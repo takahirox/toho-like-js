@@ -1,50 +1,107 @@
 <!DOCTYPE html>
 <html>
+<head>
+<meta charset="utf-8">
+<title>Toho like shooting with JavaScript</title>
+<script type="text/javascript" src="lib/glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="utility/Inherit.js"></script>
+<script type="text/javascript" src="utility/Draw.js"></script>
+<script type="text/javascript" src="utility/Random.js"></script>
+<script type="text/javascript" src="utility/FreeList.js"></script>
+<script type="text/javascript" src="utility/WebGL.js"></script>
+<script type="text/javascript" src="data/danmaku_helper.js"></script>
+<script type="text/javascript" src="data/bullets_params.js"></script>
+<script type="text/javascript" src="data/enemies_params.js"></script>
+<script type="text/javascript" src="data/bosses_params.js"></script>
+<script type="text/javascript" src="data/talk_params.js"></script>
+<script type="text/javascript" src="data/stage_params.js"></script>
+<script type="text/javascript" src="source/Game.js"></script>
+<script type="text/javascript" src="source/MoveVector.js"></script>
+<script type="text/javascript" src="source/Element.js"></script>
+<script type="text/javascript" src="source/Fighter.js"></script>
+<script type="text/javascript" src="source/FighterOption.js"></script>
+<script type="text/javascript" src="source/Enemy.js"></script>
+<script type="text/javascript" src="source/Boss.js"></script>
+<script type="text/javascript" src="source/VanishedEnemy.js"></script>
+<script type="text/javascript" src="source/Effect.js"></script>
+<script type="text/javascript" src="source/Bullet.js"></script>
+<script type="text/javascript" src="source/Bomb.js"></script>
+<script type="text/javascript" src="source/EnemyBullet.js"></script>
+<script type="text/javascript" src="source/Item.js"></script>
+<script type="text/javascript" src="source/SpellCard.js"></script>
+<script type="text/javascript" src="source/GameState.js"></script>
+<script type="text/javascript" src="source/LoadingState.js"></script>
+<script type="text/javascript" src="source/OpeningState.js"></script>
+<script type="text/javascript" src="source/CharacterSelectState.js"></script>
+<script type="text/javascript" src="source/ReplaySelectState.js"></script>
+<script type="text/javascript" src="source/PostReplayState.js"></script>
+<script type="text/javascript" src="source/StageState.js"></script>
+<script type="text/javascript" src="source/EndingState.js"></script>
+<script type="text/javascript" src="source/StaffRollState.js"></script>
+<script type="text/javascript">
 
-  <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="Toho-like-js : " />
+var __game ;
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+var init = function( ) {
+  var mainCanvas = document.getElementById( 'mainCanvas' ) ;
+  var bgCanvas = document.getElementById('bgCanvas');
+  var game = new Game(mainCanvas, bgCanvas);
+  __game = game ;
+  window.onkeydown = game.handleKeyDown.bind( game ) ;
+  window.onkeyup = game.handleKeyUp.bind( game ) ;
+  game.run( ) ;
+} ;
 
-    <title>Toho-like-js</title>
-  </head>
+</script>
+</head>
 
-  <body>
+<body onLoad="init( )">
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/takahirox/toho-like-js">View on GitHub</a>
+<div id="canvasdiv" style="position:relative; width:640px; height:480px">
+<canvas id="mainCanvas" width="640" height="480"
+ style="z-index: 2; position:absolute;left0px;top0px;"></canvas>
+<canvas id="bgCanvas" width="480" height="480"
+ style="z-index: 1; position:absolute;left0px;top0px;"></canvas>
+</div>
 
-          <h1 id="project_title">Toho-like-js</h1>
-          <h2 id="project_tagline"></h2>
+<p>
+How to play
+</p>
+<ul>
+<li>Cursor key: move / character select</li>
+<li>Z:          shot / ok</li>
+<li>X:          bomb / chancel</li>
+<li>Shift:      slow</li>
+<li>Space:      character change(for debug)</li>
+</ul>
 
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/takahirox/toho-like-js/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/takahirox/toho-like-js/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
+<p>
+Turn your hardware acceleration on to fully enjoy this game.<br />
+See &quot;chrome://gpu&quot; and &quot;chrome://flags&quot; on your chrome to check if your hardware acceleration is enabled.
+</p>
 
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <h1>
-<a name="toho-like-js" class="anchor" href="#toho-like-js"><span class="octicon octicon-link"></span></a><a href="./toho-like-js/index.html">toho-like-js</a></h1>
-      </section>
-    </div>
+<p>
+Thanks
+</p>
+<ul>
+<li>SE, etc  <a href="http://www.danmakufu.net/?%E5%88%B6%E4%BD%9C%2F%E3%83%AA%E3%83%B3%E3%82%AF">http://www.danmakufu.net/?%E5%88%B6%E4%BD%9C%2F%E3%83%AA%E3%83%B3%E3%82%AF</a></li>
+<li>SE       <a href="http://commons.nicovideo.jp/material/nc1456">http://commons.nicovideo.jp/material/nc1456</a></li>
+<li>Face     <a href="http://kinginsan.blog60.fc2.com/">http://kinginsan.blog60.fc2.com/</a></li>
+<li>Standup  <a href="http://gensoukyou.1000.tv/">http://gensoukyou.1000.tv/</a></li>
+<li>Marisa   <a href="http://commons.nicovideo.jp/material/nc71167">http://commons.nicovideo.jp/material/nc71167</a></li>
+<li>Reimu    <a href="http://commons.nicovideo.jp/material/nc70557">http://commons.nicovideo.jp/material/nc70557</a></li>
+<li>Bullet   <a href="http://commons.nicovideo.jp/material/nc74535">http://commons.nicovideo.jp/material/nc74535</a></li>
+<li>BG       <a href="http://subtlepatterns.com/hixs-evolution/">http://subtlepatterns.com/hixs-evolution/</a></li>
+<li>BG       <a href="http://gi0.net/">http://gi0.net/</a></li>
+<li>BG       <a href="http://commons.nicovideo.jp/material/nc21291">http://commons.nicovideo.jp/material/nc21291</a></li>
+<li>BGM      <a href="http://commons.nicovideo.jp/material/nc25738">http://commons.nicovideo.jp/material/nc25738</a></li>
+<li>BGM      <a href="http://commons.nicovideo.jp/material/nc13447">http://commons.nicovideo.jp/material/nc13447</a></li>
+<li>BGM      <a href="http://commons.nicovideo.jp/material/nc22928">http://commons.nicovideo.jp/material/nc22928</a></li>
+</ul>
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">Toho-like-js maintained by <a href="https://github.com/takahirox">takahirox</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
-      </footer>
-    </div>
+<p>
+This game is made by <a href="http://twitter.com/superhoge">@suprehoge</a>
+</p>
 
-    
-
-  </body>
+</body>
 </html>
