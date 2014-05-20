@@ -1,0 +1,4 @@
+[
+  { id: 1, user: 'takahirox', characterIndex: 0, datetime: 1381201800000 },
+  { id: 2, user: 'takahirox', characterIndex: 1, datetime: 1381201932580 },
+]
