@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Toho like shooting with JavaScript</title>
+<script type="text/javascript" src="lib/glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="utility/Inherit.js"></script>
+<script type="text/javascript" src="utility/Draw.js"></script>
+<script type="text/javascript" src="utility/Random.js"></script>
+<script type="text/javascript" src="utility/FreeList.js"></script>
+<script type="text/javascript" src="utility/WebGL.js"></script>
+<script type="text/javascript" src="data/danmaku_helper.js"></script>
+<script type="text/javascript" src="data/bullets_params.js"></script>
+<script type="text/javascript" src="data/enemies_params.js"></script>
+<script type="text/javascript" src="data/bosses_params.js"></script>
+<script type="text/javascript" src="data/talk_params.js"></script>
+<script type="text/javascript" src="data/stage_params.js"></script>
+<script type="text/javascript" src="source/Game.js"></script>
+<script type="text/javascript" src="source/MoveVector.js"></script>
+<script type="text/javascript" src="source/Element.js"></script>
+<script type="text/javascript" src="source/Fighter.js"></script>
+<script type="text/javascript" src="source/FighterOption.js"></script>
+<script type="text/javascript" src="source/Enemy.js"></script>
+<script type="text/javascript" src="source/Boss.js"></script>
+<script type="text/javascript" src="source/VanishedEnemy.js"></script>
+<script type="text/javascript" src="source/Effect.js"></script>
+<script type="text/javascript" src="source/Bullet.js"></script>
+<script type="text/javascript" src="source/Bomb.js"></script>
+<script type="text/javascript" src="source/EnemyBullet.js"></script>
+<script type="text/javascript" src="source/Item.js"></script>
+<script type="text/javascript" src="source/SpellCard.js"></script>
+<script type="text/javascript" src="source/GameState.js"></script>
+<script type="text/javascript" src="source/LoadingState.js"></script>
+<script type="text/javascript" src="source/OpeningState.js"></script>
+<script type="text/javascript" src="source/CharacterSelectState.js"></script>
+<script type="text/javascript" src="source/ReplaySelectState.js"></script>
+<script type="text/javascript" src="source/PostReplayState.js"></script>
+<script type="text/javascript" src="source/StageState.js"></script>
+<script type="text/javascript" src="source/EndingState.js"></script>
+<script type="text/javascript" src="source/StaffRollState.js"></script>
+<script type="text/javascript">
+
+var __game ;
+
+var init = function( ) {
+  var mainCanvas = document.getElementById( 'mainCanvas' ) ;
+  var bgCanvas = document.getElementById('bgCanvas');
+  var game = new Game(mainCanvas, bgCanvas);
+  __game = game ;
+  window.onkeydown = game.handleKeyDown.bind( game ) ;
+  window.onkeyup = game.handleKeyUp.bind( game ) ;
+  game.run( ) ;
+} ;
+
+</script>
+</head>
+
+<body onLoad="init( )">
+
+<div id="canvasdiv" style="position:relative; width:640px; height:480px">
+<canvas id="mainCanvas" width="640" height="480"
+ style="z-index: 2; position:absolute;left0px;top0px;"></canvas>
+<canvas id="bgCanvas" width="480" height="480"
+ style="z-index: 1; position:absolute;left0px;top0px;"></canvas>
+</div>
+
+<p>
+How to play
+</p>
+<ul>
+<li>Cursor key: move / character select</li>
+<li>Z:          shot / ok</li>
+<li>X:          bomb / chancel</li>
+<li>Shift:      slow</li>
+<li>Space:      character change(for debug)</li>
+</ul>
+
+<p>
+Turn your hardware acceleration on to fully enjoy this game.<br />
+See &quot;chrome://gpu&quot; and &quot;chrome://flags&quot; on your chrome to check if your hardware acceleration is enabled.
+</p>
+
+<p>
+Thanks
+</p>
+<ul>
+<li>SE, etc  <a href="http://www.danmakufu.net/?%E5%88%B6%E4%BD%9C%2F%E3%83%AA%E3%83%B3%E3%82%AF">http://www.danmakufu.net/?%E5%88%B6%E4%BD%9C%2F%E3%83%AA%E3%83%B3%E3%82%AF</a></li>
+<li>SE       <a href="http://commons.nicovideo.jp/material/nc1456">http://commons.nicovideo.jp/material/nc1456</a></li>
+<li>Face     <a href="http://kinginsan.blog60.fc2.com/">http://kinginsan.blog60.fc2.com/</a></li>
+<li>Standup  <a href="http://gensoukyou.1000.tv/">http://gensoukyou.1000.tv/</a></li>
+<li>Marisa   <a href="http://commons.nicovideo.jp/material/nc71167">http://commons.nicovideo.jp/material/nc71167</a></li>
+<li>Reimu    <a href="http://commons.nicovideo.jp/material/nc70557">http://commons.nicovideo.jp/material/nc70557</a></li>
+<li>Bullet   <a href="http://commons.nicovideo.jp/material/nc74535">http://commons.nicovideo.jp/material/nc74535</a></li>
+<li>BG       <a href="http://subtlepatterns.com/hixs-evolution/">http://subtlepatterns.com/hixs-evolution/</a></li>
+<li>BG       <a href="http://gi0.net/">http://gi0.net/</a></li>
+<li>BG       <a href="http://commons.nicovideo.jp/material/nc21291">http://commons.nicovideo.jp/material/nc21291</a></li>
+<li>BGM      <a href="http://commons.nicovideo.jp/material/nc25738">http://commons.nicovideo.jp/material/nc25738</a></li>
+<li>BGM      <a href="http://commons.nicovideo.jp/material/nc13447">http://commons.nicovideo.jp/material/nc13447</a></li>
+<li>BGM      <a href="http://commons.nicovideo.jp/material/nc22928">http://commons.nicovideo.jp/material/nc22928</a></li>
+</ul>
+
+<p>
+This game is made by <a href="http://twitter.com/superhoge">@suprehoge</a>
+</p>
+
+</body>
+</html>
