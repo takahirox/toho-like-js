@@ -2,8 +2,7 @@ function Game(mainCanvas, bgCanvas) {
   this.surface = mainCanvas.getContext('2d');
   this.surface.fillStyle = 'white';
 
-  this.bgGl = bgCanvas.getContext('webgl');
-  this.bgGl.clearColor(0.0, 0.0, 0.0, 1.0);
+  this.bgLayer = new Layer(bgCanvas);
 
 //  this.width = Number(mainCanvas.getAttribute('width')) - Game._SIDE_WIDTH;
   this.width = Number(mainCanvas.getAttribute('width'));

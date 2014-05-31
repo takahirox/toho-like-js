@@ -14,6 +14,7 @@ function StageState( game ) {
   this.itemManager          = null ;
   this.spellCardManager     = null ;
   this.spellCard            = null ;
+  this.backgroundManager    = null;
 
   this.params = __stageParams ; // TODO: temporal
   this.stageIndex = 0 ;
@@ -34,20 +35,6 @@ function StageState( game ) {
 
   this.bgLayers = null ; // TODO: temporal
   this.bgEffectLayers = null ; // TODO: temporal
-
-  /* WebGL related variables.
-     They're initialized at 
-     - this._initShaders()
-     - this._initGlBuffers()
-     - this._initBGTextures()
-     The parent class has WebGL context instance(this.game.bgGl).
-     TODO: a certain class should manage all WebGL related variables. */
-  this.vertexBuffer = null;
-  this.coordinateBuffer = null;
-  this.indexBuffer = null;
-  this.shaderProgram = null;
-  this.pMatrix = null;
-  this.mvMatrix = null;
 
   this.initialized = false ; // TODO: temporal
   this.playRecords = [ ] ;
@@ -126,9 +113,7 @@ StageState.prototype.init = function( params ) {
   this.state = StageState._STATE_SHOOTING ;
   if( ! this.initialized ) {
     this._initBGLayers();
-    this._initShaders(this.game.bgGl);
-    this._initGlBuffers(this.game.bgGl);
-    this._initBGTextures(this.game.bgGl);
+    this._initBackground();
     this._initFighter( ) ;
     this._initEnemies( ) ;
     this._initBullets( ) ;
@@ -155,6 +140,11 @@ StageState.prototype.init = function( params ) {
   this._soundBGM( Game._BGM_1 ) ;
 } ;
 
+
+StageState.prototype._initBackground = function() {
+  this.backgroundManager = new BackgroundManager(this);
+  this.backgroundManager.initDrawer(this.game.bgLayer, null);
+};
 
 /**
  * TODO: temporal
@@ -213,140 +203,6 @@ StageState.prototype._initBGLayers = function( ) {
   this.bgEffectLayers.push( this._generateForwardBlackLayer( ) ) ;
   this.bgEffectLayers.push( this._generateAllBlackLayer( ) ) ;
 } ;
-
-
-StageState.prototype._initTexture = function(gl, texture, image) {
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-};
-
-
-StageState.prototype._initBGTextures = function(gl) {
-  this.textures = [];
-  var texture = gl.createTexture();
-  this._initTexture(gl, texture, this.getImage(Game._IMG_BG1));
-  this.textures.push(texture);
-
-  var texture2 = gl.createTexture();
-  this._initTexture(gl, texture2, this.getImage(Game._IMG_BG2));
-  this.textures.push(texture2);
-};
-
-
-StageState.prototype._compileShader = function(gl, script, type) {
-  var shader;
-  if(type == "x-shader/x-fragment") {
-    shader = gl.createShader(gl.FRAGMENT_SHADER);
-  } else if(type == "x-shader/x-vertex") {
-    shader = gl.createShader(gl.VERTEX_SHADER);
-  } else {
-    return null;
-  }
-
-  gl.shaderSource(shader, script);
-  gl.compileShader(shader);
-
-  if(! gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    alert(gl.getShaderInfoLog(shader));
-    return null;
-  }
-  return shader;
-};
-
-
-StageState.prototype._initShaders = function(gl) {
-  this.mvMatrix = mat4.create();
-  this.pMatrix = mat4.create();
-
-  var vertexShader = this._compileShader(gl,
-                                         StageState._SHADER_VS_SCRIPT,
-                                         StageState._SHADER_VS_TYPE);
-  var fragmentShader = this._compileShader(gl,
-                                           StageState._SHADER_FS_SCRIPT,
-                                           StageState._SHADER_FS_TYPE);
-
-  var shaderProgram = gl.createProgram();
-  gl.attachShader(shaderProgram, vertexShader);
-  gl.attachShader(shaderProgram, fragmentShader);
-  gl.linkProgram(shaderProgram);
-
-  if(! gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-    alert("Failed to setup shaders");
-  }
-
-  gl.useProgram(shaderProgram);
-
-  shaderProgram.vertexPositionAttribute =
-    gl.getAttribLocation(shaderProgram, "aVertexPosition");
-  gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-
-  shaderProgram.textureCoordAttribute = 
-    gl.getAttribLocation(shaderProgram, "aTextureCoordinates");
-  gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
-
-  shaderProgram.pMatrixUniform =
-    gl.getUniformLocation(shaderProgram, "uPMatrix");
-  shaderProgram.mvMatrixUniform =
-    gl.getUniformLocation(shaderProgram, "uMVMatrix");
-
-  shaderProgram.uSamplerUniform =
-    gl.getUniformLocation(shaderProgram, "uSampler");
-
-  this.shaderProgram = shaderProgram;
-};
-
-
-/**
- * TODO: temporal
- */
-StageState.prototype._initGlBuffers = function(gl) {
-  var vertexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-  var vertices = [
-     0.0,  0.0,  0.0,
-     4.0,  0.0,  0.0,
-     4.0, 10.0,  0.0,
-     0.0, 10.0,  0.0,
-  ];
-  gl.bufferData(gl.ARRAY_BUFFER,
-                new Float32Array(vertices),
-                gl.STATIC_DRAW);
-  vertexBuffer.itemSize = 3;
-  vertexBuffer.numberOfItems = 4;
-  this.vertexBuffer = vertexBuffer;
-
-  var coordinateBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, coordinateBuffer);
-  var coordinates = [
-    0.0, 10.0,
-    4.0, 10.0,
-    4.0,  0.0,
-    0.0,  0.0,
-  ];
-  gl.bufferData(gl.ARRAY_BUFFER,
-                new Float32Array(coordinates),
-                gl.STATIC_DRAW);
-  coordinateBuffer.itemSize = 2;
-  coordinateBuffer.numItems = 4;
-  this.coordinateBuffer = coordinateBuffer;
-
-  var indexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-  var indecies = [
-    0, 1, 2,      0, 2, 3,
-  ];
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
-                new Uint16Array(indecies),
-                gl.STATIC_DRAW);
-  indexBuffer.itemSize = 1;
-  indexBuffer.numItems = 6;
-  this.indexBuffer = indexBuffer;
-};
 
 
 /**
@@ -431,6 +287,7 @@ StageState.prototype.runStep = function( ) {
     this.bulletManager.runStep( ) ;
     this.bombManager.runStep( ) ;
     this.spellCardManager.runStep( ) ;
+    this.backgroundManager.runStep();
 
     this.enemyBulletManager.checkGrazeWith(this.fighter);
 
@@ -496,7 +353,7 @@ StageState.prototype.runStep = function( ) {
 
 
 /**
- * TODO: temporal
+ * TODO: temporal. Should be in Background?
  */
 StageState.prototype._updateBGScale = function( ) {
   if( ! this.params[ this.stageIndex ].bgScale )
@@ -579,37 +436,7 @@ StageState.prototype.updateDisplay = function( surface ) {
 /**
  * TODO: temporal
  */
-StageState.prototype._setMatrixUniforms = function(gl, shaderProgram,
-                                                   pMatrix, mvMatrix) {
-  gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
-  gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
-}
-
-
-/**
- * TODO: temporal
- */
 StageState.prototype._displayBG = function(surface) {
-
-  /* Draw BG for 2D Canvas. */
-/*
-  var height = this.getHeight() ;
-  var offset = (this.animationCount * 2) % height; 
-
-  surface.save();
-
-  surface.drawImage(this.bgLayers[this.stageIndex],
-                    0,
-                    this.getHeight() - offset,
-                    this.getWidth(),
-                    this.getHeight(),
-                    0,
-                    0,
-                    this.getWidth(),
-                    this.getHeight());
-
-  surface.restore();
-*/
 
   /* Draw dark BG for 2D Canvas.
      TODO: move to WebGL */
@@ -621,48 +448,8 @@ StageState.prototype._displayBG = function(surface) {
   }
   surface.restore();
 
-  /* Draw BG for WebGL.
-     TODO: remove Magic numbers. */
-  var gl = this.game.bgGl;
-  var vertexBuffer = this.vertexBuffer;
-  var coordinateBuffer = this.coordinateBuffer;
-  var indexBuffer = this.indexBuffer;
-  var shaderProgram = this.shaderProgram;
-  var pMatrix = this.pMatrix;
-  var mvMatrix = this.mvMatrix;
-  var texture = this.textures[this.stageIndex];
+  this.backgroundManager.draw(this.game.bgLayer);
 
-  gl.viewport(0, 0, this.getWidth(), this.getHeight());
-  gl.clear(gl.COLOR_BUFFER_BIT);
-
-  mat4.perspective(60, this.getWidth()/this.getHeight(),
-                   0.1, 10.0, pMatrix);
-
-  mat4.identity(mvMatrix);
-  mat4.rotate(mvMatrix, Math.PI/180*50, [-1, 0, 0]);
-  /* Y-axis -2.0 is magic number to avoid X-axis gap. */
-  mat4.translate(mvMatrix,
-                 [-2.0, -2.0-(this.animationCount%200)/200, -this.bgScale]);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,
-                         vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, coordinateBuffer);
-  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute,
-                         coordinateBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.uniform1i(shaderProgram.uSamplerUniform, 0);
-/*
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-  gl.enable(gl.BLEND);
-  gl.disable(gl.DEPTH_TEST);
-*/
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-  this._setMatrixUniforms(gl, shaderProgram, pMatrix, mvMatrix);
-  gl.drawElements(gl.TRIANGLES, indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 };
 
 
@@ -900,6 +687,7 @@ StageState.prototype.reset = function( ) {
   this.effectManager.reset( ) ;
   this.itemManager.reset( ) ;
   this.spellCardManager.reset( ) ;
+  this.backgroundManager.reset();
 
   this.fighter.beDefaultPosition( ) ;
   this.fighter.initOptions( ) ; // TODO: temporal
@@ -1221,6 +1009,7 @@ StageState.prototype.notifyGoNextStage = function( ) {
   this.pending = 0 ;
   this.enemyManager.goNextStage( ) ;
   this.bossManager.goNextStage( ) ;
+  this.backgroundManager.goNextStage();
 } ;
 
 
