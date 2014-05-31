@@ -6,6 +6,8 @@ function ElementManager(gameState) {
   this.elements = [];
   this.count = 0;
   this.factory = null;
+  this.drawer = null;
+  this.oneElementActive = false;
   this.maxNum = this._initMaxNum();
   this._initFactory();
 };
@@ -16,11 +18,39 @@ ElementManager.prototype._initMaxNum = function() {
 };
 
 
+/**
+ * return true if one element in elements is active.
+ * to avoid class design complication, use this method
+ * instead of inheritance.
+ * TODO: bad design
+ */
+ElementManager.prototype.oneElement = function() {
+  return this.oneElementActive;
+};
+
+
+/**
+ * get method for the class one element is active.
+ * TODO: bad design
+ */
+ElementManager.prototype.getOne = function() {
+  return this.get(0);
+};
+
+
 ElementManager.prototype._initFactory = function( ) {
   this.factory = new ElementFactory( this.gameStage,
                                      this.gameState.maxX,
                                      this.gameState.maxY ) ;
 } ;
+
+
+/**
+ * TODO: be private?
+ */
+ElementManager.prototype.initDrawer = function(layer, image) {
+  this.drawer = new ElementsDrawer(this, layer.gl, image);
+};
 
 
 ElementManager.prototype.reset = function( ) {
@@ -34,17 +64,37 @@ ElementManager.prototype.reset = function( ) {
 } ;
 
 
-ElementManager.prototype.runStep = function( ) {
-  for( var i = 0; i < this.elements.length; i++ )
-    this.elements[ i ].runStep( ) ;
-  this.count++ ;
-} ;
+/**
+ * TODO: bad design.
+ */
+ElementManager.prototype.runStep = function() {
+  if(this.oneElement()) {
+    if(this.elements.length)
+      this.getOne().runStep();
+  } else {
+    for(var i = 0; i < this.elements.length; i++)
+      this.elements[i].runStep();
+  }
+  this.count++;
+};
 
 
+/**
+ * displays on 2D Canvas
+ */
 ElementManager.prototype.display = function( surface ) {
   for( var i = 0; i < this.elements.length; i++ )
     this.elements[ i ].display( surface ) ;
 } ;
+
+
+/**
+ * draws on WebGL layer
+ * TODO: rename
+ */
+ElementManager.prototype.draw = function(layer) {
+  this.drawer.draw(layer);
+};
 
 
 ElementManager.prototype.create = function( params ) {
@@ -52,13 +102,21 @@ ElementManager.prototype.create = function( params ) {
 } ;
 
 
-ElementManager.prototype.addElement = function( element ) {
-  this.elements.push( element ) ;
-} ;
+/**
+ * TODO: rename to add()
+ */
+ElementManager.prototype.addElement = function(element) {
+  this.elements.push(element);
+};
 
 
-ElementManager.prototype.getElement = function(index) {
-  return this.elements.get[index];
+ElementManager.prototype.add = function(element) {
+  this.addElement(element);
+};
+
+
+ElementManager.prototype.get = function(index) {
+  return this.elements[index];
 };
 
 
@@ -120,9 +178,12 @@ ElementManager.prototype.checkLoss = function( callback ) {
 }
 
 
-ElementManager.prototype.getNum = function( ) {
-  return this.elements.length ;
-} ;
+/**
+ * TODO: bad design
+ */
+ElementManager.prototype.getNum = function() {
+  return (this.oneElement()) ? 1 : this.elements.length;
+};
 
 
 ElementManager.prototype.getMaxNum = function() {
@@ -184,6 +245,12 @@ ElementFreeList.prototype._generateElement = function( ) {
 } ;
 
 
+/**
+ * This class has position and parameters of Element for WebGL.
+ * They're used by ElementsDrawer.
+ * Note that this class doesn't have image and texture.
+ * ElementsDrawer has them.
+ */
 function ElementView(element) {
   this.element = element;
   this.a = 1.0;
@@ -313,15 +380,16 @@ ElementView.prototype.restoreVertices = function() {
 
 ElementView.prototype.translate = function() {
   for(var i = 0; i < ElementView._V_ITEM_NUM; i++) {
-    this.vertices[i*ElementView._V_ITEM_SIZE+0] += this.element.getX();
-    this.vertices[i*ElementView._V_ITEM_SIZE+1] -= this.element.getY();
-    this.vertices[i*ElementView._V_ITEM_SIZE+2] += this.element.getZ();
+    this.vertices[i*ElementView._V_ITEM_SIZE+0] += this.element.x;
+    // this is the trick to correspond 2D canvas coordinates.
+    this.vertices[i*ElementView._V_ITEM_SIZE+1] -= this.element.y;
+    this.vertices[i*ElementView._V_ITEM_SIZE+2] += this.element.z;
   }
 };
 
 
 ElementView.prototype.rotate = function() {
-  var radian = this.element.getARadian();
+  var radian = 0 * Math.PI / 180;//this.element.getARadian();
   for(var i = 0; i < ElementView._V_ITEM_NUM; i++) {
     var x = this.vertices[i*ElementView._V_ITEM_SIZE+0];
     var y = this.vertices[i*ElementView._V_ITEM_SIZE+1];
@@ -334,6 +402,9 @@ ElementView.prototype.rotate = function() {
 };
 
 
+/**
+ * assume that update coordinates here in each frame.
+ */
 ElementView.prototype.animate = function() {
 };
 
@@ -341,7 +412,7 @@ ElementView.prototype.animate = function() {
 
 function ElementsDrawer(elementManager, gl, image) {
   this.elementManager = elementManager;
-  var maxLength = elementManager.getMaxLength();
+  var maxLength = elementManager.getMaxNum();
   this.vArray = new Float32Array(maxLength*12);
   this.cArray = new Float32Array(maxLength*8);
   this.iArray = new Uint16Array(maxLength*6);
@@ -424,10 +495,15 @@ ElementsDrawer.prototype._pourColors = function(i, v) {
 
 
 ElementsDrawer.prototype._pourArray = function() {
-  var length = this.elementManager.getLength();
+  // TODO: bad design
+  var length = (this.elementManager.oneElement())
+                 ? 1 : this.elementManager.getNum();
 
   for(var i = 0; i < length; i++) {
-    var e = this.elementManager.get(i);
+    // TODO: bad design
+    var e = (this.elementManager.oneElement())
+              ? this.elementManager.getOne()
+              : this.elementManager.get(i);
     var v = e.getView();
     v.animate();
     this._pourVerticies(i, v);
@@ -439,7 +515,7 @@ ElementsDrawer.prototype._pourArray = function() {
 
 
 ElementsDrawer.prototype._pourBuffer = function(gl) {
-  var length = this.elementManager.getLength();
+  var length = this.elementManager.getNum();
 
   gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, this.vArray, gl.STATIC_DRAW);
@@ -492,6 +568,17 @@ ElementsDrawer.prototype._draw = function(layer) {
 };
 
 
+ElementsDrawer.prototype._initDraw = function(gl) {
+  gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+};
+
+
+ElementsDrawer.prototype._project = function(layer) {
+  layer.ortho(0.1, 10.0);
+};
+
+
 ElementsDrawer.prototype._prepareDraw = function(layer) {
 };
 
@@ -499,6 +586,8 @@ ElementsDrawer.prototype._prepareDraw = function(layer) {
 ElementsDrawer.prototype.draw = function(layer) {
   this._pourArray();
   this._pourBuffer(layer.gl);
+  this._initDraw(layer.gl);
+  this._project(layer);
   mat4.identity(layer.mvMatrix);
   this._prepareDraw(layer);
   this._draw(layer);
@@ -522,6 +611,7 @@ function Element( gameState, maxX, maxY ) {
 
   this.x = 0 ;
   this.y = 0 ;
+  this.z = 0 ;
   this.r = 0 ;
   this.keepAlive = 0 ;
   this.baseTheta = 0 ;
@@ -544,7 +634,9 @@ function Element( gameState, maxX, maxY ) {
   this.baseVectorCount = 0 ;
   this.vectors = [ ] ;
   this.gravity = null ;
-}
+
+  this.view = this._generateView();
+};
 
 Element._STATE_ALIVE = 1 ;
 Element._STATE_DEAD  = 2 ;
@@ -564,6 +656,7 @@ Element.prototype.init = function(params, image) {
 
   this.x               = this._getValueOrDefaultValue(params.x, 0);
   this.y               = this._getValueOrDefaultValue(params.y, 0);
+  this.z               = this._getValueOrDefaultValue(params.z, 0);
   this.r               = this._getValueOrDefaultValue(params.r, 0);
   this.keepAlive       = this._getValueOrDefaultValue(params.keepAlive, 0);
   this.baseTheta       = this._getValueOrDefaultValue(params.baseTheta, 0);
@@ -605,6 +698,21 @@ Element.prototype.init = function(params, image) {
   this._supplyPosition( ) ;
 
 } ;
+
+
+Element.prototype._initView = function() {
+  this.view.init();
+};
+
+
+Element.prototype.getView = function() {
+  return this.view;
+};
+
+
+Element.prototype._generateView = function() {
+  return new ElementView(this);
+};
 
 
 Element.prototype._getValueOrDefaultValue = function( value, defaultValue ) {
@@ -802,6 +910,16 @@ Element.prototype.getWidth = function( ) {
 Element.prototype.getHeight = function( ) {
   return this.height ;
 } ;
+
+
+Element.prototype.getImageWidth = function() {
+  return this.image.width;
+};
+
+
+Element.prototype.getImageHeight = function() {
+  return this.image.height;
+};
 
 
 Element.prototype.setX = function( x ) {

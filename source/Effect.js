@@ -264,6 +264,7 @@ GrazeEffect._END_COUNT = 20;
 GrazeEffect._SPAN = 4;
 GrazeEffect._SIZE = 4;
 GrazeEffect._FLUCTUATION = 30;
+GrazeEffect._GAP = 5;
 
 
 GrazeEffect.prototype.init = function(params, image, element, bullet) {
@@ -286,9 +287,11 @@ GrazeEffect.prototype.init = function(params, image, element, bullet) {
 GrazeEffect.prototype.display = function(surface) {
   var x = Math.round(this.getX());
   var y = Math.round(this.getY());
-  x = x + this.count * Math.cos(this._calculateRadian(this.theta))
+  x = x + (this.count + GrazeEffect._GAP) 
+            * Math.cos(this._calculateRadian(this.theta))
             * GrazeEffect._SPAN;
-  y = y + this.count * Math.sin(this._calculateRadian(this.theta))
+  y = y + (this.count + GrazeEffect._GAP)
+            * Math.sin(this._calculateRadian(this.theta))
             * GrazeEffect._SPAN;
 
   surface.save();
