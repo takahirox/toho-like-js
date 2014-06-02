@@ -2,8 +2,8 @@ function BackgroundManager(gameState) {
   this.parent = ElementManager;
   this.parent.call(this, gameState);
   this.activeIndex = 0;
-  this.oneElementActive = true;
   this.drawers = [];
+  this.effectTextures = [];
   this._init();
 };
 __inherit(BackgroundManager, ElementManager);
@@ -24,6 +24,7 @@ BackgroundManager.prototype._initFactory = function() {
 
 
 BackgroundManager.prototype._init = function() {
+  this.elements.length = 0;
   this.add(new Background(this.gameState,
                           this.gameState.maxX,
                           this.gameState.maxY));
@@ -35,17 +36,71 @@ BackgroundManager.prototype._init = function() {
 
 BackgroundManager.prototype.initDrawer = function(layer, image) {
   this.drawers.length = 0;
-  this.drawers.push(new BackgroundsDrawer(
-                          this, layer.gl,
+  this.drawers.push(new BackgroundDrawer(
+                          this.get(0), layer,
                           this.gameState.getImage(Game._IMG_BG1)));
-  this.drawers.push(new BackgroundsDrawer(
-                          this, layer.gl,
+  this.drawers.push(new BackgroundDrawer(
+                          this.get(1), layer,
                           this.gameState.getImage(Game._IMG_BG2)));
+
+  this.effectTextures.length = 0;
+  this._initForwardBlackEffect(layer);
 };
 
 
-BackgroundManager.prototype.draw = function(layer) {
+/**
+ * TODO: is there a way to generate non-premultiplied image?
+ */
+BackgroundManager.prototype._initForwardBlackEffect = function(layer) {
+  var h = 3;
+  var loop = 40;
+
+  var width = layer.calculateSquareValue(this.gameState.getWidth());
+  var height = layer.calculateSquareValue(h*loop);
+
+  var canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  var surface = canvas.getContext('2d');
+
+  surface.fillStyle = 'rgb(0, 0, 0)';
+  for(var i = 0; i < loop; i++) {
+    surface.globalAlpha = 0.4 - i * 0.01;
+    surface.fillRect(0, i * h, width, h);
+  }
+
+  var texture = layer.generateTexture(canvas, true);
+  texture.width = width;
+  texture.height = height;
+
+  this.effectTextures.push(texture);
+};
+
+
+BackgroundManager.prototype.setDarkness = function(d) {
+  this.get(this.activeIndex).getView().setDarkness(d);
+};
+
+
+BackgroundManager.prototype.draw = function(layer, darken) {
+  var d = darken ? 0.4 : 1.0;
+
+  this.setDarkness(d);
   this.drawers[this.activeIndex].draw(layer);
+
+  if(! darken)
+    this._drawEffect(layer);
+};
+
+
+BackgroundManager.prototype._drawEffect = function(layer) {
+  var texture = this.effectTextures[0];
+  layer.viewport();
+  layer.ortho(0.1, 10.0);
+  mat4.identity(layer.mvMatrix);
+  layer.drawOneTexture(texture,
+                       texture.width/2, texture.height/2, -1.0,
+                       texture.width,   texture.height, 1.0, 1.0);
 };
 
 
@@ -55,10 +110,8 @@ BackgroundManager.prototype.draw = function(layer) {
  */
 BackgroundManager.prototype.reset = function() {
   this.activeIndex = 0;
-  // cannot use this.elements.getNum() here.
-  // TODO: bad design
-  for(var i = 0; i < this.elements.length; i++) {
-    this.elements[i].reset();
+  for(var i = 0; i < this.getNum(); i++) {
+    this.get(i).reset();
   }
 };
 
@@ -68,10 +121,6 @@ BackgroundManager.prototype.goNextStage = function() {
 };
 
 
-BackgroundManager.prototype.getOne = function() {
-  return this.get(this.activeIndex);
-};
-
 
 function BackgroundView(element) {
   this.parent = ElementView;
@@ -80,55 +129,62 @@ function BackgroundView(element) {
 __inherit(BackgroundView, ElementView);
 
 
+BackgroundView.prototype.setDarkness = function(d) {
+  this.d = d;
+};
+
+
 BackgroundView.prototype._initVertices = function() {
   this.vertices[0]  = -2.0;
-  this.vertices[1]  = -2.0;
+  this.vertices[1]  =  2.0;
   this.vertices[2]  =  0.0;
 
   this.vertices[3]  =  2.0;
-  this.vertices[4]  = -2.0;
+  this.vertices[4]  =  2.0;
   this.vertices[5]  =  0.0;
 
   this.vertices[6]  =  2.0;
-  this.vertices[7]  =  8.0;
+  this.vertices[7]  = -8.0;
   this.vertices[8]  =  0.0;
 
   this.vertices[9]  = -2.0;
-  this.vertices[10] =  8.0;
+  this.vertices[10] = -8.0;
   this.vertices[11] =  0.0;
 };
 
 
 BackgroundView.prototype._initCoordinates = function() {
-  this.coordinates[0] = 0.0;
+  this.coordinates[0] =  0.0;
   this.coordinates[1] = 10.0;
 
-  this.coordinates[2] = 4.0;
+  this.coordinates[2] =  4.0;
   this.coordinates[3] = 10.0;
 
-  this.coordinates[4] = 4.0;
-  this.coordinates[5] = 0.0;
+  this.coordinates[4] =  4.0;
+  this.coordinates[5] =  0.0;
 
-  this.coordinates[6] = 0.0;
-  this.coordinates[7] = 0.0;
+  this.coordinates[6] =  0.0;
+  this.coordinates[7] =  0.0;
 };
 
 
-function BackgroundsDrawer(elementManager, gl, image) {
-  this.parent = ElementsDrawer;
+
+function BackgroundDrawer(elementManager, gl, image) {
+  this.parent = ElementDrawer;
   this.parent.call(this, elementManager, gl, image);
 };
-__inherit(BackgroundsDrawer, ElementsDrawer);
+__inherit(BackgroundDrawer, ElementDrawer);
 
 
-BackgroundsDrawer.prototype._project = function(layer) {
+BackgroundDrawer.prototype._project = function(layer) {
   layer.perspective(60, 0.1, 10.0);
 };
 
 
-BackgroundsDrawer.prototype._prepareDraw = function(layer) {
+BackgroundDrawer.prototype._prepareDraw = function(layer) {
   mat4.rotate(layer.mvMatrix, Math.PI/180*50, [-1, 0, 0]);
 };
+
 
 
 function Background(gameState, maxX, maxY) {
@@ -139,6 +195,10 @@ function Background(gameState, maxX, maxY) {
 __inherit(Background, Element);
 
 
+/**
+ * Excepts not to call this method unlike other Element inherit class.
+ * TODO: bad design.
+ */
 Background.prototype.init = function(params, image) {
   this.image = image;
 //  Prolly unnecessary to call perent init()
@@ -171,3 +231,4 @@ Background.prototype.runStep = function() {
   this.y = (this.count%200)/200;
   this.z = -this.gameState.bgScale;
 };
+

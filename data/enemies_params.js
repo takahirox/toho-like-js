@@ -7,8 +7,8 @@ __stage1EnemiesParams.push(
     'y': 100,
     'vital': 3,
     's': [
-//      { 'bullet': 20, 'type': 6, 'shotCount': [ 20 ], 'loop': true },
-      { 'bullet': 20, 'type': 6, 'shotCount': [ 40 ], 'loop': true },
+      { 'bullet': 20, 'type': 6, 'shotCount': [ 20 ], 'loop': true },
+      { 'bullet': 11, 'type': 6, 'shotCount': [ 100 ], 'loop': true },
 //      { 'bullet': 17, 'type': 7, 'shotCount': [ 0 ], 'loop': true, 'r': 20 },
     ],
     'v': { 'r': 0,  'theta': 90, 'w':    0, 'ra': 0, 'wa':     0 },

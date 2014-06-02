@@ -5,6 +5,17 @@ function Layer(canvas) {
   this.shader = this._initShader(this.gl);
   this.mvMatrix = mat4.create();
   this.pMatrix = mat4.create();
+
+  // These are for one texture drawing.
+  // TODO: remove magic numbers.
+  this.vArray = this.createFloatArray(12);
+  this.cArray = this.createFloatArray(8);
+  this.iArray = this.createUintArray(6);
+  this.aArray = this.createFloatArray(16);
+  this.vBuffer = this.gl.createBuffer();
+  this.cBuffer = this.gl.createBuffer();
+  this.iBuffer = this.gl.createBuffer();
+  this.aBuffer = this.gl.createBuffer();
 };
 
 Layer._NAMES = ['webgl', 'experimental-webgl'];
@@ -179,9 +190,163 @@ Layer.prototype.perspective = function(theta, near, far) {
 
 
 Layer.prototype.ortho = function(near, far) {
-  mat4.ortho(-this.gl.viewportWidth/2,
-              this.gl.viewportWidth/2,
-             -this.gl.viewportHeight/2,
-              this.gl.viewportHeight/2,
-              near, far, this.pMatrix);
+  mat4.ortho(0, this.gl.viewportWidth, -this.gl.viewportHeight, 0,
+             near, far, this.pMatrix);
+};
+
+
+/**
+ * pre_multiplied argument is a last resort.
+ */
+Layer.prototype.generateTexture = function(image, pre_multiplied) {
+  var gl = this.gl;
+  var texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture)
+//  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  texture.pre_multiplied = pre_multiplied;
+  return texture;
+};
+
+
+Layer.prototype.draw = function(texture, vBuffer, cBuffer, iBuffer, aBuffer) {
+  var gl = this.gl;
+  var shader = this.shader;
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer);
+  gl.vertexAttribPointer(shader.vertexPositionAttribute,
+                         vBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, aBuffer);
+  gl.vertexAttribPointer(shader.colorAttribute,
+                         aBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+  gl.vertexAttribPointer(shader.textureCoordAttribute,
+                         cBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.uniform1i(shader.uSamplerUniform, 0);
+
+  if(texture.pre_multiplied)
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  else
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.enable(gl.BLEND);
+  gl.disable(gl.DEPTH_TEST);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBuffer);
+  this.setMatrixUniforms(gl);
+  gl.drawElements(gl.TRIANGLES, iBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+};
+
+
+Layer.prototype.pourArrayBuffer = function(buffer, array, itemSize, numItems) {
+  var gl = this.gl;
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, array, gl.STATIC_DRAW);
+  buffer.itemSize = itemSize;
+  buffer.numItems = numItems;
+};
+
+
+Layer.prototype.pourElementArrayBuffer = function(buffer, array, itemSize,
+                                                  numItems) {
+  var gl = this.gl;
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, array, gl.STATIC_DRAW);
+  buffer.itemSize = itemSize;
+  buffer.numItems = numItems;
+};
+
+
+Layer.prototype.createFloatArray = function(num) {
+  return new Float32Array(num);
+};
+
+
+Layer.prototype.createUintArray = function(num) {
+  return new Uint16Array(num);
+};
+
+
+Layer.prototype.createBuffer = function() {
+  return this.gl.createBuffer();
+};
+
+
+/**
+ * This method is to easily draw one texture.
+ * I wanna use image, not texture.
+ * But cannot do that cuz of performance reason.
+ */
+Layer.prototype.drawOneTexture = function(texture, x, y, z, w, h, d, a) {
+  y = -y;
+
+  this.vArray[0]  = x-w/2;
+  this.vArray[1]  = y-h/2;
+  this.vArray[2]  = z;
+  this.vArray[3]  = x+w/2;
+  this.vArray[4]  = y-h/2;
+  this.vArray[5]  = z;
+  this.vArray[6]  = x+w/2;
+  this.vArray[7]  = y+h/2;
+  this.vArray[8]  = z;
+  this.vArray[9]  = x-w/2;
+  this.vArray[10] = y+h/2;
+  this.vArray[11] = z;
+  this.pourArrayBuffer(this.vBuffer, this.vArray, 3, 4);
+
+  this.cArray[0] = 0.0;
+  this.cArray[1] = 1.0;
+  this.cArray[2] = 1.0;
+  this.cArray[3] = 1.0;
+  this.cArray[4] = 1.0;
+  this.cArray[5] = 0.0;
+  this.cArray[6] = 0.0;
+  this.cArray[7] = 0.0;
+  this.pourArrayBuffer(this.cBuffer, this.cArray, 2, 4);
+
+  this.iArray[0] = 0;
+  this.iArray[1] = 1;
+  this.iArray[2] = 2;
+  this.iArray[3] = 0;
+  this.iArray[4] = 2;
+  this.iArray[5] = 3;
+  this.pourElementArrayBuffer(this.iBuffer, this.iArray, 1, 6);
+
+  this.aArray[0] = d;
+  this.aArray[1] = d;
+  this.aArray[2] = d;
+  this.aArray[3] = a;
+  this.aArray[4] = d;
+  this.aArray[5] = d;
+  this.aArray[6] = d;
+  this.aArray[7] = a;
+  this.aArray[8] = d;
+  this.aArray[9] = d;
+  this.aArray[10] = d;
+  this.aArray[11] = a;
+  this.aArray[12] = d;
+  this.aArray[13] = d;
+  this.aArray[14] = d;
+  this.aArray[15] = a;
+  this.pourArrayBuffer(this.aBuffer, this.aArray, 4, 4);
+
+  this.draw(texture, this.vBuffer, this.cBuffer, this.iBuffer, this.aBuffer);
+};
+
+
+Layer.prototype.calculateSquareValue = function(num) {
+  var val = 1;
+  while(num > val) {
+    val = val << 1;
+  }
+  return val;
 };
