@@ -146,14 +146,14 @@ StageState.prototype._initBomb = function( ) {
 
 StageState.prototype._initEnemyBullets = function() {
   this.enemyBulletManager = new EnemyBulletManager(this, __enemyBulletsParams);
-  // TODO: temporal
   this.enemyBulletManager.initDrawer(this.game.bgLayer, null);
 };
 
 
-StageState.prototype._initItems = function( ) {
-  this.itemManager = new ItemManager( this ) ;
-} ;
+StageState.prototype._initItems = function() {
+  this.itemManager = new ItemManager(this);
+  this.itemManager.initDrawer(this.game.bgLayer, null);
+};
 
 
 StageState.prototype._initSpellCards = function( ) {
@@ -384,7 +384,7 @@ StageState.prototype._displayElements = function( surface ) {
   this.vanishedEnemyManager.display( surface ) ;
   this.effectManager.display( surface ) ;
   this.enemyBulletManager.draw(this.game.bgLayer);
-  this.itemManager.display( surface ) ;
+  this.itemManager.draw(this.game.bgLayer);
   this.spellCardManager.display( surface ) ;
 } ;
 

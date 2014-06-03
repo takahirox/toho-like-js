@@ -13,19 +13,11 @@ function ElementManager(gameState) {
 
 
 /**
+ * maximum number for WebGL Buffer.
  * TODO: bad design?
  */
 ElementManager.prototype._initMaxNum = function() {
   return 1;
-};
-
-
-/**
- * get method for the class one element is active.
- * TODO: bad design
- */
-ElementManager.prototype.getOne = function() {
-  return this.get(0);
 };
 
 
