@@ -276,9 +276,9 @@ EnemyBulletFreeList.prototype._generateElement = function( ) {
 
 
 
-function EnemyBulletDrawer(elementManager, gl, image) {
+function EnemyBulletDrawer(elementManager, layer, image) {
   this.parent = ElementDrawer;
-  this.parent.call(this, elementManager, gl, image);
+  this.parent.call(this, elementManager, layer, image);
 };
 __inherit(EnemyBulletDrawer, ElementDrawer);
 

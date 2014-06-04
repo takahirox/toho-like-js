@@ -36,7 +36,8 @@ var __bulletTypes = [
     'indexX':           5,
     'indexY':           0,
     'width':           16,
-    'height':          32,
+//    'height':          32,
+    'height':          256,
     'collisionWidth':  16,
     'collisionHeight': 32,
     'rotate':          true

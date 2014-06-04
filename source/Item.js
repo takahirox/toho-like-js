@@ -115,9 +115,9 @@ ItemFreeList.prototype._generateElement = function( ) {
 
 
 
-function ItemDrawer(elementManager, gl, image) {
+function ItemDrawer(elementManager, layer, image) {
   this.parent = ElementDrawer;
-  this.parent.call(this, elementManager, gl, image);
+  this.parent.call(this, elementManager, layer, image);
 };
 __inherit(ItemDrawer, ElementDrawer);
 

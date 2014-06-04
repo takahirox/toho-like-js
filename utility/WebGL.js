@@ -20,6 +20,10 @@ function Layer(canvas) {
 
 Layer._NAMES = ['webgl', 'experimental-webgl'];
 
+Layer._BLEND_ALPHA     = 0;
+Layer._BLEND_ALPHA2    = 1;
+Layer._BLEND_ADD_ALPHA = 2;
+
 Layer._SHADERS = {};
 
 Layer._SHADERS['shader-vs'] = {};
@@ -198,10 +202,11 @@ Layer.prototype.ortho = function(near, far) {
 /**
  * pre_multiplied argument is a last resort.
  */
-Layer.prototype.generateTexture = function(image, pre_multiplied) {
+Layer.prototype.generateTexture = function(image) {
   var gl = this.gl;
   var texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture)
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+//  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 //  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -209,12 +214,12 @@ Layer.prototype.generateTexture = function(image, pre_multiplied) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
   gl.bindTexture(gl.TEXTURE_2D, null);
-  texture.pre_multiplied = pre_multiplied;
   return texture;
 };
 
 
-Layer.prototype.draw = function(texture, vBuffer, cBuffer, iBuffer, aBuffer) {
+Layer.prototype.draw = function(texture, vBuffer, cBuffer, iBuffer, aBuffer,
+                                blend) {
   var gl = this.gl;
   var shader = this.shader;
 
@@ -234,10 +239,26 @@ Layer.prototype.draw = function(texture, vBuffer, cBuffer, iBuffer, aBuffer) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.uniform1i(shader.uSamplerUniform, 0);
 
-  if(texture.pre_multiplied)
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-  else
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  var param1;
+  var param2;
+  switch(blend) {
+    case Layer._BLEND_ALPHA2:
+      param1 = gl.ONE;
+      param2 = gl.ONE_MINUS_SRC_ALPHA;
+      break;
+    case Layer._BLEND_ADD_ALPHA:
+      param1 = gl.SRC_ALPHA;
+      param2 = gl.ONE;
+      break;
+//  case Layer._BLEND_ALPHA:
+//  case null:
+    default:
+      param1 = gl.SRC_ALPHA;
+      param2 = gl.ONE_MINUS_SRC_ALPHA;
+      break;
+  }
+  gl.blendFuncSeparate(param1, param2, gl.ONE, gl.ONE);
+
   gl.enable(gl.BLEND);
   gl.disable(gl.DEPTH_TEST);
 
@@ -286,7 +307,7 @@ Layer.prototype.createBuffer = function() {
  * I wanna use image, not texture.
  * But cannot do that cuz of performance reason.
  */
-Layer.prototype.drawOneTexture = function(texture, x, y, z, w, h, d, a) {
+Layer.prototype.drawOneTexture = function(texture, x, y, z, w, h, d, a, blend) {
   y = -y;
 
   this.vArray[0]  = x-w/2;
@@ -339,7 +360,8 @@ Layer.prototype.drawOneTexture = function(texture, x, y, z, w, h, d, a) {
   this.aArray[15] = a;
   this.pourArrayBuffer(this.aBuffer, this.aArray, 4, 4);
 
-  this.draw(texture, this.vBuffer, this.cBuffer, this.iBuffer, this.aBuffer);
+  this.draw(texture, this.vBuffer, this.cBuffer, this.iBuffer, this.aBuffer,
+            blend);
 };
 
 

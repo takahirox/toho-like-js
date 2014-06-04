@@ -134,9 +134,10 @@ StageState.prototype._initEnemies = function( ) {
 } ;
 
 
-StageState.prototype._initBullets = function( ) {
-  this.bulletManager = new BulletManager( this, __bulletsParams ) ;
-} ;
+StageState.prototype._initBullets = function() {
+  this.bulletManager = new BulletManager(this, __bulletsParams);
+  this.bulletManager.initDrawer(this.game.bgLayer, null);
+};
 
 
 StageState.prototype._initBomb = function( ) {
@@ -375,7 +376,7 @@ StageState.prototype._displayBossVital = function( surface ) {
  * The order is important.
  */
 StageState.prototype._displayElements = function( surface ) {
-  this.bulletManager.display( surface ) ;
+  this.bulletManager.draw(this.game.bgLayer);
   this.fighter.display( surface ) ;
   this.fighterOptionManager.display( surface ) ;
   this.bombManager.display( surface ) ;

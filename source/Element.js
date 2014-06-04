@@ -360,12 +360,27 @@ ElementView.prototype.translate = function() {
   for(var j = 0; j < this.getNum(); j++) {
     var o = ElementView._V_SIZE * j;
     for(var i = 0; i < ElementView._V_ITEM_NUM; i++) {
-      this.vertices[o+i*ElementView._V_ITEM_SIZE+0] += this.element.x;
+      this.vertices[o+i*ElementView._V_ITEM_SIZE+0] += this._getElementX();
       // this is the trick to correspond 2D canvas coordinates.
-      this.vertices[o+i*ElementView._V_ITEM_SIZE+1] -= this.element.y;
-      this.vertices[o+i*ElementView._V_ITEM_SIZE+2] += this.element.z;
+      this.vertices[o+i*ElementView._V_ITEM_SIZE+1] -= this._getElementY();
+      this.vertices[o+i*ElementView._V_ITEM_SIZE+2] += this._getElementZ();;
     }
   }
+};
+
+
+ElementView.prototype._getElementX = function() {
+  return this.element.getX();
+};
+
+
+ElementView.prototype._getElementY = function() {
+  return this.element.getY();
+};
+
+
+ElementView.prototype._getElementZ = function() {
+  return this.element.getZ();
 };
 
 
@@ -509,7 +524,12 @@ ElementDrawer.prototype._pourBuffer = function(layer, n) {
 
 ElementDrawer.prototype._draw = function(layer) {
   layer.draw(this.texture, this.vBuffer, this.cBuffer, this.iBuffer,
-             this.aBuffer);
+             this.aBuffer, this._getBlend());
+};
+
+
+ElementDrawer.prototype._getBlend = function() {
+  return Layer._BLEND_ALPHA;
 };
 
 
@@ -844,6 +864,11 @@ Element.prototype.getX = function( ) {
 Element.prototype.getY = function( ) {
   return this.y ;
 } ;
+
+
+Element.prototype.getZ = function() {
+  return this.z;
+};
 
 
 Element.prototype.getWidth = function( ) {

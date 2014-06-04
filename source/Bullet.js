@@ -6,10 +6,22 @@ function BulletManager( gameState, params ) {
 } ;
 __inherit( BulletManager, ElementManager ) ;
 
+BulletManager._MAX_NUM = 500;
+
+BulletManager.prototype._initMaxNum = function() {
+  return BulletManager._MAX_NUM;
+};
+
 
 BulletManager.prototype._initFactory = function( ) {
   this.factory = new BulletFactory( this.gameState, this.gameState.getWidth( ), this.gameState.getHeight( ) ) ;
 } ;
+
+
+BulletManager.prototype.initDrawer = function(layer, image) {
+  this.drawer = new BulletDrawer(this, layer,
+                                 this.gameState.getImage(Game._IMG_SHOT));
+};
 
 
 BulletManager.prototype.reset = function( ) {
@@ -162,6 +174,22 @@ BulletFreeList.prototype._generateElement = function( ) {
 
 
 
+function BulletDrawer(elementManager, layer, image) {
+  this.parent = ElementDrawer;
+  this.parent.call(this, elementManager, layer, image);
+};
+__inherit(BulletDrawer, ElementDrawer);
+
+
+function BulletView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+  this.a = 0.8;
+};
+__inherit(BulletView, ElementView);
+
+
+
 function Bullet( gameState, maxX, maxY ) {
   this.parent = Element ;
   this.parent.call( this, gameState, maxX, maxY ) ;
@@ -192,7 +220,13 @@ Bullet.prototype.init = function( params, image, params2 ) {
 
   this.power  = params.power   != undefined ? params.power   : 1 ;
   this.rotate = params2.rotate != undefined ? params2.rotate : 0 ;
+  this._initView();
 } ;
+
+
+Bullet.prototype._generateView = function() {
+  return new BulletView(this);
+};
 
 
 /**
@@ -222,8 +256,69 @@ LaserFreeList.prototype._generateElement = function( ) {
 
 
 /**
+ * TODO: consider the option to use add blend.
+ */
+function LaserView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+};
+__inherit(LaserView, ElementView);
+
+
+LaserView.prototype._getElementX = function() {
+  return this.element.option.getCenterX() + this.element.getX();
+};
+
+
+LaserView.prototype._getElementY = function() {
+  return this.element.option.getCenterY() + this.element.getY();
+};
+
+
+LaserView.prototype._getElementZ = function() {
+  return this.element.option.getZ();
+};
+
+
+/**
+ * assumes that image height is 256 and master image size is 256.
  * TODO: temporal
- * should make the Laser manager
+ */
+LaserView.prototype._initVertices = function() {
+  this.parent.prototype._initVertices.call(this);
+  this.vertices[1]   = 0;
+  this.vertices[4]   = 0;
+  this.vertices[7]  *= 4;
+  this.vertices[10] *= 4;
+};
+
+
+/**
+ * assumes that image height is 256 and master image size is 256.
+ * TODO: temporal
+ */
+LaserView.prototype._initCoordinates = function() {
+  this.parent.prototype._initCoordinates.call(this);
+  this.coordinates[1] *= 2;
+  this.coordinates[3] *= 2;
+};
+
+
+/**
+ * TODO: should be in Laser?
+ */
+LaserView.prototype.animate = function() {
+  if(this.element.count < this.element.waitCount ||
+     this.element.count + 10 > this.element.keepAlive )
+    this.a = 0.2;
+  else
+    this.a = 0.8;
+};
+
+
+
+/**
+ * TODO: temporal
  */
 function Laser( gameState, maxX, maxY ) {
   this.parent = Element ;
@@ -254,7 +349,13 @@ Laser.prototype.init = function( params, image, option, params2 ) {
   this.power     = params.power     != undefined ? params.power     : 1 ;
   this.waitCount = params.waitCount != undefined ? params.waitCount : 50 ;
   this.rotate    = params2.rotate   != undefined ? params2.rotate   : 0 ;
+  this._initView();
 } ;
+
+
+Laser.prototype._generateView = function() {
+  return new LaserView(this);
+};
 
 
 /**
@@ -340,7 +441,6 @@ HomingFreeList.prototype._generateElement = function( ) {
 
 /**
  * TODO: temporal
- * should make the Homing manager
  */
 function Homing( gameState, maxX, maxY ) {
   this.parent = Element ;
@@ -384,7 +484,13 @@ Homing.prototype.init = function( params, image, option, params2 ) {
 
   this.target = null ;
   this.targetIsDead = false ;
+  this._initView();
 } ;
+
+
+Homing.prototype._generateView = function() {
+  return new BulletView(this);
+};
 
 
 Homing.prototype.display = function( surface ) {

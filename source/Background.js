@@ -69,7 +69,7 @@ BackgroundManager.prototype._initForwardBlackEffect = function(layer) {
     surface.fillRect(0, i * h, width, h);
   }
 
-  var texture = layer.generateTexture(canvas, true);
+  var texture = layer.generateTexture(canvas);
   texture.width = width;
   texture.height = height;
 
