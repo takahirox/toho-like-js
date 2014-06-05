@@ -136,6 +136,8 @@ StageState.prototype._initEnemies = function( ) {
   this.vanishedEnemyManager = new VanishedEnemyManager( this ) ;
   this.bossManager          = new BossManager( this, __bossesParams ) ;
   this.effectManager        = new EffectManager( this ) ;
+
+  this.bossManager.initDrawer(this.game.bgLayer, null);
 } ;
 
 
@@ -383,11 +385,10 @@ StageState.prototype._displayBossVital = function( surface ) {
 StageState.prototype._displayElements = function( surface ) {
   this.bulletManager.draw(this.game.bgLayer);
   this.fighterManager.draw(this.game.bgLayer);
-//  this.fighterOptionManager.display( surface ) ;
   this.fighterOptionManager.draw(this.game.bgLayer);
   this.bombManager.display( surface ) ;
   this.enemyManager.display( surface ) ;
-  this.bossManager.display( surface ) ;
+  this.bossManager.draw(this.game.bgLayer);
   this.vanishedEnemyManager.display( surface ) ;
   this.effectManager.display( surface ) ;
   this.enemyBulletManager.draw(this.game.bgLayer);
