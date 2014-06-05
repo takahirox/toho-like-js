@@ -12,10 +12,23 @@ function EnemyManager( gameState, params ) {
 } ;
 __inherit( EnemyManager, ElementManager ) ;
 
+EnemyManager._MAX_NUM = 200;
+
+
+EnemyManager.prototype._initMaxNum = function() {
+  return EnemyManager._MAX_NUM;
+};
+
 
 EnemyManager.prototype._initFactory = function( ) {
   this.factory = new EnemyFactory( this.gameState, this.gameState.getWidth( ), this.gameState.getHeight( ) ) ;
 } ;
+
+
+EnemyManager.prototype.initDrawer = function(layer, image) {
+  this.drawer = new EnemyDrawer(this, layer,
+                                this.gameState.getImage(Game._IMG_ENEMY));
+};
 
 
 EnemyManager.prototype.reset = function( ) {
@@ -121,6 +134,35 @@ EnemyFreeList.prototype._generateElement = function( ) {
 
 
 
+function EnemyDrawer(elementManager, layer, image) {
+  this.parent = ElementDrawer;
+  this.parent.call(this, elementManager, layer, image);
+};
+__inherit(EnemyDrawer, ElementDrawer);
+
+
+
+function EnemyView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+};
+__inherit(EnemyView, ElementView);
+
+
+/**
+ * no rotate.
+ * TODO: no rotate impl should be in parent class?
+ */
+EnemyView.prototype.rotate = function() {
+};
+
+
+EnemyView.prototype.animate = function() {
+  this._initCoordinates();
+};
+
+
+
 function Enemy( gameState, maxX, maxY ) {
   this.parent = Element ;
   this.parent.call( this, gameState, maxX, maxY ) ;
@@ -180,7 +222,13 @@ Enemy.prototype.init = function( params, image ) {
   this.powerItem  = params.powerItem  != undefined ? params.powerItem  : 0 ;
   this.lpowerItem = params.lpowerItem != undefined ? params.lpowerItem : 0 ;
   this.scoreItem  = params.scoreItem  != undefined ? params.scoreItem  : 0 ;
+  this._initView();
 } ;
+
+
+Enemy.prototype._generateView = function() {
+  return new EnemyView(this);
+};
 
 
 Enemy.prototype._shot = function( ) {
