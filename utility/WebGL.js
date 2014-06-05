@@ -268,6 +268,10 @@ Layer.prototype.draw = function(texture, vBuffer, cBuffer, iBuffer, aBuffer,
 };
 
 
+/**
+ * TODO: gl.bufferSubData and pratial update could improve
+ *       CPU-GPU transfer performance.
+ */
 Layer.prototype.pourArrayBuffer = function(buffer, array, itemSize, numItems) {
   var gl = this.gl;
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);

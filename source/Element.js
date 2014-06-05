@@ -15,6 +15,7 @@ function ElementManager(gameState) {
 /**
  * maximum number for WebGL Buffer.
  * TODO: bad design?
+ * TODO: rename to _getMaxNum.
  */
 ElementManager.prototype._initMaxNum = function() {
   return 1;
@@ -509,6 +510,13 @@ ElementDrawer.prototype._pourArrays = function() {
 };
 
 
+/**
+ * This method can be performance critical function.
+ * TODO: iBuffer generally doesn't need to update in each frame.
+ *       It's good enough to update only its size if it's initialized.
+ *       It could be improve CPU-GPU transfer performance.
+ * TODO: attempt to redoce CPU-GPU transfer.
+ */
 ElementDrawer.prototype._pourBuffer = function(layer, n) {
   layer.pourArrayBuffer(this.vBuffer, this.vArray, ElementView._V_ITEM_SIZE,
                         n * ElementView._V_ITEM_NUM);

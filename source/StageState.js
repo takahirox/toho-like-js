@@ -3,6 +3,7 @@ function StageState( game ) {
   this.parent.call( this, game ) ;
 
   this.fighter              = null ;
+  this.fighterManager       = null;
   this.fighterOptionManager = null ;
   this.bulletManager        = null ;
   this.bombManager          = null ;
@@ -118,12 +119,16 @@ StageState.prototype._initBackground = function() {
 /**
  * TODO: temporal
  */
-StageState.prototype._initFighter = function( ) {
-  this.fighter = new Fighter( this, this.getWidth( ), this.getHeight( ) ) ;
-  this.fighter.beDefaultPosition( ) ;
-  this.fighterOptionManager = new FighterOptionManager( this ) ;
-  this.fighter.initOptions( ) ; // TODO: temporal
-} ;
+StageState.prototype._initFighter = function() {
+  this.fighterManager = new FighterManager(this);
+  this.fighterManager.initDrawer(this.game.bgLayer, null);
+
+ // TODO: temporal
+  this.fighter = this.fighterManager.getFighter();
+
+  this.fighterOptionManager = new FighterOptionManager(this, this.fighter);
+  this.fighterOptionManager.initDrawer(this.game.bgLayer, null);
+};
 
 
 StageState.prototype._initEnemies = function( ) {
@@ -377,8 +382,9 @@ StageState.prototype._displayBossVital = function( surface ) {
  */
 StageState.prototype._displayElements = function( surface ) {
   this.bulletManager.draw(this.game.bgLayer);
-  this.fighter.display( surface ) ;
-  this.fighterOptionManager.display( surface ) ;
+  this.fighterManager.draw(this.game.bgLayer);
+//  this.fighterOptionManager.display( surface ) ;
+  this.fighterOptionManager.draw(this.game.bgLayer);
   this.bombManager.display( surface ) ;
   this.enemyManager.display( surface ) ;
   this.bossManager.display( surface ) ;
@@ -584,7 +590,6 @@ StageState.prototype.reset = function( ) {
   this.backgroundManager.reset();
 
   this.fighter.beDefaultPosition( ) ;
-  this.fighter.initOptions( ) ; // TODO: temporal
 
   this.states[ StageState._STATE_TALK ].reset( ) ; // TODO: temporal
 
