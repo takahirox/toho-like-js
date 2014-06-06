@@ -4,10 +4,23 @@ function BombManager( gameState ) {
 }
 __inherit( BombManager, ElementManager ) ;
 
+BombManager._MAX_NUM = 40;
+
+
+BombManager.prototype._initMaxNum = function() {
+  return BombManager._MAX_NUM;
+};
+
 
 BombManager.prototype._initFactory = function( ) {
   this.factory = new BombFactory( this.gameState, this.gameState.getWidth( ), this.gameState.getHeight( ) ) ;
 } ;
+
+
+BombManager.prototype.initDrawer = function(layer, image) {
+  this.drawer = new BombDrawer(this, layer,
+                               this.gameState.getImage(Game._IMG_BOMB));
+};
 
 
 // TODO: temporal
@@ -80,6 +93,31 @@ BombFreeList.prototype._generateElement = function( ) {
 
 
 
+function BombDrawer(elementManager, layer, image) {
+  this.parent = ElementDrawer;
+  this.parent.call(this, elementManager, layer, image);
+};
+__inherit(BombDrawer, ElementDrawer);
+
+
+BombDrawer.prototype._getBlend = function() {
+  return Layer._BLEND_ADD_ALPHA;
+};
+
+
+
+function BombView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+  this.a = 0.4;
+};
+__inherit(BombView, ElementView);
+
+
+
+/**
+ * Currently Bomb represents just a big bullet.
+ */
 function Bomb( gameState, maxX, maxY ) {
   this.parent = Element ;
   this.parent.call( this, gameState, maxX, maxY ) ;
@@ -104,7 +142,13 @@ Bomb.prototype.init = function( params, image, fighter ) {
   this.collisionHeight = this.height ;
   this.indexX = 0 ;
   this.indexY = 3 ;
+  this._initView();
 } ;
+
+
+Bomb.prototype._generateView = function() {
+  return new BombView(this);
+};
 
 
 Bomb.prototype.display = function( surface ) {
