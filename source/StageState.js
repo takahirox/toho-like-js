@@ -395,7 +395,7 @@ StageState.prototype._displayElements = function( surface ) {
   this.effectManager.display( surface ) ;
   this.enemyBulletManager.draw(this.game.bgLayer);
   this.itemManager.draw(this.game.bgLayer);
-  this.spellCardManager.display( surface ) ;
+  this.spellCardManager.display(surface);
 } ;
 
 
@@ -703,7 +703,7 @@ StageState.prototype.notifyEnemyDidShot = function( enemy, shot ) {
 
 
 StageState.prototype.notifyBulletHit = function( bullet, enemy ) {
-  this.vanishedEnemyManager.createDamageEffect( enemy ) ;
+  this.effectManager.createDamageEffect( enemy ) ;
   this.setFlag( StageState._FLAG_SE_ENEMY_DAMAGE ) ;
   this.score += 10 ;
 } ;
@@ -745,7 +745,7 @@ StageState.prototype.notifyEnemyVanished = function( bullet, enemy ) {
     this.itemManager.create( enemy, Item._TYPE_POWER ) ;
   else if( enemy.scoreItem )
     this.itemManager.create( enemy, Item._TYPE_SCORE ) ;
-  this.vanishedEnemyManager.create( enemy ) ;
+  this.effectManager.createExplosion(enemy);
   this.notifyDoEffect( enemy, 'shockwave', null ) ;
   this.score += 100 ;
 } ;
@@ -801,7 +801,7 @@ StageState.prototype.notifyFighterDead = function( fighter, element ) {
 
   this.setFlag( StageState._FLAG_FIGHTER_DEAD ) ;
   this.setFlag( StageState._FLAG_SE_DEAD ) ;
-  this.vanishedEnemyManager.create( fighter ) ;
+  this.effectManager.createExplosion(fighter);
   this.notifyDoEffect(fighter, 'shockwave', null);
   this.fighter.setFlag( Element._FLAG_UNHITTABLE ) ;
   this.fighter.deadCount = this.fighter.count ;

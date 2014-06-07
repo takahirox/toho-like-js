@@ -669,7 +669,7 @@ __inherit(EnemyBeamView, ElementView);
 
 
 EnemyBeamView.prototype.getNum = function() {
-  return 10;
+  return this.element.histories.length * 2;
 };
 
 
@@ -761,6 +761,28 @@ EnemyBeamView.prototype._initColors = function() {
 
 
 EnemyBeamView.prototype.animate = function() {
+  var height = this.element.imageHeight / this.element.histories.length;
+  var width = this.element.imageWidth;
+
+  var p = this.element.p;
+  this.a = 0.5;
+  for(var i = 0; i < this.histories.length - 1; i++) {
+    var by = height * i;
+
+    var t1 = ( p[ i ].x1 - p[ i ].x0 ) / width ;
+    var t2 = ( p[ i ].y1 - p[ i ].y0 ) / width ;
+    var t3 = ( p[ i ].x2 - p[ i ].x0 ) / height ;
+    var t4 = ( p[ i ].y2 - p[ i ].y0 ) / height ;
+    var t5 = p[ i ].x0 ;
+    var t6 = p[ i ].y0 ;
+
+    var t1 = ( p[ i ].x3 - p[ i ].x2 ) / width ;
+    var t2 = ( p[ i ].y3 - p[ i ].y2 ) / width ;
+    var t3 = ( p[ i ].x3 - p[ i ].x1 ) / height ;
+    var t4 = ( p[ i ].y3 - p[ i ].y1 ) / height;
+    var t5 = p[ i ].x2 ;
+    var t6 = p[ i ].y2 ;
+  }
 
 };
 
@@ -769,14 +791,15 @@ EnemyBeamView.prototype.animate = function() {
  * TODO: temporal
  */
 function EnemyBeam( gameState, maxX, maxY, hFreelist, pFreelist ) {
-  this.parent = Element ;
-  this.parent.call( this, gameState, maxX, maxY ) ;
-  this.imageWidth = 20 ;
-  this.imageHeight = 256 ;
   this.histories = [ ] ;
   this.p = [ ] ;
   this.hFreelist = hFreelist ;
   this.pFreelist = pFreelist ;
+
+  this.parent = Element ;
+  this.parent.call( this, gameState, maxX, maxY ) ;
+  this.imageWidth = 20 ;
+  this.imageHeight = 256 ;
 }
 __inherit( EnemyBeam, Element ) ;
 
@@ -784,8 +807,13 @@ EnemyBeam._WIDTH  = 16 ;
 EnemyBeam._HEIGHT = 16 ;
 
 
+/**
+ * EnemyBeamView isn't implemented yet,
+ * so use EnemyBulletView so far.
+ */
 EnemyBeam.prototype._generateView = function() {
-  return new EnemyBeamView(this);
+//  return new EnemyBeamView(this);
+  return new EnemyBulletView(this);
 };
 
 

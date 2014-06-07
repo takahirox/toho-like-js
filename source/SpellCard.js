@@ -1,3 +1,7 @@
+/**
+ * no plan to port this class to WebGL so far cuz
+ * it cannot be performance critical.
+ */
 function SpellCardManager( gameState ) {
   this.parent = ElementManager ;
   this.parent.call( this, gameState ) ;
@@ -85,6 +89,10 @@ SpellCardFreeList.prototype._generateElement = function( ) {
 
 
 
+/**
+ * This class shows Spell card background.
+ * That is character image and spellcard name strings.
+ */
 function SpellCard( gameState, maxX, maxY ) {
   this.parent = Element ;
   this.parent.call( this, gameState, maxX, maxY ) ;
@@ -119,27 +127,23 @@ SpellCard.prototype.display = function( surface ) {
   surface.save( ) ;
   surface.globalAlpha = 0.4 ;
   this.parent.prototype.display.call( this, surface ) ;
-  surface.fillStyle = 'rgb( 255, 255, 255 )' ;
-  surface.textAlign = 'center' ;
-  surface.font = '16px Arial' ;
-  surface.globalAlpha = 0.8 ;
-  var x = this.baseX + ( this.getX( ) - this.baseX ) / 4 ;
-  var y = this.baseY + ( this.getY( ) - this.baseY ) / 4 + 150 ;
-  surface.fillText( 'Spell Card: ' + this.boss.spellCard, x, y ) ;
-/*
-  var x = parseInt( this.getLeftX( ) + this.width  * ( 0.5 - this.count * 0.1 ) ) ;
-  var y = parseInt( this.getUpY( )   + this.height * ( 0.5 - this.count * 0.1 ) ) ;
-  var width  = this.width  * this.count * 0.2 ;
-  var height = this.height * this.count * 0.2 ;
-  surface.drawImage( this.image,
-                     this.width  * this.indexX, this.height * this.indexY,
-                     this.width,                this.height,
-                     x,                         y,
-                     width,                     height ) ;
-*/
+  this.displaySpellCardName(surface);
   surface.restore( ) ;
 //  surface.fillText( x + ':' + y, x, y ) ;
 } ;
+
+
+SpellCard.prototype.displaySpellCardName = function(surface) {
+  surface.save();
+  surface.fillStyle = 'rgb(255, 255, 255)';
+  surface.textAlign = 'center';
+  surface.font = '16px Arial';
+  surface.globalAlpha = 0.8;
+  var x = this.baseX + (this.getX() - this.baseX) / 4;
+  var y = this.baseY + (this.getY() - this.baseY) / 4 + 150;
+  surface.fillText('Spell Card: ' + this.boss.spellCard, x, y);
+  surface.restore();
+};
 
 
 /**
