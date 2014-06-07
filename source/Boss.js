@@ -134,6 +134,24 @@ BossManager.prototype._str2type = function(str) {
 
 
 /**
+ * TODO: temporal
+ */
+BossManager.prototype.checkLoss = function() {
+  this.parent.prototype.checkLoss.call(this,
+                                       this._checkLossCallBack.bind(this));
+};
+
+
+/**
+ * TODO: temporal
+ */
+BossManager.prototype._checkLossCallBack = function(element) {
+  if(element.dead != 'escape')
+    this.gameState.notifyBossVanishEnd(element);
+};
+
+
+/**
  * TODO: temporal. implement multi bosses?
  */
 BossManager.prototype.getBoss = function() {
@@ -230,15 +248,27 @@ BossView.prototype.rotate = function() {
 
 BossView.prototype.animate = function() {
   this._initCoordinates();
-  if(this.element.effects && this.element.effects['vanish'])
+
+  if(this.element.inVanishing()) {
+    this.a = this._inVanishingEffect();
+  } else if(this.element.effects && this.element.effects['vanish']) {
     this.a = this._vanishEffect(this.element.effects['vanish']);
-  else
+  } else {
     this.a = 1.0;
+  }
 };
 
 
 /**
- * TODO: temporal.
+ * TODO: temporal. especially name.
+ */
+BossView.prototype._inVanishingEffect = function() {
+  return (Boss._VANISH_COUNT - this.element.vanishingCount + 1) * 0.01;
+};
+
+
+/**
+ * TODO: temporal. especially name.
  */
 BossView.prototype._vanishEffect = function(params) {
   var count = this.element._getCountFromBase(params, -1);
@@ -249,6 +279,7 @@ BossView.prototype._vanishEffect = function(params) {
   }
   return 1.0;
 };
+
 
 
 function Boss( gameState, maxX, maxY ) {
@@ -267,6 +298,12 @@ function Boss( gameState, maxX, maxY ) {
   this.animation = null ;
   this.spellCard = false ;
   this.effect = null ;
+
+  this.escaping = false;
+
+  this.vanishing = false;
+  this.vanishingCount = 0;
+
 /*
   this.powerItem  = powerItem  ? powerItem : 0 ;
   this.lpowerItem = lpowerItem ? lpowerItem : 0 ;
@@ -285,9 +322,13 @@ Boss._HEIGHT = 128 ;
 Boss._APPEAR_COUNT = 100 ;
 Boss._APPEAR_WAIT_COUNT = 50 ;
 
+Boss._VANISH_COUNT = 100;
+
 Boss._TYPE_RUMIA     = 0;
 Boss._TYPE_DAIYOUSEI = 1;
 Boss._TYPE_CHIRNO    = 2;
+
+Boss._ESCAPE_VECTOR = {'r': 0, 'theta': 225, 'ra': 0.1};
 
 
 Boss.prototype.init = function( params, image ) {
@@ -305,6 +346,11 @@ Boss.prototype.init = function( params, image ) {
   this.animation = params.animation ; // TODO: temporal
   this.spellCard = false ;
   this.effect = null ;
+
+  this.escaping = false;
+
+  this.vanishing = false;
+  this.vanishingCount = 0;
 
 /*
   this.powerItem  = powerItem  ? powerItem : 0 ;
@@ -325,16 +371,12 @@ Boss.prototype._generateView = function() {
 };
 
 
-Boss.prototype.display = function( surface ) {
-  surface.save( ) ;
-  this.parent.prototype.display.call( this, surface ) ;
-  surface.restore( ) ;
-} ;
-
-
 Boss.prototype._shot = function( ) {
   if( this.shots.length == 0 )
     return ;
+
+  if(this.vanishing || this.escaping)
+    return;
 
   var offset = Boss._APPEAR_COUNT + Boss._APPEAR_WAIT_COUNT ;
   if( this.count < offset )
@@ -387,6 +429,10 @@ Boss.prototype.runStep = function( ) {
         this.indexY = 0 ;
     }
   }
+
+  if(this.vanishing)
+    this.vanishingCount++;
+
 } ;
 
 
@@ -416,18 +462,24 @@ Boss.prototype._doEffect = function( ) {
 /**
  * TODO: temporal
  */
-Boss.prototype._checkState = function( ) {
-  if( this.vital <= 0 ) {
-    this.index++ ;
-    if( this.index >= this.params.length ) {
-      this.die( ) ;
-      this.gameState.notifyBossVanished( this ) ;
+Boss.prototype._checkState = function() {
+  if(this.vanishing || this.escaping)
+    return;
+  if(this.vital <= 0) {
+    this.index++;
+    if(this.index >= this.params.length) {
+      this.die();
+      this.gameState.notifyBossVanished(this);
+      if(this.dead == 'escape')
+        this._beginEscape();
+      else
+        this._beginVanish();
     } else {
-      this.gameState.notifyBossMovedNextStage( this ) ;
-      this._initState( ) ;
+      this.gameState.notifyBossMovedNextStage(this);
+      this._initState();
     }
   }
-} ;
+};
 
 
 Boss.prototype._initState = function( ) {
@@ -521,3 +573,77 @@ Boss.prototype.outOfTheField = function( ) {
   return this.parent.prototype._outOfTheField.call( this ) ;
 } ;
 
+
+Boss.prototype._beginEscape = function() {
+  this.escaping = true;
+  this.gravity = null;
+  // TODO: temporal
+  this.vector = this.moveVectorManager.create(Boss._ESCAPE_VECTOR);
+
+  // TODO: these parameters should move to EffectFactory.
+  this.gameState.notifyDoEffect(this, 'shockwave', {
+    'w': 5,
+    'g': 5,
+    'a': 0.1,
+    'b': 20,
+    'endCount': 100
+  });
+};
+
+
+Boss.prototype._beginVanish = function() {
+  this.vanishing = true;
+  this.vanishingCount = 0;
+
+  this.gravity = null;
+  this.vector = null;
+
+  // TODO: these parameters should move to EffectFactory.
+  this.gameState.notifyDoEffect(this, 'shockwave', {
+    'w': 5,
+    'g': 5,
+    'a': 0.1,
+    'b': 10,
+    'endCount': 100
+  });
+  this.gameState.effectManager.createBigExplosion(this);
+
+
+  // TODO: who manages this logic? Boss? StageState?
+  if(this.dead == 'escape' && this.vanishedTalk) {
+    this.gameState.notifyBeginTalk();
+  }
+
+};
+
+
+Boss.prototype.inVanishing = function() {
+  return (this.vanishing && this.vanishingCount < Boss._VANISH_COUNT);
+};
+
+
+Boss.prototype.overVanishing = function() {
+  return (this.vanishing && this.vanishingCount >= Boss._VANISH_COUNT);
+};
+
+
+/**
+ * TODO: temporal logic.
+ */
+Boss.prototype.checkLoss = function() {
+  if(this.escaping)
+    return this.parent.prototype._outOfTheField.call(this);
+
+  if(! this.vanishing)
+    return this.parent.prototype.checkLoss.call(this);
+
+  var tmp = this.state;
+  this.state = Element._STATE_ALIVE;
+  var value = this.parent.prototype.checkLoss.call(this);
+  this.state = tmp;
+
+  if(value)
+    return value;
+
+  return this.overVanishing();
+};

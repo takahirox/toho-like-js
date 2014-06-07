@@ -488,6 +488,9 @@ Homing.prototype.init = function( params, image, option, params2 ) {
 } ;
 
 
+/**
+ * unnecessary to have Homing special view.
+ */
 Homing.prototype._generateView = function() {
   return new BulletView(this);
 };
@@ -520,7 +523,7 @@ Homing.prototype.runStep = function( ) {
  */
 Homing.prototype._searchNearestEnemy = function( ) {
   // TODO: temporal
-  if( this.targetIsDead )
+  if( this.targetIsDead)
     return ;
 
   var min = 1000 * 1000 ; // TODO: temporary
@@ -535,10 +538,12 @@ Homing.prototype._searchNearestEnemy = function( ) {
   }
   if( this.gameState.bossManager.existBoss( ) ) {
     var b = this.gameState.bossManager.getBoss( ) ;
-    var d = Math.pow( this.getX( ) - b.getX( ), 2 ) + Math.pow( this.getY( ) - b.getY( ), 2 ) ;
-    if( d < min ) {
-      min = d ;
-      nearest = b ;
+    if(! b.vanishing && ! b.escaping) {
+      var d = Math.pow( this.getX( ) - b.getX( ), 2 ) + Math.pow( this.getY( ) - b.getY( ), 2 ) ;
+      if( d < min ) {
+        min = d ;
+        nearest = b ;
+      }
     }
   }
 
@@ -555,7 +560,10 @@ Homing.prototype._calculateHomingPoint = function( ) {
   if( ! this.target )
     return ;
   // TODO: how handles the case if target is used for the other alive element soon again?
-  if( this.target.isDead( ) || this.target.isFlagSet( Element._FLAG_UNHITTABLE ) ) {
+  if(this.target.isDead() || this.target.isFlagSet(Element._FLAG_UNHITTABLE) ||
+  // TODO: this logic should be in Boss.
+     (this.target instanceof Boss &&
+       (this.target.vanishing || this.target.escaping))) {
     this.targetIsDead = true ;
     return ;
   }
