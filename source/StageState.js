@@ -9,7 +9,6 @@ function StageState( game ) {
   this.bombManager          = null ;
   this.enemyManager         = null ;
   this.enemyBulletManager   = null ;
-  this.vanishedEnemyManager = null ;
   this.effectManager        = null ;
   this.bossManager          = null ;
   this.itemManager          = null ;
@@ -133,7 +132,6 @@ StageState.prototype._initFighter = function() {
 
 StageState.prototype._initEnemies = function( ) {
   this.enemyManager         = new EnemyManager( this, __enemiesParams ) ;
-  this.vanishedEnemyManager = new VanishedEnemyManager( this ) ;
   this.bossManager          = new BossManager( this, __bossesParams ) ;
   this.effectManager        = new EffectManager( this ) ;
 
@@ -183,7 +181,6 @@ StageState.prototype.runStep = function( ) {
     this._updateBGScale( ) ;
 
     this.enemyManager.runStep( ) ;
-    this.vanishedEnemyManager.runStep( ) ;
     this.effectManager.runStep( ) ;
     this.bossManager.runStep( ) ;
     this.enemyBulletManager.runStep( ) ;
@@ -206,7 +203,6 @@ StageState.prototype.runStep = function( ) {
     }
 
     this.enemyManager.checkLoss( ) ;
-    this.vanishedEnemyManager.checkLoss( ) ;
     this.effectManager.checkLoss( ) ;
     this.bulletManager.checkLoss( ) ;
     this.bombManager.checkLoss( ) ;
@@ -391,7 +387,6 @@ StageState.prototype._displayElements = function( surface ) {
   this.bombManager.draw(this.game.bgLayer);
   this.enemyManager.draw(this.game.bgLayer);
   this.bossManager.draw(this.game.bgLayer);
-  this.vanishedEnemyManager.display( surface ) ;
   this.effectManager.display( surface ) ;
   this.enemyBulletManager.draw(this.game.bgLayer);
   this.itemManager.draw(this.game.bgLayer);
@@ -461,8 +456,7 @@ StageState.prototype._drawSide = function(surface) {
   surface.fillText(this.itemManager.getNum(), this.getWidth() + 80, 300);
 
   surface.fillText(parseInt(this.bgScale*1000), this.getWidth() + 140, 220);
-  surface.fillText(this.vanishedEnemyManager.getNum(), this.getWidth() + 140, 240);
-  surface.fillText(this.effectManager.getNum(), this.getWidth() + 140, 260);
+  surface.fillText(this.effectManager.getNum(), this.getWidth() + 140, 240);
 
   surface.restore();
 };
@@ -581,7 +575,6 @@ StageState.prototype.reset = function( ) {
   this.fighter.reset( ) ;
   this.fighterOptionManager.reset( ) ;
   this.enemyManager.reset( ) ;
-  this.vanishedEnemyManager.reset( ) ;
   this.effectManager.reset( ) ;
   this.bossManager.reset( ) ;
   this.bombManager.reset( ) ;
@@ -753,35 +746,11 @@ StageState.prototype.notifyEnemyVanished = function( bullet, enemy ) {
 
 StageState.prototype.notifyBossVanished = function( boss ) {
   this.enemyBulletManager.beItem( ) ;
-//  this.enemyBulletManager.removeBulletsOfEnemy( boss ) ;
   this.setFlag( StageState._FLAG_SE_ENEMY_VANISH ) ;
   this.spellCard = null ;
-  this.vanishedEnemyManager.create( boss ) ;
-  // TODO: these parameters should move to EffectFactory.
-  if(boss.dead == 'escape') {
-    this.notifyDoEffect(boss, 'shockwave', {
-      'w': 5,
-      'g': 5,
-      'a': 0.1,
-      'b': 20,
-      'endCount': 100
-    });
-  } else {
-    this.notifyDoEffect(boss, 'shockwave', {
-      'w': 5,
-      'g': 5,
-      'a': 0.1,
-      'b': 10,
-      'endCount': 100
-    });
-  }
+
   this.clearFlag( StageState._FLAG_BOSS_EXIST ) ;
   this.score += boss.score ;
-  // TODO: temporal
-  if( boss.dead == 'escape' && boss.vanishedTalk ) {
-    this.state = StageState._STATE_TALK ;
-    this.fighter.beNeutral( ) ;
-  }
 } ;
 
 
@@ -792,6 +761,15 @@ StageState.prototype.notifyBossVanishEnd = function( boss ) {
   }
 //  this.state = StageState._STATE_CLEAR ;
 } ;
+
+
+/**
+ * TODO: temporal. especially name is temporal.
+ */
+StageState.prototype.notifyBeginTalk = function() {
+  this.state = StageState._STATE_TALK;
+  this.fighter.beNeutral();
+};
 
 
 /**

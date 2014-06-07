@@ -45,10 +45,21 @@ EffectManager.prototype.createExplosion = function(enemy) {
 };
 
 
+/**
+ * TODO: temporal. combine with create()?
+ */
+EffectManager.prototype.createBigExplosion = function(enemy) {
+  this.addElement(this.factory.createBigExplosion(enemy));
+};
+
+
 
 function EffectFactory(gameState, maxX, maxY) {
   this.parent = ElementFactory;
   this.grazeFreelist = null;
+  this.damageFreelist = null;
+  this.explosionFreelist = null;
+  this.bExplosionFreelist = null;
   this.parent.call(this, gameState, maxX, maxY);
 } ;
 __inherit(EffectFactory, ElementFactory);
@@ -57,6 +68,7 @@ EffectFactory._SHOCKWAVE_NUM = 200 ;
 EffectFactory._GRAZE_NUM = 200 ;
 EffectFactory._DAMAGE_NUM = 200;
 EffectFactory._EXPLOSION_NUM = 200;
+EffectFactory._BIG_EXPLOSION_NUM = 10;
 
 
 // TODO: temporal
@@ -74,7 +86,9 @@ EffectFactory.prototype._initFreelist = function() {
   this.damageFreelist = new DamageEffectFreeList(EffectFactory._DAMAGE_NUM,
                                                  this.gameState);
   this.explosionFreelist = new ExplosionEffectFreeList(
-                                 EffectFactory._EXPLOSION_NUM, this.gameState);
+                                 EffectFactory._EXPLOSION_NUM, this.gameState);   this.bExplosionFreelist = new BigExplosionEffectFreeList(
+                                  EffectFactory._BIG_EXPLOSION_NUM,
+                                  this.gameState);
 };
 
 
@@ -127,6 +141,13 @@ EffectFactory.prototype.createExplosion = function(enemy) {
 };
 
 
+EffectFactory.prototype.createBigExplosion = function(enemy) {
+  var effect = this.bExplosionFreelist.get();
+  effect.init(enemy, this.gameState.getImage(Game._IMG_VANISHED), enemy);
+  return effect;
+};
+
+
 EffectFactory.prototype.free = function(element) {
   if(element instanceof GrazeEffect)
     this.grazeFreelist.free(element);
@@ -134,6 +155,8 @@ EffectFactory.prototype.free = function(element) {
     this.damageFreelist.free(element);
   else if(element instanceof ExplosionEffect)
     this.explosionFreelist.free(element);
+  else if(element instanceof BigExplosionEffect)
+    this.bExplosionFreelist.free(element);
   else
     this.freelist.free(element);
 };
@@ -515,3 +538,76 @@ DamageEffect.prototype.display = function( surface ) {
 DamageEffect.prototype.checkLoss = function( ) {
   return this.count > 2 ? true : false ;
 } ;
+
+
+
+function BigExplosionEffectFreeList(num, gameState) {
+  this.parent = ElementFreeList;
+  this.parent.call(this, num, gameState);
+};
+__inherit(BigExplosionEffectFreeList, ElementFreeList);
+
+
+BigExplosionEffectFreeList.prototype._generateElement = function() {
+  return new BigExplosionEffect(this.gameState,
+                                this.gameState.getWidth(),
+                                this.gameState.getHeight());
+};
+
+
+
+function BigExplosionEffect(gameState, maxX, maxY) {
+  this.parent = Element;
+  this.parent.call(this, gameState, maxX, maxY);
+  this.boss = null;
+};
+__inherit(BigExplosionEffect, Element);
+
+BigExplosionEffect._WIDTH = 32;
+BigExplosionEffect._HEIGHT = 32;
+
+
+BigExplosionEffect.prototype.init = function(params, image, boss) {
+  this.parent.prototype.init.call(this, params, image);
+
+  this.width  = BigExplosionEffect._WIDTH;
+  this.height = BigExplosionEffect._HEIGHT;
+  this.collisionWidth  = this.width;
+  this.collisionHeight = this.height;
+  this.boss = boss;
+  this.indexX = 0;
+  this.indexY = 1;
+};
+
+
+/**
+ * TODO: temporal
+ */
+BigExplosionEffect.prototype.display = function(surface) {
+  var x = Math.round(this.getX());
+  var y = Math.round(this.getY());
+  var r = this.width * this.count * 0.1;
+  surface.save();
+  surface.fillStyle = 'rgb(255, 255, 255)';
+  surface.globalAlpha = (100 - this.count + 1) * 0.005;
+  surface.beginPath();
+  surface.arc(x, y, r,  0, Math.PI * 2);
+  surface.fill();
+
+  surface.strokeStyle = 'rgb(255, 255, 255)';
+  surface.globalAlpha = (100 - this.count + 1 ) * 0.01;
+  surface.beginPath();
+  surface.arc(x, y, r,  0, Math.PI * 2);
+  surface.lineWidth = 3;
+  surface.stroke();
+  surface.restore();
+
+//  surface.fillText( x + ':' + y, x, y ) ;
+};
+
+
+BigExplosionEffect.prototype.checkLoss = function() {
+  return this.count > 100 ? true : false;
+};
+
+
