@@ -9,8 +9,18 @@ function BossManager( gameState, params ) {
   this.params = params ;
   this.index = 0 ;
   this.stageIndex = 0 ; // TODO: temporal
+  this.drawers = null;
+  this.activeType = null;
 } ;
 __inherit( BossManager, ElementManager ) ;
+
+
+BossManager._MAX_NUM = 4;
+
+
+BossManager.prototype._initMaxNum = function() {
+  return BossManager._MAX_NUM;
+};
 
 
 BossManager.prototype._initFactory = function( ) {
@@ -18,11 +28,64 @@ BossManager.prototype._initFactory = function( ) {
 } ;
 
 
-BossManager.prototype.reset = function( ) {
-  this.parent.prototype.reset.call( this ) ;
-  this.index = 0 ;
-  this.stageIndex = 0 ;
-} ;
+/**
+ * TODO: consider the design. To use drawers is easy to handle,
+ *       but not smart. To extend BossDrawer is smarter.
+ */
+BossManager.prototype.initDrawer = function(layer, image) {
+  this.drawers = [];
+  this._generateDrawer(Boss._TYPE_RUMIA, layer);
+  this._generateDrawer(Boss._TYPE_DAIYOUSEI, layer);
+  this._generateDrawer(Boss._TYPE_CHIRNO, layer);
+};
+
+
+BossManager.prototype._generateDrawer = function(key, layer) {
+  this.drawers[key] = new BossDrawer(this, layer, this._getImage(key));
+};
+
+
+/**
+ * TODO: consider who should manage image.
+ */
+BossManager.prototype._getImage = function(type) {
+  var key;
+  switch(type) {
+    case Boss._TYPE_RUMIA:
+      key = Game._IMG_ENEMY_RUMIA;
+      break;
+    case Boss._TYPE_DAIYOUSEI:
+      key = Game._IMG_ENEMY_DAIYOUSEI;
+      break;
+    case Boss._TYPE_CHIRNO:
+      key = Game._IMG_ENEMY_CHILNO;
+      break;
+    // TODO: temporal
+    default:
+      key = Game._IMG_ENEMY_MOKOU;
+      break;
+  }
+  return this.gameState.getImage(key);
+};
+
+
+BossManager.prototype.reset = function() {
+  this.parent.prototype.reset.call(this);
+  this.index = 0;
+  this.stageIndex = 0;
+  this.activeType = null;
+};
+
+
+/**
+ * assumes only one boss in a display.
+ */
+BossManager.prototype.draw = function(layer) {
+  if(! this.existBoss())
+    return;
+
+  this.drawers[this.activeType].draw(layer);
+};
 
 
 BossManager.prototype.goNextStage = function( ) {
@@ -38,31 +101,49 @@ BossManager.prototype.runStep = function( ) {
 } ;
 
 
-BossManager.prototype._generateBoss = function( ) {
-  if( this.gameState.isFlagSet( StageState._FLAG_BOSS_EXIST ) )
-    return ;
+BossManager.prototype._generateBoss = function() {
+  if(this.gameState.isFlagSet(StageState._FLAG_BOSS_EXIST))
+    return;
 
-  while( this.index < this.params[ this.stageIndex ].length &&
-         this.params[ this.stageIndex ][ this.index ].count + this.gameState.pending <= this.gameState.count ) {
-    var boss = this.factory.create( this.params[ this.stageIndex ][ this.index ] ) ;
-    this.gameState.notifyBossAppeared( boss ) ;
-    this.addElement( boss ) ;
-    this.index++ ;
+  while(this.index < this.params[this.stageIndex].length &&
+        this.params[this.stageIndex][this.index].count
+          + this.gameState.pending <= this.gameState.count) {
+    var params = this.params[this.stageIndex][this.index];
+    var boss = this.factory.create(params);
+    this.activeType = this._str2type(params.character);
+    this.gameState.notifyBossAppeared(boss);
+    this.addElement(boss);
+    this.index++;
   }
-} ;
+};
+
+
+BossManager.prototype._str2type = function(str) {
+  switch(str) {
+    case 'rumia':
+      return Boss._TYPE_RUMIA;
+    case 'daiyousei':
+      return Boss._TYPE_DAIYOUSEI;
+    case 'chilno':
+      return Boss._TYPE_CHIRNO;
+    // TODO: temporal
+    default:
+      return null;
+  }
+};
 
 
 /**
  * TODO: temporal. implement multi bosses?
  */
-BossManager.prototype.getBoss = function( ) {
-  return this.getNum( ) > 0 ? this.elements[ 0 ] : null ;
-} ;
+BossManager.prototype.getBoss = function() {
+  return (this.existBoss()) > 0 ? this.elements[0] : null;
+};
 
 
-BossManager.prototype.existBoss = function( ) {
-  return this.getNum( ) > 0 ? true : false ;
-} ;
+BossManager.prototype.existBoss = function() {
+  return this.getNum( ) > 0 ? true : false;
+};
 
 
 /**
@@ -124,6 +205,51 @@ BossFreeList.prototype._generateElement = function( ) {
 } ;
 
 
+function BossDrawer(elementManager, layer, image) {
+  this.parent = ElementDrawer;
+  this.parent.call(this, elementManager, layer, image);
+};
+__inherit(BossDrawer, ElementDrawer);
+
+
+
+function BossView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+};
+__inherit(BossView, ElementView);
+
+
+/**
+ * no rotate.
+ * TODO: no rotate impl should be in parent class?
+ */
+BossView.prototype.rotate = function() {
+};
+
+
+BossView.prototype.animate = function() {
+  this._initCoordinates();
+  if(this.element.effects && this.element.effects['vanish'])
+    this.a = this._vanishEffect(this.element.effects['vanish']);
+  else
+    this.a = 1.0;
+};
+
+
+/**
+ * TODO: temporal.
+ */
+BossView.prototype._vanishEffect = function(params) {
+  var count = this.element._getCountFromBase(params, -1);
+
+  if(count >= params['count'] &&
+     count <  params['count'] + params['length']) {
+    return 1.0 - ((count - params['count']) / params['length']) ;
+  }
+  return 1.0;
+};
+
 
 function Boss( gameState, maxX, maxY ) {
   this.parent = Element ;
@@ -159,6 +285,10 @@ Boss._HEIGHT = 128 ;
 Boss._APPEAR_COUNT = 100 ;
 Boss._APPEAR_WAIT_COUNT = 50 ;
 
+Boss._TYPE_RUMIA     = 0;
+Boss._TYPE_DAIYOUSEI = 1;
+Boss._TYPE_CHIRNO    = 2;
+
 
 Boss.prototype.init = function( params, image ) {
   this.parent.prototype.init.call( this, params, image ) ;
@@ -186,31 +316,19 @@ Boss.prototype.init = function( params, image ) {
   this.shotIndices.length = 0 ;
 
   this._initState( ) ;
+  this._initView();
 } ;
+
+
+Boss.prototype._generateView = function() {
+  return new BossView(this);
+};
 
 
 Boss.prototype.display = function( surface ) {
   surface.save( ) ;
-  // TODO: temporal
-  if( this.effects && this.effects[ 'vanish' ] )
-    this._vanishEffect( surface, this.effects[ 'vanish' ] ) ;
   this.parent.prototype.display.call( this, surface ) ;
   surface.restore( ) ;
-} ;
-
-
-/**
- * TODO: temporal
- */
-Boss.prototype._vanishEffect = function( surface, params ) {
-//  var offset = Boss._APPEAR_COUNT + Boss._APPEAR_WAIT_COUNT ;
-//  var count = ( this.count - offset - 1 ) % params[ 'baseCount' ] ;
-  var count = this._getCountFromBase( params, -1 ) ;
-
-  if( count >= params[ 'count' ] &&
-      count <  params[ 'count' ] + params[ 'length' ] ) {
-    surface.globalAlpha = 1.0 - ( ( count - params[ 'count' ] ) / params[ 'length' ] ) ;
-  }
 } ;
 
 
@@ -394,7 +512,6 @@ Boss.prototype._outOfTheField = function( ) {
     this._beInTheField( ) ;
   return false ;
 } ;
-
 
 
 /**

@@ -4,10 +4,23 @@ function ItemManager( gameState ) {
 } ;
 __inherit( ItemManager, ElementManager ) ;
 
+ItemManager._MAX_NUM = 3000;
+
+
+ItemManager.prototype._initMaxNum = function() {
+  return ItemManager._MAX_NUM;
+};
+
 
 ItemManager.prototype._initFactory = function( ) {
   this.factory = new ItemFactory( this.gameState, this.gameState.getWidth( ), this.gameState.getHeight( ) ) ;
 } ;
+
+
+ItemManager.prototype.initDrawer = function(layer, image) {
+  this.drawer = new ItemDrawer(this, layer,
+                               this.gameState.getImage(Game._IMG_ITEM));
+};
 
 
 /**
@@ -57,7 +70,7 @@ function ItemFactory( gameState, maxX, maxY ) {
 } ;
 __inherit( ItemFactory, ElementFactory ) ;
 
-ItemFactory._NUM = 1000 ;
+ItemFactory._NUM = 3000 ;
 ItemFactory._PARAMS = {
   'x': 0,
   'y': 0,
@@ -83,10 +96,9 @@ ItemFactory.prototype.create = function( element, type ) {
 } ;
 
 
-ItemFactory.prototype._getImage = function( type ) {
-  var key = type == Item._TYPE_POWER ? Game._IMG_POWER_ITEM : Game._IMG_SCORE_ITEM ;
-  return this.gameState.getImage( key ) ;
-} ;
+ItemFactory.prototype._getImage = function(type) {
+  return this.gameState.getImage(Game._IMG_ITEM);
+};
 
 
 
@@ -101,6 +113,29 @@ ItemFreeList.prototype._generateElement = function( ) {
   return new Item( this.gameState, this.gameState.getWidth( ), this.gameState.getHeight( ) ) ;
 } ;
 
+
+
+function ItemDrawer(elementManager, layer, image) {
+  this.parent = ElementDrawer;
+  this.parent.call(this, elementManager, layer, image);
+};
+__inherit(ItemDrawer, ElementDrawer);
+
+
+
+function ItemView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+};
+__inherit(ItemView, ElementView);
+
+
+/**
+ * no rotate.
+ * TODO: no rotate impl should be in parent class?
+ */
+ItemView.prototype.rotate = function() {
+};
 
 
 function Item( gameState, maxX, maxY ) {
@@ -127,12 +162,19 @@ Item._TYPE_SCORE = 1 ;
 Item.prototype.init = function( params, image, type ) {
   this.parent.prototype.init.call( this, params, image ) ;
   this.type = type ;
+  this.indexX = this.type; // TODO: temporal.
   this.width = Item._WIDTH ;
   this.height = Item._HEIGHT ;
   this.collisionWidth = Item._COLLISION_WIDTH ;
   this.collisionHeight = Item._COLLISION_HEIGHT ;
   this.target = null ;
+  this._initView();
 } ;
+
+
+Item.prototype._generateView = function() {
+  return new ItemView(this);
+};
 
 
 /**

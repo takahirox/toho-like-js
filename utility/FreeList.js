@@ -41,6 +41,7 @@ FreeList.prototype._generateElement = function( ) {
 FreeList.prototype.get = function( ) {
   if( this.head == null ) {
     window.alert( 'ran out of object resources.' ) ;
+    console.log(this);
     throw new Error( 'ran out of object resources.' ) ;
   }
   var head = this.head ;

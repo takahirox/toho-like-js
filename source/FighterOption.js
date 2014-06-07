@@ -1,8 +1,45 @@
-function FighterOptionManager( gameState ) {
-  this.parent = ElementManager ;
-  this.parent.call( this, gameState ) ;
-} ;
-__inherit( FighterOptionManager, ElementManager ) ;
+function FighterOptionManager(gameState, fighter) {
+  this.parent = ElementManager;
+  this.parent.call(this, gameState);
+  this.fighter = fighter;
+  this._init();
+};
+__inherit(FighterOptionManager, ElementManager);
+
+
+FighterOptionManager._MAX_NUM = 4;
+
+
+FighterOptionManager.prototype._initMaxNum = function() {
+  return FighterOptionManager._MAX_NUM;
+};
+
+
+FighterOptionManager.prototype._init = function() {
+  // TODO: move these parameters to outside.
+  this.create(this.fighter,
+              {'r':  32,
+               'angle': 180,
+               'theta': 180,
+                'd':  1,
+                'trange': {'min': 180, 'max': 250}});
+  this.create(this.fighter,
+             {'r':  32,
+              'angle':   0,
+              'theta': 360,
+              'd': -1,
+              'trange': {'min': 290, 'max': 360}});
+};
+
+
+/**
+ * keeps the elements even it resets.
+ * TODO: unstraightforward.
+ */
+FighterOptionManager.prototype.reset = function() {
+  this.parent.prototype.reset.call(this);
+  this._init();
+};
 
 
 FighterOptionManager.prototype._initFactory = function( ) {
@@ -12,9 +49,23 @@ FighterOptionManager.prototype._initFactory = function( ) {
 } ;
 
 
-FighterOptionManager.prototype.create = function( fighter, params ) {
-  this.addElement( this.factory.create( fighter, params ) ) ;
-} ;
+FighterOptionManager.prototype.initDrawer = function(layer, image) {
+  this.drawer = new FighterOptionDrawer(this, layer, this._getImage());
+};
+
+
+/**
+ * TODO: consider who should manage image.
+ */
+FighterOptionManager.prototype._getImage = function() {
+  return this.gameState.getImage(Game._IMG_FIGHTER_OPTION);
+};
+
+
+FighterOptionManager.prototype.create = function(fighter, params) {
+  this.addElement(this.factory.create(fighter, params, this._getImage()));
+};
+
 
 
 function FighterOptionFactory( gameState, maxX, maxY ) {
@@ -35,16 +86,11 @@ FighterOptionFactory.prototype._initFreelist = function( ) {
 /**
  *
  */
-FighterOptionFactory.prototype.create = function( fighter, params ) {
-  var option = this.freelist.get( ) ;
-  option.init( params, this._getImage( params ), fighter ) ;
-  return option ;
-} ;
-
-
-FighterOptionFactory.prototype._getImage = function( params ) {
-  return this.gameState.getImage( Game._IMG_REIMU_OPTION ) ; // TODO: temporal
-} ;
+FighterOptionFactory.prototype.create = function(fighter, params, image) {
+  var option = this.freelist.get();
+  option.init(params, image, fighter);
+  return option;
+};
 
 
 
@@ -62,17 +108,70 @@ FighterOptionFreeList.prototype._generateElement = function( ) {
 } ;
 
 
+function FighterOptionDrawer(elementManager, layer, image) {
+  this.parent = ElementDrawer;
+  this.parent.call(this, elementManager, layer, image);
+};
+__inherit(FighterOptionDrawer, ElementDrawer);
 
-function FighterOption( gameState, maxX, maxY ) {
-  this.parent = Element ;
-  this.parent.call( this, gameState, maxX, maxY ) ;
-  this.fighter = null ;
-  this.angle   = null ;
-  this.theta   = null ;
-  this.d       = null ;
-  this.trange  = null ;
+
+
+function FighterOptionView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+};
+__inherit(FighterOptionView, ElementView);
+
+
+
+/**
+ * if fighter doesn't have option, return 0 not to draw.
+ * TODO: not straight forward design.
+ */
+FighterOptionView.prototype.getNum = function() {
+  return (this.element.fighter.hasOption()) ? 1 : 0;
+};
+
+
+FighterOptionView.prototype._getElementX = function() {
+  return this.parent.prototype._getElementX.call(this) +
+           this.element.fighter.getX();
+};
+
+
+FighterOptionView.prototype._getElementY = function() {
+  return this.parent.prototype._getElementY.call(this) +
+           this.element.fighter.getY();
+};
+
+
+FighterOptionView.prototype._getElementZ = function() {
+  return this.parent.prototype._getElementZ.call(this) +
+           this.element.fighter.getZ();
+};
+
+
+/**
+ * for character change.
+ * TODO: bad design.
+ */
+FighterOptionView.prototype.animate = function() {
+  this._initCoordinates();
+  this.a = this.element.fighter.isFlagSet(Element._FLAG_UNHITTABLE) ? 0.7 : 1.0;
+};
+
+
+
+function FighterOption(gameState, maxX, maxY) {
+  this.parent = Element;
+  this.parent.call(this, gameState, maxX, maxY);
+  this.fighter = null;
+  this.angle   = null;
+  this.theta   = null;
+  this.d       = null;
+  this.trange  = null;
 }
-__inherit( FighterOption, Element ) ;
+__inherit(FighterOption, Element);
 
 FighterOption._WIDTH = 16 ;
 FighterOption._HEIGHT = 16 ;
@@ -94,7 +193,13 @@ FighterOption.prototype.init = function( params, image, fighter ) {
   this.theta  = this._getValueOrDefaultValue( params.theta, 0 ) ;
   this.d      = this._getValueOrDefaultValue( params.d, 0 ) ;
   this.trange = this._getValueOrDefaultValue( params.trange, null ) ;
+  this._initView();
 } ;
+
+
+FighterOption.prototype._generateView = function() {
+  return new FighterOptionView(this);
+};
 
 
 /**
@@ -126,10 +231,13 @@ FighterOption.prototype.display = function( surface ) {
                  ? this.gameState.getImage( Game._IMG_REIMU_OPTION )
                  : this.gameState.getImage( Game._IMG_MARISA_OPTION ) ;
 
-  var angle = ( this.angle + this.count * FighterOption._ROTATE_SPEED + 90 )
-                % 360 ;
   this.parent.prototype.display.call( this, surface, true, angle ) ;
 } ;
+
+
+FighterOption.prototype.getDirectionTheta = function() {
+  return (this.angle + this.count * FighterOption._ROTATE_SPEED + 90) % 360;
+};
 
 
 FighterOption.prototype.checkLoss = function( ) {
@@ -146,4 +254,11 @@ FighterOption.prototype.getCenterY = function( ) {
   return this.getY( ) + this.fighter.getY( ) ;
 } ;
 
+
+/**
+ * TODO: temporal. bad design.
+ */
+FighterOption.prototype.getImageIndexY = function() {
+  return this.fighter.characterIndex;
+};
 

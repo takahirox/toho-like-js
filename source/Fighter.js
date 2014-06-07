@@ -1,10 +1,90 @@
 /**
- * TODO: should make FighterManager?
+ * care for two players in the future.
  */
-function Fighter(gameState, maxX, maxY) {
+function FighterManager(gameState) {
+  this.parent = ElementManager;
+  this.parent.call(this, gameState);
+  this._init();
+};
+__inherit(FighterManager, ElementManager);
+
+FighterManager._MAX_NUM = 2;
+
+
+FighterManager.prototype._initMaxNum = function() {
+  return FighterManager._MAX_NUM;
+};
+
+
+FighterManager.prototype.getFighter = function() {
+  return this.get(0);
+};
+
+
+FighterManager.prototype._init = function() {
+  this.add(new Fighter(this.gameState,
+                       this.gameState.getWidth(),
+                       this.gameState.getHeight(),
+                       this._getImage()));
+  this.getFighter().beDefaultPosition();
+};
+
+
+/**
+ * unnecessary.
+ */
+FighterManager.prototype._initFactory = function() {
+};
+
+
+FighterManager.prototype.initDrawer = function(layer, image) {
+  this.drawer = new FighterDrawer(this, layer, this._getImage());
+};
+
+
+FighterManager.prototype._getImage = function() {
+  return this.gameState.getImage(Game._IMG_FIGHTER);
+};
+
+
+function FighterDrawer(elementManager, layer, image) {
+  this.parent = ElementDrawer;
+  this.parent.call(this, elementManager, layer, image);
+};
+__inherit(FighterDrawer, ElementDrawer);
+
+
+
+/**
+ * TODO: consider if should make Reimu/Marisa View.
+ */
+function FighterView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+};
+__inherit(FighterView, ElementView);
+
+
+/**
+ * no rotate.
+ * TODO: no rotate impl should be in parent class?
+ */
+FighterView.prototype.rotate = function() {
+};
+
+
+FighterView.prototype.animate = function() {
+  this._initCoordinates();
+  this.a = this.element.isFlagSet(Element._FLAG_UNHITTABLE) ? 0.7 : 1.0;
+};
+
+
+
+function Fighter(gameState, maxX, maxY, image) {
   this.characterIndex = 0;  // TODO: temporal
   this.parent = Element;
   this.parent.call(this, gameState, maxX, maxY);
+  this.image = image;
   this.width = Fighter._WIDTH;
   this.height = Fighter._HEIGHT;
   this.collisionWidth = Fighter._COLLISION_WIDTH[this.characterIndex];
@@ -16,7 +96,8 @@ function Fighter(gameState, maxX, maxY) {
   this.deadCount = 0;
   this.spellCard = 'Special Spell'; // TODO: temporary
   this.setFlag(Element._FLAG_UNHITTABLE);
-}
+  this._initView();
+};
 __inherit(Fighter, Element);
 
 
@@ -53,18 +134,14 @@ Fighter.prototype.reset = function( ) {
 } ;
 
 
+Fighter.prototype._generateView = function() {
+  return new FighterView(this);
+};
+
+
 Fighter.prototype.beDefaultPosition = function( ) {
   this.setX( parseInt( this.maxX / 2 ) ) ;
   this.setY( this.maxY - 100 ) ;
-} ;
-
-
-/**
- * TODO: temporal
- */
-Fighter.prototype.initOptions = function( ) {
-  this.gameState.fighterOptionManager.create( this, { 'r':  32, 'angle': 180, 'theta': 180, 'd':  1, 'trange': { 'min': 180, 'max': 250 } } ) ;
-  this.gameState.fighterOptionManager.create( this, { 'r':  32, 'angle':   0, 'theta': 360, 'd': -1, 'trange': { 'min': 290, 'max': 360 } } ) ;
 } ;
 
 
@@ -149,10 +226,10 @@ Fighter.prototype.getBulletIndex = function( ) {
 } ;
 
 
-Fighter.prototype.setCharacterIndex = function( index ) {
-  this.characterIndex = index ;
-  this._updateFighterInfoDependingCharacterIndex( ) ;
-} ;
+Fighter.prototype.setCharacterIndex = function(index) {
+  this.characterIndex = index;
+  this._updateFighterInfoDependingCharacterIndex();
+};
 
 
 /**
@@ -166,11 +243,10 @@ Fighter.prototype.changeCharacter = function( ) {
 } ;
 
 
-Fighter.prototype._updateFighterInfoDependingCharacterIndex = function( ) {
-  this.image = this.gameState.getImage( Fighter._SHIP_IMAGE[ this.characterIndex ] ) ;
-  this.collisionWidth = Fighter._COLLISION_WIDTH[ this.characterIndex ] ;
-  this.collisionHeight = Fighter._COLLISION_HEIGHT[ this.characterIndex ] ;
-} ;
+Fighter.prototype._updateFighterInfoDependingCharacterIndex = function() {
+  this.collisionWidth = Fighter._COLLISION_WIDTH[ this.characterIndex ];
+  this.collisionHeight = Fighter._COLLISION_HEIGHT[ this.characterIndex ];
+};
 
 
 Fighter.prototype._initVector = function( ) {
@@ -251,3 +327,13 @@ Fighter.prototype.beNeutral = function( ) {
   this.clearFlag( Element._FLAG_MOVE_DOWN ) ;
   this.clearFlag( Element._FLAG_SHOT ) ;
 } ;
+
+
+/**
+ * TODO: temporal. bad design.
+ */
+Fighter.prototype.getImageIndexY = function() {
+  return this.parent.prototype.getImageIndexY.call(this) + 
+           this.characterIndex * 3;
+};
+

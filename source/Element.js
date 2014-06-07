@@ -7,34 +7,18 @@ function ElementManager(gameState) {
   this.count = 0;
   this.factory = null;
   this.drawer = null;
-  this.oneElementActive = false;
   this.maxNum = this._initMaxNum();
   this._initFactory();
 };
 
 
+/**
+ * maximum number for WebGL Buffer.
+ * TODO: bad design?
+ * TODO: rename to _getMaxNum.
+ */
 ElementManager.prototype._initMaxNum = function() {
   return 1;
-};
-
-
-/**
- * return true if one element in elements is active.
- * to avoid class design complication, use this method
- * instead of inheritance.
- * TODO: bad design
- */
-ElementManager.prototype.oneElement = function() {
-  return this.oneElementActive;
-};
-
-
-/**
- * get method for the class one element is active.
- * TODO: bad design
- */
-ElementManager.prototype.getOne = function() {
-  return this.get(0);
 };
 
 
@@ -49,7 +33,7 @@ ElementManager.prototype._initFactory = function( ) {
  * TODO: be private?
  */
 ElementManager.prototype.initDrawer = function(layer, image) {
-  this.drawer = new ElementsDrawer(this, layer.gl, image);
+  this.drawer = new ElementDrawer(this, layer, image);
 };
 
 
@@ -64,17 +48,9 @@ ElementManager.prototype.reset = function( ) {
 } ;
 
 
-/**
- * TODO: bad design.
- */
 ElementManager.prototype.runStep = function() {
-  if(this.oneElement()) {
-    if(this.elements.length)
-      this.getOne().runStep();
-  } else {
-    for(var i = 0; i < this.elements.length; i++)
-      this.elements[i].runStep();
-  }
+  for(var i = 0; i < this.elements.length; i++)
+    this.elements[i].runStep();
   this.count++;
 };
 
@@ -178,11 +154,8 @@ ElementManager.prototype.checkLoss = function( callback ) {
 }
 
 
-/**
- * TODO: bad design
- */
 ElementManager.prototype.getNum = function() {
-  return (this.oneElement()) ? 1 : this.elements.length;
+  return this.elements.length;
 };
 
 
@@ -247,13 +220,14 @@ ElementFreeList.prototype._generateElement = function( ) {
 
 /**
  * This class has position and parameters of Element for WebGL.
- * They're used by ElementsDrawer.
+ * They're used by ElementDrawer.
  * Note that this class doesn't have image and texture.
- * ElementsDrawer has them.
+ * ElementDrawer has them.
  */
 function ElementView(element) {
   this.element = element;
   this.a = 1.0;
+  this.d = 1.0;
   this.vertices = [];
   this.coordinates = [];
   this.indices = [];
@@ -314,8 +288,8 @@ ElementView.prototype._initCoordinates = function() {
   var w = this.element.getWidth()/this.element.getImageWidth();
   var h = this.element.getHeight()/this.element.getImageHeight();
 
-  var x1 = w * this.element.getImageXIndex();
-  var y1 = h * this.element.getImageYIndex();
+  var x1 = w * this.element.getImageIndexX();
+  var y1 = h * this.element.getImageIndexY();
   var x2 = x1 + w;
   var y2 = y1 + h;
 
@@ -364,40 +338,67 @@ ElementView.prototype._initColors = function() {
 };
 
 
+ElementView.prototype.getNum = function() {
+  return 1;
+};
+
+
 ElementView.prototype.saveVertices = function() {
-  for(var i = 0; i < ElementView._V_SIZE; i++) {
+  for(var i = 0; i < ElementView._V_SIZE * this.getNum(); i++) {
     this.sVertices[i] = this.vertices[i];
   }
 };
 
 
 ElementView.prototype.restoreVertices = function() {
-  for(var i = 0; i < ElementView._V_SIZE; i++) {
+  for(var i = 0; i < ElementView._V_SIZE * this.getNum(); i++) {
     this.vertices[i] = this.sVertices[i];
   }
 };
 
 
 ElementView.prototype.translate = function() {
-  for(var i = 0; i < ElementView._V_ITEM_NUM; i++) {
-    this.vertices[i*ElementView._V_ITEM_SIZE+0] += this.element.x;
-    // this is the trick to correspond 2D canvas coordinates.
-    this.vertices[i*ElementView._V_ITEM_SIZE+1] -= this.element.y;
-    this.vertices[i*ElementView._V_ITEM_SIZE+2] += this.element.z;
+  for(var j = 0; j < this.getNum(); j++) {
+    var o = ElementView._V_SIZE * j;
+    for(var i = 0; i < ElementView._V_ITEM_NUM; i++) {
+      this.vertices[o+i*ElementView._V_ITEM_SIZE+0] += this._getElementX();
+      // this is the trick to correspond 2D canvas coordinates.
+      this.vertices[o+i*ElementView._V_ITEM_SIZE+1] -= this._getElementY();
+      this.vertices[o+i*ElementView._V_ITEM_SIZE+2] += this._getElementZ();;
+    }
   }
 };
 
 
-ElementView.prototype.rotate = function() {
-  var radian = 0 * Math.PI / 180;//this.element.getARadian();
-  for(var i = 0; i < ElementView._V_ITEM_NUM; i++) {
-    var x = this.vertices[i*ElementView._V_ITEM_SIZE+0];
-    var y = this.vertices[i*ElementView._V_ITEM_SIZE+1];
+ElementView.prototype._getElementX = function() {
+  return this.element.getX();
+};
 
-    this.vertices[i*ElementView._V_ITEM_SIZE+0] =
-      x * Math.cos(radian) - y * Math.sin(radian);
-    this.vertices[i*ElementView._V_ITEM_SIZE+1] =
-      x * Math.sin(radian) + y * Math.cos(radian);
+
+ElementView.prototype._getElementY = function() {
+  return this.element.getY();
+};
+
+
+ElementView.prototype._getElementZ = function() {
+  return this.element.getZ();
+};
+
+
+ElementView.prototype.rotate = function() {
+  var theta = 270 - this.element.getDirectionTheta();
+  var radian = theta * Math.PI / 180;
+  for(var j = 0; j < this.getNum(); j++) {
+    var o = ElementView._V_SIZE * j;
+    for(var i = 0; i < ElementView._V_ITEM_NUM; i++) {
+      var x = this.vertices[o+i*ElementView._V_ITEM_SIZE+0];
+      var y = this.vertices[o+i*ElementView._V_ITEM_SIZE+1];
+
+      this.vertices[o+i*ElementView._V_ITEM_SIZE+0] =
+        x * Math.cos(radian) - y * Math.sin(radian);
+      this.vertices[o+i*ElementView._V_ITEM_SIZE+1] =
+        x * Math.sin(radian) + y * Math.cos(radian);
+    }
   }
 };
 
@@ -410,183 +411,154 @@ ElementView.prototype.animate = function() {
 
 
 
-function ElementsDrawer(elementManager, gl, image) {
-  this.elementManager = elementManager;
-  var maxLength = elementManager.getMaxNum();
-  this.vArray = new Float32Array(maxLength*12);
-  this.cArray = new Float32Array(maxLength*8);
-  this.iArray = new Uint16Array(maxLength*6);
-  this.aArray = new Float32Array(maxLength*16);
-  this.vBuffer = gl.createBuffer();
-  this.cBuffer = gl.createBuffer();
-  this.iBuffer = gl.createBuffer();
-  this.aBuffer = gl.createBuffer();
-  this.image = image;
+function ElementDrawer(e, layer, image) {
+  if(e instanceof ElementManager) {
+    this.elementManager = e;
+    this.element = null;
+    this.maxLength = e.getMaxNum();
+  } else {
+    this.element = e;
+    this.elementManager = null;
+    this.maxLength = 1;
+  }
+  this.vArray = layer.createFloatArray(this.maxLength*ElementView._V_SIZE);
+  this.cArray = layer.createFloatArray(this.maxLength*ElementView._C_SIZE);
+  this.iArray = layer.createUintArray(this.maxLength*ElementView._I_SIZE);
+  this.aArray = layer.createFloatArray(this.maxLength*ElementView._A_SIZE);
+  this.vBuffer = layer.createBuffer();
+  this.cBuffer = layer.createBuffer();
+  this.iBuffer = layer.createBuffer();
+  this.aBuffer = layer.createBuffer();
   this.texture = null;
-  this._initTexture(gl);
+  this._initTexture(layer, image);
 };
 
 
-ElementsDrawer.prototype._initTexture = function(gl) {
-  this.texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, this.texture)
-//  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,
-                this.image);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-  gl.bindTexture(gl.TEXTURE_2D, null);
+ElementDrawer.prototype._initTexture = function(layer, image) {
+  this.texture = layer.generateTexture(image);
 };
 
 
-ElementsDrawer.prototype._pourVerticies = function(i, v) {
+ElementDrawer.prototype._pourVerticies = function(i, v) {
   v.saveVertices();
   v.rotate();
   v.translate();
-  for(var j = 0; j < ElementView._V_SIZE; j++) {
-    this.vArray[i*ElementView._V_SIZE+j] = v.vertices[j];
+  for(var k = 0; k < v.getNum(); k++) {
+    for(var j = 0; j < ElementView._V_SIZE; j++) {
+      this.vArray[(i+k)*ElementView._V_SIZE+j] =
+        v.vertices[k*ElementView._V_SIZE+j];
+    }
   }
   v.restoreVertices();
 };
 
 
-ElementsDrawer.prototype._pourCoordinates = function(i, v) {
-  for(var j = 0; j < ElementView._C_SIZE; j++) {
-    this.cArray[i*ElementView._C_SIZE+j] = v.coordinates[j];
+ElementDrawer.prototype._pourCoordinates = function(i, v) {
+  for(var k = 0; k < v.getNum(); k++) {
+    for(var j = 0; j < ElementView._C_SIZE; j++) {
+      this.cArray[(i+k)*ElementView._C_SIZE+j] =
+        v.coordinates[k*ElementView._C_SIZE+j];
+    }
   }
 };
 
 
-ElementsDrawer.prototype._pourIndices = function(i, v) {
+ElementDrawer.prototype._pourIndices = function(i, v) {
   // TODO: 4 is a magic number
-  this.iArray[i*ElementView._I_SIZE+0] = i*4 + v.indices[0];
-  this.iArray[i*ElementView._I_SIZE+1] = i*4 + v.indices[1];
-  this.iArray[i*ElementView._I_SIZE+2] = i*4 + v.indices[2];
-
-  this.iArray[i*ElementView._I_SIZE+3] = i*4 + v.indices[3];
-  this.iArray[i*ElementView._I_SIZE+4] = i*4 + v.indices[4];
-  this.iArray[i*ElementView._I_SIZE+5] = i*4 + v.indices[5];
-};
-
-
-ElementsDrawer.prototype._pourColors = function(i, v) {
-  this.aArray[i*ElementView._A_SIZE+0] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+1] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+2] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+3] = v.a;
-
-  this.aArray[i*ElementView._A_SIZE+4] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+5] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+6] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+7] = v.a;
-
-  this.aArray[i*ElementView._A_SIZE+8] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+9] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+10] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+11] = v.a;
-
-  this.aArray[i*ElementView._A_SIZE+12] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+13] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+14] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+15] = v.a;
-};
-
-
-ElementsDrawer.prototype._pourArray = function() {
-  // TODO: bad design
-  var length = (this.elementManager.oneElement())
-                 ? 1 : this.elementManager.getNum();
-
-  for(var i = 0; i < length; i++) {
-    // TODO: bad design
-    var e = (this.elementManager.oneElement())
-              ? this.elementManager.getOne()
-              : this.elementManager.get(i);
-    var v = e.getView();
-    v.animate();
-    this._pourVerticies(i, v);
-    this._pourCoordinates(i, v);
-    this._pourIndices(i, v);
-    this._pourColors(i, v);
+  for(var k = 0; k < v.getNum(); k++) {
+    for(var j = 0; j < ElementView._I_SIZE; j++) {
+      this.iArray[(i+k)*ElementView._I_SIZE+j] =
+        (i+k)*4 + v.indices[k*ElementView._I_SIZE+j];
+    }
   }
 };
 
 
-ElementsDrawer.prototype._pourBuffer = function(gl) {
-  var length = this.elementManager.getNum();
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, this.vArray, gl.STATIC_DRAW);
-  this.vBuffer.itemSize = ElementView._V_ITEM_SIZE;
-  this.vBuffer.numItems = length * ElementView._V_ITEM_NUM;
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, this.cArray, gl.STATIC_DRAW);
-  this.cBuffer.itemSize = ElementView._C_ITEM_SIZE;
-  this.cBuffer.numItems = length * ElementView._C_ITEM_NUM;
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.aBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, this.aArray, gl.STATIC_DRAW);
-  this.aBuffer.itemSize = ElementView._A_ITEM_SIZE;
-  this.aBuffer.numItems = length * ElementView._A_ITEM_NUM;
-
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.iArray, gl.STATIC_DRAW);
-  this.iBuffer.itemSize = ElementView._I_ITEM_SIZE;
-  this.iBuffer.numItems = length * ElementView._I_ITEM_NUM;
+ElementDrawer.prototype._pourColors = function(i, v) {
+  for(var k = 0; k < v.getNum(); k++) {
+    for(var j = 0; j < ElementView._A_SIZE; j++) {
+      if(j % 4 == 3)
+        this.aArray[(i+k)*ElementView._A_SIZE+j] =
+          v.colors[k*ElementView._A_SIZE+j] * v.a;
+      else
+        this.aArray[(i+k)*ElementView._A_SIZE+j] =
+          v.colors[k*ElementView._A_SIZE+j] * v.d;
+    }
+  }
 };
 
 
-ElementsDrawer.prototype._draw = function(layer) {
-  var gl = layer.gl;
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
-  gl.vertexAttribPointer(layer.shader.vertexPositionAttribute,
-                         this.vBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.aBuffer);
-  gl.vertexAttribPointer(layer.shader.colorAttribute,
-                         this.aBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
-  gl.vertexAttribPointer(layer.shader.textureCoordAttribute,
-                         this.cBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, this.texture);
-  gl.uniform1i(layer.shader.uSamplerUniform, 0);
-
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  gl.enable(gl.BLEND);
-  gl.disable(gl.DEPTH_TEST);
-
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
-  layer.setMatrixUniforms(gl);
-  gl.drawElements(gl.TRIANGLES, this.iBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+ElementDrawer.prototype._pourArray = function(e, n) {
+  var v = e.getView();
+  v.animate();
+  this._pourVerticies(n, v);
+  this._pourCoordinates(n, v);
+  this._pourIndices(n, v);
+  this._pourColors(n, v);
+  return v.getNum();
 };
 
 
-ElementsDrawer.prototype._initDraw = function(gl) {
-  gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-  gl.clear(gl.COLOR_BUFFER_BIT);
+ElementDrawer.prototype._pourArrays = function() {
+  var n = 0;
+  for(var i = 0; i < this.elementManager.getNum(); i++) {
+    // TODO: bad design
+    var e = this.elementManager.get(i);
+    n += this._pourArray(e, n);
+  }
+  return n;
 };
 
 
-ElementsDrawer.prototype._project = function(layer) {
+/**
+ * This method can be performance critical function.
+ * TODO: iBuffer generally doesn't need to update in each frame.
+ *       It's good enough to update only its size if it's initialized.
+ *       It could be improve CPU-GPU transfer performance.
+ * TODO: attempt to redoce CPU-GPU transfer.
+ */
+ElementDrawer.prototype._pourBuffer = function(layer, n) {
+  layer.pourArrayBuffer(this.vBuffer, this.vArray, ElementView._V_ITEM_SIZE,
+                        n * ElementView._V_ITEM_NUM);
+  layer.pourArrayBuffer(this.cBuffer, this.cArray, ElementView._C_ITEM_SIZE,
+                        n * ElementView._C_ITEM_NUM);
+  layer.pourArrayBuffer(this.aBuffer, this.aArray, ElementView._A_ITEM_SIZE,
+                        n * ElementView._A_ITEM_NUM);
+  layer.pourElementArrayBuffer(this.iBuffer, this.iArray,
+                               ElementView._I_ITEM_SIZE,
+                               n * ElementView._I_ITEM_NUM);
+};
+
+
+ElementDrawer.prototype._draw = function(layer) {
+  layer.draw(this.texture, this.vBuffer, this.cBuffer, this.iBuffer,
+             this.aBuffer, this._getBlend());
+};
+
+
+ElementDrawer.prototype._getBlend = function() {
+  return Layer._BLEND_ALPHA;
+};
+
+
+ElementDrawer.prototype._initDraw = function(layer) {
+  layer.viewport();
+};
+
+
+ElementDrawer.prototype._project = function(layer) {
   layer.ortho(0.1, 10.0);
 };
 
 
-ElementsDrawer.prototype._prepareDraw = function(layer) {
+ElementDrawer.prototype._prepareDraw = function(layer) {
 };
 
 
-ElementsDrawer.prototype.draw = function(layer) {
-  this._pourArray();
-  this._pourBuffer(layer.gl);
-  this._initDraw(layer.gl);
+ElementDrawer.prototype.draw = function(layer) {
+  var n = this.element ? this._pourArray(this.element, 0) : this._pourArrays();
+  this._pourBuffer(layer, n);
+  this._initDraw(layer);
   this._project(layer);
   mat4.identity(layer.mvMatrix);
   this._prepareDraw(layer);
@@ -902,6 +874,11 @@ Element.prototype.getY = function( ) {
 } ;
 
 
+Element.prototype.getZ = function() {
+  return this.z;
+};
+
+
 Element.prototype.getWidth = function( ) {
   return this.width ;
 } ;
@@ -910,6 +887,16 @@ Element.prototype.getWidth = function( ) {
 Element.prototype.getHeight = function( ) {
   return this.height ;
 } ;
+
+
+Element.prototype.getImageIndexX = function() {
+  return this.indexX;
+};
+
+
+Element.prototype.getImageIndexY = function() {
+  return this.indexY;
+};
 
 
 Element.prototype.getImageWidth = function() {

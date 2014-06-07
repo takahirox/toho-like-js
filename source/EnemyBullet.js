@@ -10,10 +10,24 @@ function EnemyBulletManager( gameState, params ) {
 __inherit( EnemyBulletManager, ElementManager ) ;
 
 EnemyBulletManager._RESERVED_NUM = 50 ; // TODO: temporal
+EnemyBulletManager._MAX_NUM = 3000 ; // TODO: temporal
+
+
+EnemyBulletManager.prototype._initMaxNum = function() {
+  return EnemyBulletManager._MAX_NUM;
+};
+
 
 EnemyBulletManager.prototype._initFactory = function( ) {
   this.factory = new EnemyBulletFactory( this.gameState, this.gameState.getWidth( ), this.gameState.getHeight( ) ) ;
 } ;
+
+
+EnemyBulletManager.prototype.initDrawer = function(layer, image) {
+  this.drawer = new EnemyBulletDrawer(
+                      this, layer,
+                      this.gameState.getImage(Game._IMG_ENEMY_SHOT));
+};
 
 
 /**
@@ -186,7 +200,7 @@ function EnemyBulletFactory( gameState, maxX, maxY ) {
 }
 __inherit( EnemyBulletFactory, ElementFactory ) ;
 
-EnemyBulletFactory._NUM = 1000 ;
+EnemyBulletFactory._NUM = 3000 ;
 EnemyBulletFactory._BEAM_NUM = 100 ;
 EnemyBulletFactory._LASER_NUM = 50 ;
 
@@ -242,8 +256,8 @@ EnemyBulletFactory.prototype.free = function( bullet ) {
 
 
 EnemyBulletFactory.prototype._getImage = function( params ) {
-  if( params.beam )
-    return this.gameState.getImage( Game._IMG_BEAM ) ;
+//  if( params.beam )
+//    return this.gameState.getImage( Game._IMG_BEAM ) ;
   return this.gameState.getImage( Game._IMG_ENEMY_SHOT ) ;
 } ;
 
@@ -259,6 +273,22 @@ __inherit( EnemyBulletFreeList, ElementFreeList ) ;
 EnemyBulletFreeList.prototype._generateElement = function( ) {
   return new EnemyBullet( this.gameState, this.gameState.getWidth( ), this.gameState.getHeight( ) ) ;
 } ;
+
+
+
+function EnemyBulletDrawer(elementManager, layer, image) {
+  this.parent = ElementDrawer;
+  this.parent.call(this, elementManager, layer, image);
+};
+__inherit(EnemyBulletDrawer, ElementDrawer);
+
+
+
+function EnemyBulletView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+};
+__inherit(EnemyBulletView, ElementView);
 
 
 
@@ -285,6 +315,12 @@ EnemyBullet.prototype.init = function(params, image, enemy, params2) {
   this.rotate          = params2.rotate;
   this.grazeWidth      = this.width;
   this.grazeHeight     = this.height;
+  this._initView();
+};
+
+
+EnemyBullet.prototype._generateView = function() {
+  return new EnemyBulletView(this);
 };
 
 
@@ -307,6 +343,63 @@ EnemyLaserFreeList.prototype._generateElement = function( ) {
 
 
 
+function EnemyLaserView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+};
+__inherit(EnemyLaserView, ElementView);
+
+
+
+EnemyLaserView.prototype._initVertices = function() {
+  this.parent.prototype._initVertices.call(this);
+  this.vertices[1] = 0;
+  this.vertices[4] = 0;
+  this.vertices[7] *= 2;
+  this.vertices[10] *= 2;
+};
+
+
+EnemyLaserView.prototype._initCoordinates = function() {
+  this.parent.prototype._initCoordinates.call(this);
+  // TODO: temporal.
+  var s = 0.01;
+  var h = this.element.getWidth()/this.element.getImageHeight();
+  var y1 = h * this.element.getImageIndexY();
+  var y2 = y1 + h - s;
+
+  this.coordinates[1] = y2;
+  this.coordinates[3] = y2;
+  this.coordinates[5] = y1;
+  this.coordinates[7] = y1;
+};
+
+
+/**
+ * TODO: should be in EnemyLaser?
+ */
+EnemyLaserView.prototype.animate = function() {
+  var w = this.element.getWidth()/2;
+  if(this.element.count < this.element.waitCount) {
+    w = w * this.element.count / this.element.waitCount ;
+    this.a = 0.2;
+  } else if (this.element.inExtendTime()) {
+    w = w * (this.element.keepAlive + EnemyLaser._EXTEND_COUNT
+               - this.element.count)
+            / EnemyLaser._EXTEND_COUNT;
+    this.a = 0.2;
+  } else {
+    this.a = 0.8;
+  }
+
+  this.vertices[0] = -w;
+  this.vertices[3] =  w;
+  this.vertices[6] =  w;
+  this.vertices[9] = -w;
+};
+
+
+
 /**
  * TODO: temporal
  */
@@ -318,8 +411,10 @@ function EnemyLaser( gameState, maxX, maxY ) {
 }
 __inherit( EnemyLaser, Element ) ;
 
-EnemyLaser._WIDTH = 16 ;
-EnemyLaser._HEIGHT = 400 * 2 ; // TODO: temporal
+// TODO: temporal
+EnemyLaser._WIDTH = 16; 
+EnemyLaser._HEIGHT = 400 * 2;
+EnemyLaser._EXTEND_COUNT = 20;
 
 
 EnemyLaser.prototype.init = function( params, image, enemy ) {
@@ -337,31 +432,19 @@ EnemyLaser.prototype.init = function( params, image, enemy ) {
   this.baseY = Math.round( enemy.getY( ) ) ;
   this.indexX = 15 ;
   this.indexY = 0 ;
-} ;
+  this._initView();
+};
+
+
+EnemyLaser.prototype._generateView = function() {
+  return new EnemyLaserView(this);
+};
 
 
 /**
  * TODO: temporal
  */
 EnemyLaser.prototype.display = function( surface ) {
-/*
-  var x = this.getCenterX( ) ;
-  var y = this.getCenterY( ) - this.getWidth( ) / 2 ;
-  surface.save( ) ;
-  if( this.count < this.waitCount || this.count + 10 > this.keepAlive )
-    surface.globalAlpha = 0.2 ;
-  else
-    surface.globalAlpha = 0.8 ;
-  surface.translate( this.baseX, this.baseY ) ;
-  surface.rotate( this._calculateRadian( this.vector.theta ) ) ;
-  surface.translate( -this.baseX, -this.baseY ) ;
-  surface.drawImage( this.image,
-                     this.width  * this.indexX, this.height * this.indexY,
-                     this.width,                this.width,
-                     x,                         y,
-                     this.height,               this.width ) ;
-  surface.restore( ) ;
-*/
   surface.save( ) ;
   var width = this.getWidth( ) ;
   if( this.count < this.waitCount ) {
@@ -474,22 +557,27 @@ EnemyLaser.prototype.getCollisionBottomRightY = function( ) {
 
 
 EnemyLaser.prototype.inCollisionArea = function( x, y ) {
-  if( ! this._inCollisionTheta(
-          this.getCollisionUpRightX( ), this.getCollisionUpRightY( ),
-          x,                            y,
-          this.getCollisionUpLeftX( ),  this.getCollisionUpLeftY( )
-        ) )
-    return false ;
 
-  if( ! this._inCollisionTheta(
-          this.getCollisionBottomLeftX( ),   this.getCollisionBottomLeftY( ),
-          x,                                 y,
-          this.getCollisionBottomRightX( ),  this.getCollisionBottomRightY( )
-        ) )
-    return false ;
+  if(this.inExtendTime() || this.overExtendTime())
+    return false;
 
-  return true ;
-} ;
+  if(! this._inCollisionTheta(
+         this.getCollisionUpRightX(), this.getCollisionUpRightY(),
+         x,                           y,
+         this.getCollisionUpLeftX(),  this.getCollisionUpLeftY()
+     ))
+    return false;
+
+  if(! this._inCollisionTheta(
+         this.getCollisionBottomLeftX(),   this.getCollisionBottomLeftY(),
+         x,                                y,
+         this.getCollisionBottomRightX(),  this.getCollisionBottomRightY()
+     ))
+    return false;
+
+  return true;
+
+};
 
 
 EnemyLaser.prototype._inCollisionTheta = function( x1, y1, x2, y2, baseX, baseY ) {
@@ -517,14 +605,30 @@ EnemyLaser.prototype.checkViewCollision = function( e ) {
 /**
  * TODO: temporal
  */
-EnemyLaser.prototype.checkLoss = function( ) {
-  if( this.isDead( ) )
-    return true ;
-  if( this.keepAlive && this.count >= this.keepAlive )
-    return true ;
-  return false ;
-} ;
+EnemyLaser.prototype.checkLoss = function() {
+  if(this.isDead())
+    return true;
+  if(this.overExtendTime())
+    return true;
+  return false;
+};
 
+
+EnemyLaser.prototype.inExtendTime = function() {
+  if(this.keepAlive &&
+     this.count >= this.keepAlive && 
+     this.count < this.keepAlive + EnemyLaser._EXTEND_COUNT)
+    return true;
+  return false;
+};
+
+
+EnemyLaser.prototype.overExtendTime = function() {
+  if(this.keepAlive &&
+     this.count >= this.keepAlive + EnemyLaser._EXTEND_COUNT)
+    return true;
+  return false;
+};
 
 
 function EnemyBeamFreeList( num, gameState ) {
@@ -550,22 +654,167 @@ EnemyBeamFreeList.prototype._generateElement = function( ) {
 
 
 /**
+ * TODO: not implemented yet.
+ */
+function EnemyBeamView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+  this.vertices.length = ElementView._V_SIZE * this.getNum();
+  this.coordinates.length = ElementView._C_SIZE * this.getNum();
+  this.indices.length = ElementView._I_SIZE * this.getNum();
+  this.colors.length = ElementView._A_SIZE * this.getNum();
+  this.sVertices.length = ElementView._V_SIZE * this.getNum();
+};
+__inherit(EnemyBeamView, ElementView);
+
+
+EnemyBeamView.prototype.getNum = function() {
+  return this.element.histories.length * 2;
+};
+
+
+EnemyBeamView.prototype._initVertices = function() {
+  var w = this.element.getWidth()/2;
+  var h = this.element.getHeight()/2;
+
+  for(var i = 0; i < this.getNum(); i++) {
+    var o = ElementView._V_SIZE * i;
+    this.vertices[o+0]  = -w;
+    this.vertices[o+1]  = -h+o;
+    this.vertices[o+2]  = -1.0;
+    this.vertices[o+3]  =  w;
+    this.vertices[o+4]  = -h+o;
+    this.vertices[o+5]  = -1.0;
+    this.vertices[o+6]  =  w;
+    this.vertices[o+7]  =  h+o;
+    this.vertices[o+8]  = -1.0;
+    this.vertices[o+9]  = -w;
+    this.vertices[o+10] =  h+o;
+    this.vertices[o+11] = -1.0;
+  }
+};
+
+
+EnemyBeamView.prototype._initCoordinates = function() {
+  var w = this.element.getWidth()/this.element.getImageWidth();
+  var h = this.element.getHeight()/this.element.getImageHeight();
+
+  var x1 = w * this.element.getImageIndexX();
+  var x2 = x1 + w;
+  var y = h * this.element.getImageIndexY();
+  var dy = h / this.getNum();
+
+  for(var i = 0; i < this.getNum()-1; i++) {
+    var o = ElementView._C_SIZE * i;
+    var y1 = y + dy * i;
+    var y2 = y + dy * (i+1);
+    this.coordinates[o+0] = x1;
+    this.coordinates[o+1] = y2;
+    this.coordinates[o+2] = x2;
+    this.coordinates[o+3] = y2;
+    this.coordinates[o+4] = x2;
+    this.coordinates[o+5] = y1;
+    this.coordinates[o+6] = x1;
+    this.coordinates[o+7] = y1;
+  }
+};
+
+
+EnemyBeamView.prototype._initIndices = function() {
+  for(var i = 0; i < this.getNum(); i++) {
+    var o = ElementView._I_SIZE * i;
+    this.indices[o+0] = 0;
+    this.indices[o+1] = 1;
+    this.indices[o+2] = 2;
+
+    this.indices[o+3] = 0;
+    this.indices[o+4] = 2;
+    this.indices[o+5] = 3;
+  }
+};
+
+
+EnemyBeamView.prototype._initColors = function() {
+  for(var i = 0; i < this.getNum(); i++) {
+    var o = ElementView._A_SIZE * i;
+    this.colors[o+0] = 1.0;
+    this.colors[o+1] = 1.0;
+    this.colors[o+2] = 1.0;
+    this.colors[o+3] = 1.0;
+
+    this.colors[o+4] = 1.0;
+    this.colors[o+5] = 1.0;
+    this.colors[o+6] = 1.0;
+    this.colors[o+7] = 1.0;
+
+    this.colors[o+8] = 1.0;
+    this.colors[o+9] = 1.0;
+    this.colors[o+10] = 1.0;
+    this.colors[o+11] = 1.0;
+
+    this.colors[o+12] = 1.0;
+    this.colors[o+13] = 1.0;
+    this.colors[o+14] = 1.0;
+    this.colors[o+15] = 1.0;
+  }
+};
+
+
+EnemyBeamView.prototype.animate = function() {
+  var height = this.element.imageHeight / this.element.histories.length;
+  var width = this.element.imageWidth;
+
+  var p = this.element.p;
+  this.a = 0.5;
+  for(var i = 0; i < this.histories.length - 1; i++) {
+    var by = height * i;
+
+    var t1 = ( p[ i ].x1 - p[ i ].x0 ) / width ;
+    var t2 = ( p[ i ].y1 - p[ i ].y0 ) / width ;
+    var t3 = ( p[ i ].x2 - p[ i ].x0 ) / height ;
+    var t4 = ( p[ i ].y2 - p[ i ].y0 ) / height ;
+    var t5 = p[ i ].x0 ;
+    var t6 = p[ i ].y0 ;
+
+    var t1 = ( p[ i ].x3 - p[ i ].x2 ) / width ;
+    var t2 = ( p[ i ].y3 - p[ i ].y2 ) / width ;
+    var t3 = ( p[ i ].x3 - p[ i ].x1 ) / height ;
+    var t4 = ( p[ i ].y3 - p[ i ].y1 ) / height;
+    var t5 = p[ i ].x2 ;
+    var t6 = p[ i ].y2 ;
+  }
+
+};
+
+
+/**
  * TODO: temporal
  */
 function EnemyBeam( gameState, maxX, maxY, hFreelist, pFreelist ) {
-  this.parent = Element ;
-  this.parent.call( this, gameState, maxX, maxY ) ;
-  this.imageWidth = 20 ;
-  this.imageHeight = 256 ;
   this.histories = [ ] ;
   this.p = [ ] ;
   this.hFreelist = hFreelist ;
   this.pFreelist = pFreelist ;
+
+  this.parent = Element ;
+  this.parent.call( this, gameState, maxX, maxY ) ;
+  this.imageWidth = 20 ;
+  this.imageHeight = 256 ;
 }
 __inherit( EnemyBeam, Element ) ;
 
-EnemyBeam._WIDTH  = 20 ;
-EnemyBeam._HEIGHT = 32 ;
+EnemyBeam._WIDTH  = 16 ;
+EnemyBeam._HEIGHT = 16 ;
+
+
+/**
+ * EnemyBeamView isn't implemented yet,
+ * so use EnemyBulletView so far.
+ */
+EnemyBeam.prototype._generateView = function() {
+//  return new EnemyBeamView(this);
+  return new EnemyBulletView(this);
+};
 
 
 EnemyBeam.prototype.free = function( ) {
@@ -588,10 +837,11 @@ EnemyBeam.prototype.init = function( params, image, enemy ) {
   this.height = EnemyBeam._HEIGHT ;  // TODO: temporal
   this.collisionWidth = this.width ;
   this.collisionHeight = this.height ;
-  this.indexX = 0 ;
-  this.indexY = 0 ;
+  this.indexX = 12 ;
+  this.indexY = 3 ;
   this.histories.length = 0 ;
   this.p.length = 0 ;
+  this._initView();
 } ;
 
 

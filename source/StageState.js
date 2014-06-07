@@ -3,6 +3,7 @@ function StageState( game ) {
   this.parent.call( this, game ) ;
 
   this.fighter              = null ;
+  this.fighterManager       = null;
   this.fighterOptionManager = null ;
   this.bulletManager        = null ;
   this.bombManager          = null ;
@@ -32,9 +33,6 @@ function StageState( game ) {
   this.pending = 0 ;
   this.bgScale = 1 ;
   this.didContinue = false ;
-
-  this.bgLayers = null ; // TODO: temporal
-  this.bgEffectLayers = null ; // TODO: temporal
 
   this.initialized = false ; // TODO: temporal
   this.playRecords = [ ] ;
@@ -82,37 +80,9 @@ StageState._STATE_CLEAR     = 0x3 ;
 StageState._STATE_GAME_OVER = 0x4 ;
 
 
-/* Shader programs */
-StageState._SHADER_VS_TYPE = 'x-shader/x-vertex';
-StageState._SHADER_VS_SCRIPT = '\
-  attribute vec3 aVertexPosition;\
-  attribute vec2 aTextureCoordinates;\
-\
-  uniform mat4 uMVMatrix;\
-  uniform mat4 uPMatrix;\
-\
-  varying vec2 vTextureCoordinates;\
-  void main() {\
-    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\
-    vTextureCoordinates = aTextureCoordinates;\
-  }\
-';
-
-StageState._SHADER_FS_TYPE = 'x-shader/x-fragment';
-StageState._SHADER_FS_SCRIPT = '\
-  precision mediump float;\
-  varying vec2 vTextureCoordinates;\
-  uniform sampler2D uSampler;\
-  void main() {\
-    gl_FragColor = texture2D(uSampler, vTextureCoordinates);\
-  }\
-';
-
-
 StageState.prototype.init = function( params ) {
   this.state = StageState._STATE_SHOOTING ;
   if( ! this.initialized ) {
-    this._initBGLayers();
     this._initBackground();
     this._initFighter( ) ;
     this._initEnemies( ) ;
@@ -149,12 +119,16 @@ StageState.prototype._initBackground = function() {
 /**
  * TODO: temporal
  */
-StageState.prototype._initFighter = function( ) {
-  this.fighter = new Fighter( this, this.getWidth( ), this.getHeight( ) ) ;
-  this.fighter.beDefaultPosition( ) ;
-  this.fighterOptionManager = new FighterOptionManager( this ) ;
-  this.fighter.initOptions( ) ; // TODO: temporal
-} ;
+StageState.prototype._initFighter = function() {
+  this.fighterManager = new FighterManager(this);
+  this.fighterManager.initDrawer(this.game.bgLayer, null);
+
+ // TODO: temporal
+  this.fighter = this.fighterManager.getFighter();
+
+  this.fighterOptionManager = new FighterOptionManager(this, this.fighter);
+  this.fighterOptionManager.initDrawer(this.game.bgLayer, null);
+};
 
 
 StageState.prototype._initEnemies = function( ) {
@@ -162,106 +136,38 @@ StageState.prototype._initEnemies = function( ) {
   this.vanishedEnemyManager = new VanishedEnemyManager( this ) ;
   this.bossManager          = new BossManager( this, __bossesParams ) ;
   this.effectManager        = new EffectManager( this ) ;
+
+  this.enemyManager.initDrawer(this.game.bgLayer, null);
+  this.bossManager.initDrawer(this.game.bgLayer, null);
 } ;
 
 
-StageState.prototype._initBullets = function( ) {
-  this.bulletManager = new BulletManager( this, __bulletsParams ) ;
-} ;
+StageState.prototype._initBullets = function() {
+  this.bulletManager = new BulletManager(this, __bulletsParams);
+  this.bulletManager.initDrawer(this.game.bgLayer, null);
+};
 
 
-StageState.prototype._initBomb = function( ) {
-  this.bombManager = new BombManager( this ) ;
-} ;
+StageState.prototype._initBomb = function() {
+  this.bombManager = new BombManager(this);
+  this.bombManager.initDrawer(this.game.bgLayer, null);
+};
 
 
-StageState.prototype._initEnemyBullets = function( ) {
-  this.enemyBulletManager = new EnemyBulletManager( this, __enemyBulletsParams ) ;
-} ;
+StageState.prototype._initEnemyBullets = function() {
+  this.enemyBulletManager = new EnemyBulletManager(this, __enemyBulletsParams);
+  this.enemyBulletManager.initDrawer(this.game.bgLayer, null);
+};
 
 
-StageState.prototype._initItems = function( ) {
-  this.itemManager = new ItemManager( this ) ;
-} ;
+StageState.prototype._initItems = function() {
+  this.itemManager = new ItemManager(this);
+  this.itemManager.initDrawer(this.game.bgLayer, null);
+};
 
 
 StageState.prototype._initSpellCards = function( ) {
   this.spellCardManager = new SpellCardManager( this ) ;
-} ;
-
-
-/**
- * TODO: temporal
- */
-StageState.prototype._initBGLayers = function( ) {
-/*
-  this.bgLayers = [ ] ;
-  this.bgLayers.push( this._generateBGCanvas( 0 ) ) ;
-  this.bgLayers.push( this._generateBGCanvas( 1 ) ) ;
-*/
-  this.bgEffectLayers = [ ] ;
-  this.bgEffectLayers.push( this._generateForwardBlackLayer( ) ) ;
-  this.bgEffectLayers.push( this._generateAllBlackLayer( ) ) ;
-} ;
-
-
-/**
- * TODO: temporal
- */
-StageState.prototype._generateBGCanvas = function( stageIndex ) {
-
-  var width = this.getWidth( ) ;
-  var height = this.getHeight( ) * 2 ;
-  var image = this.getImage( stageIndex == 0 ? Game._IMG_BG1 : Game._IMG_BG2 ) ;
-
-  var canvas = document.createElement( 'canvas' ) ;
-  canvas.width = width ;
-  canvas.height = height ;
-  var surface = canvas.getContext( '2d' ) ;
-
-  var pattern = surface.createPattern( image, '' ) ;
-  surface.fillStyle = pattern ;
-  surface.fillRect( 0, 0, width, height ) ;
-
-  return canvas ;
-
-} ;
-
-
-StageState.prototype._generateForwardBlackLayer = function( ) {
-
-  var h = 3 ;
-  var loop = 40 ;
-
-  var canvas = document.createElement( 'canvas' ) ;
-  canvas.width = this.getWidth( ) ;
-  canvas.height = h * loop ;
-  var surface = canvas.getContext( '2d' ) ;
-
-  surface.fillStyle = 'rgb( 0, 0, 0 )' ;
-  for( var i = 0; i < loop; i++ ) {
-    surface.globalAlpha = 0.4 - i * 0.01 ;
-    surface.fillRect( 0, i * h, this.getWidth( ), h ) ;
-  }
-
-  return canvas ;
-
-} ;
-
-
-StageState.prototype._generateAllBlackLayer = function( ) {
-
-  var canvas = document.createElement( 'canvas' ) ;
-  canvas.width = this.getWidth( ) ;
-  canvas.height = this.getHeight( ) ;
-  var surface = canvas.getContext( '2d' ) ;
-
-  surface.fillStyle = 'rgb( 0, 0, 0 )' ;
-  surface.globalAlpha = 0.5 ;
-  surface.fillRect( 0, 0, this.getWidth( ), this.getHeight( ) ) ;
-
-  return canvas ;
-
 } ;
 
 
@@ -287,7 +193,6 @@ StageState.prototype.runStep = function( ) {
     this.bulletManager.runStep( ) ;
     this.bombManager.runStep( ) ;
     this.spellCardManager.runStep( ) ;
-    this.backgroundManager.runStep();
 
     this.enemyBulletManager.checkGrazeWith(this.fighter);
 
@@ -341,6 +246,8 @@ StageState.prototype.runStep = function( ) {
       this.viewScore = this.score;
   }
   this.states[ this.state ].runStep( ) ;
+  this.backgroundManager.runStep();
+
   this.animationCount++ ;
 
   // TODO: temporal
@@ -421,7 +328,8 @@ StageState.prototype._soundEffectDependsOnFlag = function( ) {
  */
 StageState.prototype.updateDisplay = function( surface ) {
   this.game.clear( surface ) ;
-  this._displayBG( surface ) ;
+  this.game.bgLayer.clear();
+  this._displayBG();
   this._displayElements( surface ) ;
   this._displayBossVital( surface ) ;
   this._displayStageTitle( surface ) ;
@@ -436,20 +344,12 @@ StageState.prototype.updateDisplay = function( surface ) {
 /**
  * TODO: temporal
  */
-StageState.prototype._displayBG = function(surface) {
-
-  /* Draw dark BG for 2D Canvas.
-     TODO: move to WebGL */
-  surface.save();
+StageState.prototype._displayBG = function() {
+  var darken = false;
   if(this.isFlagSet(StageState._FLAG_BOMB) || this.spellCard) {
-    surface.drawImage(this.bgEffectLayers[1], 0, 0);
-  } else {
-    surface.drawImage(this.bgEffectLayers[0], 0, 0);
+    darken = true;
   }
-  surface.restore();
-
-  this.backgroundManager.draw(this.game.bgLayer);
-
+  this.backgroundManager.draw(this.game.bgLayer, darken);
 };
 
 
@@ -481,18 +381,21 @@ StageState.prototype._displayBossVital = function( surface ) {
 } ;
 
 
+/**
+ * The order is important.
+ */
 StageState.prototype._displayElements = function( surface ) {
-  this.bulletManager.display( surface ) ;
-  this.fighter.display( surface ) ;
-  this.fighterOptionManager.display( surface ) ;
-  this.bombManager.display( surface ) ;
-  this.enemyManager.display( surface ) ;
-  this.bossManager.display( surface ) ;
+  this.bulletManager.draw(this.game.bgLayer);
+  this.fighterManager.draw(this.game.bgLayer);
+  this.fighterOptionManager.draw(this.game.bgLayer);
+  this.bombManager.draw(this.game.bgLayer);
+  this.enemyManager.draw(this.game.bgLayer);
+  this.bossManager.draw(this.game.bgLayer);
   this.vanishedEnemyManager.display( surface ) ;
   this.effectManager.display( surface ) ;
-  this.enemyBulletManager.display( surface ) ;
-  this.itemManager.display( surface ) ;
-  this.spellCardManager.display( surface ) ;
+  this.enemyBulletManager.draw(this.game.bgLayer);
+  this.itemManager.draw(this.game.bgLayer);
+  this.spellCardManager.display(surface);
 } ;
 
 
@@ -690,7 +593,6 @@ StageState.prototype.reset = function( ) {
   this.backgroundManager.reset();
 
   this.fighter.beDefaultPosition( ) ;
-  this.fighter.initOptions( ) ; // TODO: temporal
 
   this.states[ StageState._STATE_TALK ].reset( ) ; // TODO: temporal
 
@@ -801,7 +703,7 @@ StageState.prototype.notifyEnemyDidShot = function( enemy, shot ) {
 
 
 StageState.prototype.notifyBulletHit = function( bullet, enemy ) {
-  this.vanishedEnemyManager.createDamageEffect( enemy ) ;
+  this.effectManager.createDamageEffect( enemy ) ;
   this.setFlag( StageState._FLAG_SE_ENEMY_DAMAGE ) ;
   this.score += 10 ;
 } ;
@@ -843,7 +745,7 @@ StageState.prototype.notifyEnemyVanished = function( bullet, enemy ) {
     this.itemManager.create( enemy, Item._TYPE_POWER ) ;
   else if( enemy.scoreItem )
     this.itemManager.create( enemy, Item._TYPE_SCORE ) ;
-  this.vanishedEnemyManager.create( enemy ) ;
+  this.effectManager.createExplosion(enemy);
   this.notifyDoEffect( enemy, 'shockwave', null ) ;
   this.score += 100 ;
 } ;
@@ -899,7 +801,7 @@ StageState.prototype.notifyFighterDead = function( fighter, element ) {
 
   this.setFlag( StageState._FLAG_FIGHTER_DEAD ) ;
   this.setFlag( StageState._FLAG_SE_DEAD ) ;
-  this.vanishedEnemyManager.create( fighter ) ;
+  this.effectManager.createExplosion(fighter);
   this.notifyDoEffect(fighter, 'shockwave', null);
   this.fighter.setFlag( Element._FLAG_UNHITTABLE ) ;
   this.fighter.deadCount = this.fighter.count ;

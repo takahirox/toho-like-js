@@ -31,7 +31,7 @@ __marisaBossTalkParams.push(
 ) ;
 
 __marisaBossTalkParams.push(
-  { 'serif': 'Ah? I\'m just enjoying flying.',
+  { 'serif': 'Ah? I just enjoy flying now.',
     'left':  { 'character': 'marisa', 'active': true},
     'right': { 'character': 'rumia' },
   }

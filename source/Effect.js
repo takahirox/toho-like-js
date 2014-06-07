@@ -1,3 +1,7 @@
+/**
+ * Effect represents an element which just shows on a screen,
+ * and not affect any other elements.
+ */
 function EffectManager( gameState ) {
   this.parent = ElementManager ;
   this.parent.call( this, gameState ) ;
@@ -18,10 +22,26 @@ EffectManager.prototype.create = function( element, type, params ) {
 
 
 /**
- * TODO: temporal
+ * TODO: temporal. combine with create()?
  */
 EffectManager.prototype.createGraze = function(element, params) {
   this.addElement(this.factory.createGraze(element, params));
+};
+
+
+/**
+ * TODO: temporal. combine with create()?
+ */
+EffectManager.prototype.createDamageEffect = function(enemy) {
+  this.addElement(this.factory.createDamageEffect(enemy));
+};
+
+
+/**
+ * TODO: temporal. combine with create()?
+ */
+EffectManager.prototype.createExplosion = function(enemy) {
+  this.addElement(this.factory.createExplosion(enemy));
 };
 
 
@@ -35,6 +55,9 @@ __inherit(EffectFactory, ElementFactory);
 
 EffectFactory._SHOCKWAVE_NUM = 200 ;
 EffectFactory._GRAZE_NUM = 200 ;
+EffectFactory._DAMAGE_NUM = 200;
+EffectFactory._EXPLOSION_NUM = 200;
+
 
 // TODO: temporal
 EffectFactory._PARAMS = [
@@ -48,6 +71,10 @@ EffectFactory.prototype._initFreelist = function() {
                                               this.gameState);
   this.grazeFreelist = new GrazeEffectFreeList(EffectFactory._GRAZE_NUM,
                                               this.gameState);
+  this.damageFreelist = new DamageEffectFreeList(EffectFactory._DAMAGE_NUM,
+                                                 this.gameState);
+  this.explosionFreelist = new ExplosionEffectFreeList(
+                                 EffectFactory._EXPLOSION_NUM, this.gameState);
 };
 
 
@@ -83,9 +110,30 @@ EffectFactory.prototype.createGraze = function(fighter, bullet) {
 };
 
 
+/**
+ * TODO: temporal. combine this method with create( )?
+ */
+EffectFactory.prototype.createDamageEffect = function(enemy) {
+  var effect = this.damageFreelist.get();
+  effect.init(enemy, this.gameState.getImage(Game._IMG_DAMAGE), enemy);
+  return effect;
+};
+
+
+EffectFactory.prototype.createExplosion = function(enemy) {
+  var effect = this.explosionFreelist.get();
+  effect.init(enemy, this.gameState.getImage(Game._IMG_VANISHED), enemy);
+  return effect;
+};
+
+
 EffectFactory.prototype.free = function(element) {
   if(element instanceof GrazeEffect)
     this.grazeFreelist.free(element);
+  else if(element instanceof DamageEffect)
+    this.damageFreelist.free(element);
+  else if(element instanceof ExplosionEffect)
+    this.explosionFreelist.free(element);
   else
     this.freelist.free(element);
 };
@@ -237,6 +285,87 @@ ShockWaveEffect.prototype.checkLoss = function( ) {
 
 
 
+function ExplosionEffectFreeList(num, gameState) {
+  this.parent = ElementFreeList;
+  this.parent.call(this, num, gameState);
+};
+__inherit(ExplosionEffectFreeList, ElementFreeList);
+
+
+ExplosionEffectFreeList.prototype._generateElement = function() {
+  return new ExplosionEffect(this.gameState, this.gameState.getWidth(),
+                             this.gameState.getHeight());
+};
+
+
+
+function ExplosionEffect(gameState, maxX, maxY) {
+  this.parent = Element;
+  this.parent.call(this, gameState, maxX, maxY);
+  this.preCanvas = ExplosionEffect._PRE_CANVAS;
+}
+__inherit(ExplosionEffect, Element);
+
+ExplosionEffect._WIDTH = 32 ;
+ExplosionEffect._HEIGHT = 32 ;
+ExplosionEffect._END_COUNT = 10;
+ExplosionEffect._PRE_CANVAS = []; /* TODO: temporal */
+
+
+ExplosionEffect.prototype.init = function(params, image, enemy) {
+  this.parent.prototype.init.call(this, params, image);
+  this.setX(enemy.getX());
+  this.setY(enemy.getY());
+  this.width  = ExplosionEffect._WIDTH;
+  this.height = ExplosionEffect._HEIGHT;
+  this.collisionWidth  = this.width;
+  this.collisionHeight = this.height;
+  this.indexX = 0;
+  this.indexY = 1;
+};
+
+
+/**
+ * TODO: temporal
+ */
+ExplosionEffect.prototype.display = function(surface) {
+  var x = Math.round(this.getX());
+  var y = Math.round(this.getY());
+  var r = Math.round(this.width * this.count * 0.1);
+
+  if(this.preCanvas[this.count] == undefined) {
+    var cvs = document.createElement('canvas')
+    cvs.width = r*2 + 4;
+    cvs.height = r*2 + 4;
+    var ctx = cvs.getContext('2d');
+
+    ctx.beginPath();
+    ctx.fillStyle = 'rgb(255, 255, 255)';
+    ctx.globalAlpha = (ExplosionEffect._END_COUNT - this.count + 1) * 0.05;
+    ctx.arc(r+2, r+2, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgb(255, 255, 255)';
+    ctx.globalAlpha = (ExplosionEffect._END_COUNT - this.count + 1) * 0.1;
+    ctx.lineWidth = 3;
+    ctx.arc(r+2, r+2, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    this.preCanvas[this.count] = cvs;
+  }
+  surface.drawImage(this.preCanvas[this.count], x-r-2, y-r-2);
+
+//  surface.fillText( x + ':' + y, x, y ) ;
+};
+
+
+ExplosionEffect.prototype.checkLoss = function() {
+  return this.count > ExplosionEffect._END_COUNT ? true : false;
+};
+
+
+
 function GrazeEffectFreeList(num, gameState) {
   this.parent = ElementFreeList ;
   this.parent.call(this, num, gameState);
@@ -307,3 +436,82 @@ GrazeEffect.prototype.display = function(surface) {
 GrazeEffect.prototype.checkLoss = function() {
   return this.count > GrazeEffect._END_COUNT ? true : false;
 };
+
+
+function DamageEffectFreeList( num, gameState ) {
+  this.parent = ElementFreeList ;
+  this.parent.call( this, num, gameState ) ;
+} ;
+__inherit( DamageEffectFreeList, ElementFreeList ) ;
+
+
+DamageEffectFreeList.prototype._generateElement = function( ) {
+  return new DamageEffect( this.gameState, this.gameState.getWidth( ), this.gameState.getHeight( ) ) ;
+} ;
+
+
+
+function DamageEffect( gameState, maxX, maxY ) {
+  this.parent = Element ;
+  this.parent.call( this, gameState, maxX, maxY ) ;
+  this.enemy = null ;
+  this.dx = 0 ;
+  this.dy = 0 ;
+}
+__inherit( DamageEffect, Element ) ;
+
+DamageEffect._WIDTH = 64 ;
+DamageEffect._HEIGHT = 64 ;
+
+
+DamageEffect.prototype.init = function( params, image, enemy ) {
+  this.parent.prototype.init.call( this, params, image ) ;
+  this.enemy = enemy ;
+  this.setX( enemy.getX( ) ) ;
+  this.setY( enemy.getY( ) ) ;
+  this.width  = DamageEffect._WIDTH ;
+  this.height = DamageEffect._HEIGHT ;
+  this.collisionWidth  = this.width ;
+  this.collisionHeight = this.height ;
+  this.indexX = 0 ;
+  this.indexY = 0 ;
+  this.dx     = 0 ;
+  this.dy     = 0 ;
+} ;
+
+
+/**
+ * TODO: temporal
+ */
+DamageEffect.prototype.runStep = function( ) {
+  var tmp = 32 ;
+  this.dx = -tmp / 2 + parseInt( Math.random( ) * tmp ) ;
+  this.dy = -tmp / 2 + parseInt( Math.random( ) * tmp ) ;
+  this.parent.prototype.runStep.call( this ) ;
+} ;
+
+
+/**
+ * TODO: temporal
+ */
+DamageEffect.prototype.display = function( surface ) {
+  surface.save( ) ;
+  var x = Math.round( this.getLeftX( ) + this.dx ) ;
+  var y = Math.round( this.getUpY( )   + this.dy ) ;
+  var width  = this.getWidth( ) ;
+  var height = this.getHeight( ) ;
+  surface.globalAlpha = ( 3 - this.count ) * 0.1 ;
+  surface.drawImage( this.image,
+                     this.width  * this.indexX,
+                     this.height * this.indexY + 32 * 13,
+                     this.width,                this.height,
+                     x,                         y,
+                     width,                     height ) ;
+  surface.restore( ) ;
+//  surface.fillText( x + ':' + y, x, y ) ;
+} ;
+
+
+DamageEffect.prototype.checkLoss = function( ) {
+  return this.count > 2 ? true : false ;
+} ;
