@@ -370,6 +370,14 @@ Layer.prototype.drawOneTexture = function(texture, x, y, z, w, h, d, a, blend) {
 
 
 Layer.prototype.calculateSquareValue = function(num) {
+  return Layer.calculateSquareValue(num);
+};
+
+
+/**
+ * Static method.
+ */
+Layer.calculateSquareValue = function(num) {
   var val = 1;
   while(num > val) {
     val = val << 1;

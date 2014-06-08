@@ -1,12 +1,18 @@
 /**
+ * TODO: optimize this file.
+ *       some codes and parameters are no longer used
+ *       because of the design change.
+ */
+
+/**
  * Effect represents an element which just shows on a screen,
  * and not affect any other elements.
  */
-function EffectManager( gameState ) {
-  this.parent = ElementManager ;
-  this.parent.call( this, gameState ) ;
-} ;
-__inherit( EffectManager, ElementManager ) ;
+function EffectManager(gameState) {
+  this.parent = ElementManager;
+  this.parent.call(this, gameState);
+};
+__inherit(EffectManager, ElementManager);
 
 EffectManager._MAX_NUM = 200; // TODO: for each so far
 
@@ -16,17 +22,18 @@ EffectManager.prototype._initMaxNum = function() {
 };
 
 
-EffectManager.prototype._initFactory = function( ) {
-  this.factory = new EffectFactory( this.gameState,
-                                    this.gameState.getWidth( ),
-                                    this.gameState.getHeight( ) ) ;
-} ;
+EffectManager.prototype._initFactory = function() {
+  this.factory = new EffectFactory(this.gameState,
+                                   this.gameState.getWidth(),
+                                   this.gameState.getHeight());
+};
 
 
 
 /**
  * TODO: consider the design. To use drawers is easy to handle,
- *       but not smart. To extend BossDrawer is smarter.
+ *       but not smart. To extend Drawer could be smarter and
+ *       performance could be better.
  */
 EffectManager.prototype.initDrawer = function(layer, image) {
   this.drawers = [];
@@ -75,9 +82,13 @@ EffectManager.prototype._generateDamageDrawer = function(layer) {
 };
 
 
-EffectManager.prototype.create = function( element, type, params ) {
-  this.addElement( this.factory.create( element, type, params ) ) ;
-} ;
+/**
+ * create ShockWaveEffect.
+ * TODO: rename or combine with other create methods.
+ */
+EffectManager.prototype.create = function(element, type, params) {
+  this.addElement(this.factory.create(element, type, params));
+};
 
 
 /**
@@ -124,23 +135,19 @@ EffectManager.prototype.createBigExplosion = function(enemy) {
  * TODO: should move into ShockWave?
  */
 EffectManager.prototype._generateShockWaveImage = function() {
-
-  // TODO: bad to get params from other class.
-  var params = EffectFactory._PARAMS[0];
-//  {'w': 4, 'g': 5, 'a': 0.1, 'b': 10, 'endCount': 10, 'default': true},
-
   var cvs = document.createElement('canvas');
-  cvs.width = 256;
-  cvs.height = 2048;
+  cvs.width = Layer.calculateSquareValue(ShockWaveEffect._WIDTH);
+  cvs.height = Layer.calculateSquareValue(
+                 ShockWaveEffect._HEIGHT*ShockWaveEffect._END_COUNT);
   var ctx = cvs.getContext('2d');
 
-  var w = 200;
-  var h = 200;
-  for(var i = 0; i < 10; i++) {
+  var w = ShockWaveEffect._WIDTH;
+  var h = ShockWaveEffect._HEIGHT;
+  for(var i = 0; i < ShockWaveEffect._END_COUNT; i++) {
     var x = w/2;
     var y = h*i + h/2;
-    var r = params.b * i;
-    var s = 1 - (5*4)/(10*i);
+    var r = ShockWaveEffect._SPEED * i;
+    var s = 1 - ShockWaveEffect._GRADATION/(ShockWaveEffect._SPEED*i);
 
     if(r <= 1)
       r = 1;
@@ -148,11 +155,9 @@ EffectManager.prototype._generateShockWaveImage = function() {
       s = 0.0;
 
     ctx.beginPath();
-
     var g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    // TODO: bad to get params from other class.
-    g.addColorStop(s, ShockWaveEffect._INNER_COLOR);
-    g.addColorStop(1.00, ShockWaveEffect._OUTER_COLORS[10]);
+    g.addColorStop(s, 'rgba(255, 255, 255, 0.0)');
+    g.addColorStop(1.00, 'rgba(255, 255, 255, 1.0)');
     ctx.fillStyle = g;
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
@@ -162,12 +167,12 @@ EffectManager.prototype._generateShockWaveImage = function() {
 
 
 /**
- * TODO: should move into ShockWave?
+ * TODO: should move into Graze?
  */
 EffectManager.prototype._generateGrazeImage = function() {
   var cvs = document.createElement('canvas');
-  cvs.width = GrazeEffect._SIZE;
-  cvs.height = GrazeEffect._SIZE;
+  cvs.width = Layer.calculateSquareValue(GrazeEffect._SIZE);
+  cvs.height = Layer.calculateSquareValue(GrazeEffect._SIZE);
   var ctx = cvs.getContext('2d');
 
   var w = GrazeEffect._SIZE;
@@ -183,8 +188,9 @@ EffectManager.prototype._generateGrazeImage = function() {
  */
 EffectManager.prototype._generateExplosionImage = function() {
   var cvs = document.createElement('canvas');
-  cvs.width = ExplosionEffect._WIDTH;
-  cvs.height = 1024;
+  cvs.width = Layer.calculateSquareValue(ExplosionEffect._WIDTH);
+  cvs.height = Layer.calculateSquareValue(
+                 ExplosionEffect._HEIGHT*ExplosionEffect._END_COUNT);
   var ctx = cvs.getContext('2d');
 
   var w = ExplosionEffect._WIDTH;
@@ -192,7 +198,7 @@ EffectManager.prototype._generateExplosionImage = function() {
   for(var i = 0; i < ExplosionEffect._END_COUNT; i++) {
     var x = w/2;
     var y = h*i + h/2;
-    var r = w/2 * i * 0.1 - 2;
+    var r = w/2 * i/ExplosionEffect._END_COUNT - 2;
     if(r <= 1)
       r = 1;
 
@@ -218,8 +224,8 @@ EffectManager.prototype._generateExplosionImage = function() {
  */
 EffectManager.prototype._generateDamageImage = function() {
   var cvs = document.createElement('canvas');
-  cvs.width = DamageEffect._WIDTH;
-  cvs.height = DamageEffect._HEIGHT;
+  cvs.width = Layer.calculateSquareValue(DamageEffect._WIDTH);
+  cvs.height = Layer.calculateSquareValue(DamageEffect._HEIGHT);
   var ctx = cvs.getContext('2d');
 
   var w = DamageEffect._WIDTH;
@@ -240,19 +246,20 @@ EffectManager.prototype._generateDamageImage = function() {
 
 /**
  * TODO: should move into BigShockWave?
+ * TODO: can share the logic with _generateShockWaveImage()?
  */
 EffectManager.prototype._generateBigShockWaveImage = function() {
-
   var cvs = document.createElement('canvas');
-  cvs.width = 512;
-  cvs.height = 512;
+  cvs.width = Layer.calculateSquareValue(BigShockWaveEffect._WIDTH);
+  cvs.height = Layer.calculateSquareValue(BigShockWaveEffect._HEIGHT);
   var ctx = cvs.getContext('2d');
 
-  var w = 512;
-  var h = 512;
+  var w = BigShockWaveEffect._WIDTH;
+  var h = BigShockWaveEffect._HEIGHT;
   var x = w/2;
   var y = h/2;
   var r = w/2;
+  // TODO: remove magic numbers.
   var s = 1 - (5*4)/(10*10);
 
   if(r <= 1)
@@ -263,8 +270,8 @@ EffectManager.prototype._generateBigShockWaveImage = function() {
   ctx.beginPath();
   var g = ctx.createRadialGradient(x, y, 0, x, y, r);
   // TODO: bad to get params from other class.
-  g.addColorStop(s, ShockWaveEffect._INNER_COLOR);
-  g.addColorStop(1.00, ShockWaveEffect._OUTER_COLORS[10]);
+  g.addColorStop(s, 'rgba(255, 255, 255, 0.0)');
+  g.addColorStop(1.00, 'rgba(255, 255, 255, 1.0)');
   ctx.fillStyle = g;
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
@@ -277,12 +284,12 @@ EffectManager.prototype._generateBigShockWaveImage = function() {
  */
 EffectManager.prototype._generateBigExplosionImage = function() {
   var cvs = document.createElement('canvas');
-  cvs.width = 512;
-  cvs.height = 512;
+  cvs.width = Layer.calculateSquareValue(BigExplosionEffect._WIDTH);
+  cvs.height = Layer.calculateSquareValue(BigExplosionEffect._HEIGHT);
   var ctx = cvs.getContext('2d');
 
-  var w = 320;
-  var h = 320;
+  var w = BigExplosionEffect._WIDTH;
+  var h = BigExplosionEffect._HEIGHT;
   var x = w/2;
   var y = h/2;
   var r = w/2 - 2;
@@ -497,6 +504,10 @@ ShockWaveView.prototype.animate = function() {
 
 
 
+/**
+ * This class is for small shockwave like the one
+ * it shows when enemy is destroyed.
+ */
 function ShockWaveEffect( gameState, maxX, maxY ) {
   this.parent = Element ;
   this.parent.call( this, gameState, maxX, maxY ) ;
@@ -510,6 +521,13 @@ function ShockWaveEffect( gameState, maxX, maxY ) {
   this.preCanvas = ShockWaveEffect._PRE_CANVAS;
 }
 __inherit( ShockWaveEffect, Element ) ;
+
+ShockWaveEffect._WIDTH = 200;
+ShockWaveEffect._HEIGHT = 200;
+ShockWaveEffect._END_COUNT = 10;
+
+ShockWaveEffect._GRADATION = 20;
+ShockWaveEffect._SPEED = 10;
 
 ShockWaveEffect._PRE_CANVAS = []; /* temporal */
 ShockWaveEffect._INNER_COLOR = 'rgba(255, 255, 255, 0.0)';
@@ -531,8 +549,8 @@ ShockWaveEffect._OUTER_COLORS = [
 ShockWaveEffect.prototype.init = function(params, image, element) {
   this.parent.prototype.init.call(this, params, image);
   this.element = element;
-  this.width = 200;
-  this.height = 200;
+  this.width = ShockWaveEffect._WIDTH;
+  this.height = ShockWaveEffect._HEIGHT;
   this.w = params.w;
   this.g = params.g;
   this.a = params.a;
@@ -724,6 +742,9 @@ function BigShockWaveEffect(gameState, maxX, maxY) {
   this.preCanvas = ShockWaveEffect._PRE_CANVAS;
 }
 __inherit(BigShockWaveEffect, Element);
+
+BigShockWaveEffect._WIDTH = 512;
+BigShockWaveEffect._HEIGHT = 512;
 
 
 BigShockWaveEffect.prototype.init = function(params, image, element) {
