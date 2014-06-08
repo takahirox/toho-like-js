@@ -131,12 +131,13 @@ StageState.prototype._initFighter = function() {
 
 
 StageState.prototype._initEnemies = function( ) {
-  this.enemyManager         = new EnemyManager( this, __enemiesParams ) ;
-  this.bossManager          = new BossManager( this, __bossesParams ) ;
-  this.effectManager        = new EffectManager( this ) ;
+  this.enemyManager = new EnemyManager( this, __enemiesParams ) ;
+  this.bossManager = new BossManager( this, __bossesParams ) ;
+  this.effectManager = new EffectManager( this ) ;
 
   this.enemyManager.initDrawer(this.game.bgLayer, null);
   this.bossManager.initDrawer(this.game.bgLayer, null);
+  this.effectManager.initDrawer(this.game.bgLayer, null);
 } ;
 
 
@@ -387,7 +388,7 @@ StageState.prototype._displayElements = function( surface ) {
   this.bombManager.draw(this.game.bgLayer);
   this.enemyManager.draw(this.game.bgLayer);
   this.bossManager.draw(this.game.bgLayer);
-  this.effectManager.display( surface ) ;
+  this.effectManager.draw(this.game.bgLayer);
   this.enemyBulletManager.draw(this.game.bgLayer);
   this.itemManager.draw(this.game.bgLayer);
   this.spellCardManager.display(surface);
@@ -805,8 +806,14 @@ StageState.prototype.notifyFighterDead = function( fighter, element ) {
 } ;
 
 
+/**
+ * TODO: temporal
+ */
 StageState.prototype.notifyDoEffect = function( element, type, params ) {
-  this.effectManager.create( element, type, params ) ;
+  if(type == 'shockwave' && params)
+    this.effectManager.createBigShockWave( element, type, params ) ;
+  else
+    this.effectManager.create( element, type, params ) ;
 } ;
 
 
