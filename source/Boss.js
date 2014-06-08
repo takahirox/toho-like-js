@@ -14,7 +14,6 @@ function BossManager( gameState, params ) {
 } ;
 __inherit( BossManager, ElementManager ) ;
 
-
 BossManager._MAX_NUM = 4;
 
 
@@ -432,7 +431,6 @@ Boss.prototype.runStep = function( ) {
 
   if(this.vanishing)
     this.vanishingCount++;
-
 } ;
 
 
@@ -624,6 +622,16 @@ Boss.prototype.inVanishing = function() {
 
 Boss.prototype.overVanishing = function() {
   return (this.vanishing && this.vanishingCount >= Boss._VANISH_COUNT);
+};
+
+
+/**
+ * TODO: temporal workaround.
+ */
+Boss.prototype._checkVectorChange = function() {
+  if(this.escaping || this.vanishing)
+    return false;
+  return this.parent.prototype._checkVectorChange.call(this);
 };
 
 
