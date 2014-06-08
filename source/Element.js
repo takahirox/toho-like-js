@@ -504,9 +504,16 @@ ElementDrawer.prototype._pourArrays = function() {
   for(var i = 0; i < this.elementManager.getNum(); i++) {
     // TODO: bad design
     var e = this.elementManager.get(i);
-    n += this._pourArray(e, n);
+    if(this._doPour(e)) {
+      n += this._pourArray(e, n);
+    }
   }
   return n;
+};
+
+
+ElementDrawer.prototype._doPour = function(e) {
+  return true;
 };
 
 
