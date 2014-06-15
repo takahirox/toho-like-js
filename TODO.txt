@@ -1,9 +1,3 @@
-replay
-record
-
-graze
-
-WebGL to draw all entities
 stage2
   - bgm
   - bg
@@ -11,22 +5,17 @@ boss finish bonus
 boss time limit
 spell card finish bonus
 vanish bullet
-game over
-volume balance
+
 enemy variation
 Boss effect
-combine Effect and VanishedEnemy ?
 Game pad API
 
 separate count up from run step?
-fighter manager
-fighter parameter
 
 enemy beam collision
 multi power items
 
 divide area
 sin, cos, tan cache
-pre-rendering
 
-network?
+network
