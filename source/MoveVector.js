@@ -4,7 +4,7 @@ function MoveVectorManager( ) {
   this._initFactory( ) ;
 }
 
-MoveVectorManager._NUM = 4000 ;
+MoveVectorManager._NUM = 2000 ;
 
 
 MoveVectorManager.prototype._initFactory = function( ) {

@@ -11,7 +11,7 @@ function EnemyBulletManager( gameState, params ) {
 __inherit( EnemyBulletManager, ElementManager ) ;
 
 EnemyBulletManager._RESERVED_NUM = 50 ; // TODO: temporal
-EnemyBulletManager._MAX_NUM = 3000 ; // TODO: temporal
+EnemyBulletManager._MAX_NUM = 1000 ; // TODO: temporal
 
 
 EnemyBulletManager.prototype._initMaxNum = function() {
@@ -210,7 +210,7 @@ function EnemyBulletFactory( gameState, maxX, maxY ) {
 }
 __inherit( EnemyBulletFactory, ElementFactory ) ;
 
-EnemyBulletFactory._NUM = 3000 ;
+EnemyBulletFactory._NUM = 1000 ;
 EnemyBulletFactory._BEAM_NUM = 100 ;
 EnemyBulletFactory._LASER_NUM = 50 ;
 
@@ -654,7 +654,7 @@ function EnemyBeamFreeList( num, gameState ) {
 } ;
 __inherit( EnemyBeamFreeList, ElementFreeList ) ;
 
-EnemyBeamFreeList._HISTORY_NUM = 3000 ; 
+EnemyBeamFreeList._HISTORY_NUM = 1000 ; 
 
 
 

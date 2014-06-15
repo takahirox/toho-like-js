@@ -4,7 +4,7 @@ function ItemManager( gameState ) {
 } ;
 __inherit( ItemManager, ElementManager ) ;
 
-ItemManager._MAX_NUM = 3000;
+ItemManager._MAX_NUM = 1000;
 
 
 ItemManager.prototype._initMaxNum = function() {
@@ -70,7 +70,7 @@ function ItemFactory( gameState, maxX, maxY ) {
 } ;
 __inherit( ItemFactory, ElementFactory ) ;
 
-ItemFactory._NUM = 3000 ;
+ItemFactory._NUM = 1000 ;
 ItemFactory._PARAMS = {
   'x': 0,
   'y': 0,
