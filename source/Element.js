@@ -439,7 +439,7 @@ ElementDrawer.prototype._initTexture = function(layer, image) {
 };
 
 
-ElementDrawer.prototype._pourVerticies = function(i, v) {
+ElementDrawer.prototype._pourVertices = function(i, v) {
   v.saveVertices();
   v.rotate();
   v.translate();
@@ -491,7 +491,7 @@ ElementDrawer.prototype._pourColors = function(i, v) {
 ElementDrawer.prototype._pourArray = function(e, n) {
   var v = e.getView();
   v.animate();
-  this._pourVerticies(n, v);
+  this._pourVertices(n, v);
   this._pourCoordinates(n, v);
   this._pourIndices(n, v);
   this._pourColors(n, v);

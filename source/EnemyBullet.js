@@ -6,6 +6,7 @@ function EnemyBulletManager( gameState, params ) {
   this.reservedLength = 0 ; // TODO: temporal
   this.reserved = [ ] ;     // TODO: temporal
   this._initReserved( ) ;
+  this.beamDrawer = null; // TODO: temporal
 } ;
 __inherit( EnemyBulletManager, ElementManager ) ;
 
@@ -27,11 +28,14 @@ EnemyBulletManager.prototype.initDrawer = function(layer, image) {
   this.drawer = new EnemyBulletDrawer(
                       this, layer,
                       this.gameState.getImage(Game._IMG_ENEMY_SHOT));
+  this.beamDrawer = new EnemyBeamDrawer(
+                      this, layer,
+                      this.gameState.getImage(Game._IMG_BEAM));
 };
 
 
 /**
- * TODO: temrapol. should implement reserved freelist?
+ * TODO: temporal. should implement reserved freelist?
  */
 EnemyBulletManager.prototype._initReserved = function( ) {
   for( var i = 0; i < EnemyBulletManager._RESERVED_NUM; i++ ) {
@@ -188,6 +192,12 @@ EnemyBulletManager.prototype.beItem = function( ) {
 } ;
 
 
+EnemyBulletManager.prototype.draw = function(layer) {
+  this.drawer.draw(layer);
+  this.beamDrawer.draw(layer);
+};
+
+
 
 function EnemyBulletFactory( gameState, maxX, maxY ) {
   this.parent = ElementFactory ;
@@ -255,11 +265,11 @@ EnemyBulletFactory.prototype.free = function( bullet ) {
 } ;
 
 
-EnemyBulletFactory.prototype._getImage = function( params ) {
-//  if( params.beam )
-//    return this.gameState.getImage( Game._IMG_BEAM ) ;
-  return this.gameState.getImage( Game._IMG_ENEMY_SHOT ) ;
-} ;
+EnemyBulletFactory.prototype._getImage = function(params) {
+  if(params.beam)
+    return this.gameState.getImage(Game._IMG_BEAM);
+  return this.gameState.getImage(Game._IMG_ENEMY_SHOT);
+};
 
 
 
@@ -281,6 +291,11 @@ function EnemyBulletDrawer(elementManager, layer, image) {
   this.parent.call(this, elementManager, layer, image);
 };
 __inherit(EnemyBulletDrawer, ElementDrawer);
+
+
+EnemyBulletDrawer.prototype._doPour = function(e) {
+  return (e instanceof EnemyBeam) ? false : true;
+};
 
 
 
@@ -639,7 +654,7 @@ function EnemyBeamFreeList( num, gameState ) {
 } ;
 __inherit( EnemyBeamFreeList, ElementFreeList ) ;
 
-EnemyBeamFreeList._HISTORY_NUM = 1000 ; 
+EnemyBeamFreeList._HISTORY_NUM = 3000 ; 
 
 
 
@@ -653,75 +668,90 @@ EnemyBeamFreeList.prototype._generateElement = function( ) {
 
 
 
-/**
- * TODO: not implemented yet.
- */
+function EnemyBeamDrawer(elementManager, layer, image) {
+  this.parent = ElementDrawer;
+  this.parent.call(this, elementManager, layer, image);
+};
+__inherit(EnemyBeamDrawer, ElementDrawer);
+
+
+EnemyBeamDrawer.prototype._doPour = function(e) {
+  return (e instanceof EnemyBeam) ? true : false;
+};
+
+
+
 function EnemyBeamView(element) {
   this.parent = ElementView;
   this.parent.call(this, element);
-  this.vertices.length = ElementView._V_SIZE * this.getNum();
-  this.coordinates.length = ElementView._C_SIZE * this.getNum();
-  this.indices.length = ElementView._I_SIZE * this.getNum();
-  this.colors.length = ElementView._A_SIZE * this.getNum();
-  this.sVertices.length = ElementView._V_SIZE * this.getNum();
+
+  // TODO: temporal
+  this.vertices.length = ElementView._V_SIZE * element.historyMax;
+  this.coordinates.length = ElementView._C_SIZE * element.historyMax;
+  this.indices.length = ElementView._I_SIZE * element.historyMax;
+  this.colors.length = ElementView._A_SIZE * element.historyMax;
+  this.sVertices.length = ElementView._V_SIZE * element.historyMax;
 };
 __inherit(EnemyBeamView, ElementView);
 
 
+/**
+ * TODO: temporal.
+ */
 EnemyBeamView.prototype.getNum = function() {
-  return this.element.histories.length * 2;
+  return this.element.p.length;
 };
 
 
 EnemyBeamView.prototype._initVertices = function() {
-  var w = this.element.getWidth()/2;
-  var h = this.element.getHeight()/2;
-
-  for(var i = 0; i < this.getNum(); i++) {
+  for(var i = 0; i < this.element.p.length; i++) {
+    var p = this.element.p[i];
     var o = ElementView._V_SIZE * i;
-    this.vertices[o+0]  = -w;
-    this.vertices[o+1]  = -h+o;
+    this.vertices[o+0]  =  p.x0;
+    this.vertices[o+1]  = -p.y0;
     this.vertices[o+2]  = -1.0;
-    this.vertices[o+3]  =  w;
-    this.vertices[o+4]  = -h+o;
+    this.vertices[o+3]  =  p.x1;
+    this.vertices[o+4]  = -p.y1;
     this.vertices[o+5]  = -1.0;
-    this.vertices[o+6]  =  w;
-    this.vertices[o+7]  =  h+o;
+    this.vertices[o+6]  =  p.x3;
+    this.vertices[o+7]  = -p.y3;
     this.vertices[o+8]  = -1.0;
-    this.vertices[o+9]  = -w;
-    this.vertices[o+10] =  h+o;
+    this.vertices[o+9]  =  p.x2;
+    this.vertices[o+10] = -p.y2;
     this.vertices[o+11] = -1.0;
   }
 };
 
 
 EnemyBeamView.prototype._initCoordinates = function() {
-  var w = this.element.getWidth()/this.element.getImageWidth();
-  var h = this.element.getHeight()/this.element.getImageHeight();
+  // TODO: temporal
+  var w = this.element.imageWidth/this.element.getImageWidth();
+  var h = this.element.imageHeight/this.element.getImageHeight();
 
   var x1 = w * this.element.getImageIndexX();
   var x2 = x1 + w;
   var y = h * this.element.getImageIndexY();
-  var dy = h / this.getNum();
+  var dy = h / this.element.p.length;
 
-  for(var i = 0; i < this.getNum()-1; i++) {
+  for(var i = 0; i < this.element.p.length; i++) {
     var o = ElementView._C_SIZE * i;
     var y1 = y + dy * i;
     var y2 = y + dy * (i+1);
+    // y order is reversed from the normal one.
     this.coordinates[o+0] = x1;
-    this.coordinates[o+1] = y2;
+    this.coordinates[o+1] = y1;
     this.coordinates[o+2] = x2;
-    this.coordinates[o+3] = y2;
+    this.coordinates[o+3] = y1;
     this.coordinates[o+4] = x2;
-    this.coordinates[o+5] = y1;
+    this.coordinates[o+5] = y2;
     this.coordinates[o+6] = x1;
-    this.coordinates[o+7] = y1;
+    this.coordinates[o+7] = y2;
   }
 };
 
 
 EnemyBeamView.prototype._initIndices = function() {
-  for(var i = 0; i < this.getNum(); i++) {
+  for(var i = 0; i < this.element.p.length; i++) {
     var o = ElementView._I_SIZE * i;
     this.indices[o+0] = 0;
     this.indices[o+1] = 1;
@@ -735,7 +765,7 @@ EnemyBeamView.prototype._initIndices = function() {
 
 
 EnemyBeamView.prototype._initColors = function() {
-  for(var i = 0; i < this.getNum(); i++) {
+  for(var i = 0; i < this.element.p.length; i++) {
     var o = ElementView._A_SIZE * i;
     this.colors[o+0] = 1.0;
     this.colors[o+1] = 1.0;
@@ -760,140 +790,165 @@ EnemyBeamView.prototype._initColors = function() {
 };
 
 
+/**
+ * unnecessary to translate cuz it's already done in EnemyBeam.
+ */
+EnemyBeamView.prototype.translate = function() {
+};
+
+
+/**
+ * unnecessary to rotate cuz it's already done in EnemyBeam.
+ */
+EnemyBeamView.prototype.rotate = function() {
+};
+
+
+/**
+ * unnecessary to save vertices cuz translate() and rotate() do nothing.
+ */
+EnemyBeamView.prototype.saveVertices = function() {
+};
+
+
+/**
+ * unnecessary to restore vertices cuz translate() and rotate() do nothing.
+ */
+EnemyBeamView.prototype.restoreVertices = function() {
+};
+
+
 EnemyBeamView.prototype.animate = function() {
-  var height = this.element.imageHeight / this.element.histories.length;
-  var width = this.element.imageWidth;
-
-  var p = this.element.p;
-  this.a = 0.5;
-  for(var i = 0; i < this.histories.length - 1; i++) {
-    var by = height * i;
-
-    var t1 = ( p[ i ].x1 - p[ i ].x0 ) / width ;
-    var t2 = ( p[ i ].y1 - p[ i ].y0 ) / width ;
-    var t3 = ( p[ i ].x2 - p[ i ].x0 ) / height ;
-    var t4 = ( p[ i ].y2 - p[ i ].y0 ) / height ;
-    var t5 = p[ i ].x0 ;
-    var t6 = p[ i ].y0 ;
-
-    var t1 = ( p[ i ].x3 - p[ i ].x2 ) / width ;
-    var t2 = ( p[ i ].y3 - p[ i ].y2 ) / width ;
-    var t3 = ( p[ i ].x3 - p[ i ].x1 ) / height ;
-    var t4 = ( p[ i ].y3 - p[ i ].y1 ) / height;
-    var t5 = p[ i ].x2 ;
-    var t6 = p[ i ].y2 ;
-  }
-
+  this._initVertices();
+  this._initCoordinates();
+  this._initIndices();
+  this._initColors();
+  this.a = 0.9;
 };
 
 
 /**
  * TODO: temporal
+ * TODO: add histories, p, hFreelist and pFreelist descriptions.
+ * TODO: implement checkColision().
  */
-function EnemyBeam( gameState, maxX, maxY, hFreelist, pFreelist ) {
-  this.histories = [ ] ;
-  this.p = [ ] ;
-  this.hFreelist = hFreelist ;
-  this.pFreelist = pFreelist ;
+function EnemyBeam(gameState, maxX, maxY, hFreelist, pFreelist) {
+  this.histories = [];
+  this.p = [];
+  this.hFreelist = hFreelist;
+  this.pFreelist = pFreelist;
+  this.historyMax = EnemyBeam._HISTORY_MAX;
 
-  this.parent = Element ;
-  this.parent.call( this, gameState, maxX, maxY ) ;
-  this.imageWidth = 20 ;
-  this.imageHeight = 256 ;
+  this.parent = Element;
+  this.parent.call(this, gameState, maxX, maxY);
+  this.imageWidth = EnemyBeam._IMAGE_WIDTH;
+  this.imageHeight = EnemyBeam._IMAGE_HEIGHT;
 }
-__inherit( EnemyBeam, Element ) ;
+__inherit(EnemyBeam, Element);
 
-EnemyBeam._WIDTH  = 16 ;
-EnemyBeam._HEIGHT = 16 ;
+EnemyBeam._WIDTH  = 16;
+EnemyBeam._HEIGHT = 16;
+
+EnemyBeam._IMAGE_WIDTH  = 20;
+EnemyBeam._IMAGE_HEIGHT = 256;
+
+EnemyBeam._HISTORY_MAX = 16;
+
+EnemyBeam._SPAN = 1;
 
 
-/**
- * EnemyBeamView isn't implemented yet,
- * so use EnemyBulletView so far.
- */
 EnemyBeam.prototype._generateView = function() {
-//  return new EnemyBeamView(this);
-  return new EnemyBulletView(this);
+  return new EnemyBeamView(this);
 };
 
 
-EnemyBeam.prototype.free = function( ) {
-  while( this.histories.length > 0 ) {
-    this.hFreelist.free( this.histories[ this.histories.length - 1 ] ) ;
-    this.histories.length-- ;
-  }
-  while( this.p.length > 0 ) {
-    this.pFreelist.free( this.p[ this.p.length - 1 ] ) ;
-    this.p.length-- ;
-  }
-  this.parent.prototype.free.call( this ) ;
-} ;
+EnemyBeam.prototype.free = function() {
+  this._freeHistoriesUntil(0);
+  this._freePositionsUntil(0);
+  this.parent.prototype.free.call(this);
+};
 
 
-EnemyBeam.prototype.init = function( params, image, enemy ) {
-  this.parent.prototype.init.call( this, params, image ) ;
-  this.enemy = enemy ;
-  this.width = EnemyBeam._WIDTH ;
-  this.height = EnemyBeam._HEIGHT ;  // TODO: temporal
-  this.collisionWidth = this.width ;
-  this.collisionHeight = this.height ;
-  this.indexX = 12 ;
-  this.indexY = 3 ;
-  this.histories.length = 0 ;
-  this.p.length = 0 ;
+EnemyBeam.prototype._freeHistoriesUntil = function(num) {
+  while(this.histories.length > num) {
+    this.hFreelist.free(this.histories[this.histories.length-1]) ;
+    this.histories.length--;
+  }
+};
+
+
+EnemyBeam.prototype._freePositionsUntil = function(num) {
+  while(this.p.length > num){
+    this.pFreelist.free(this.p[this.p.length-1]);
+    this.p.length--;
+  }
+};
+
+
+EnemyBeam.prototype.init = function(params, image, enemy) {
+  this.parent.prototype.init.call(this, params, image);
+  this.enemy = enemy;
+
+  // TODO: temporal
+  this.width = EnemyBeam._WIDTH;
+  this.height = EnemyBeam._HEIGHT;
+  this.collisionWidth = this.width;
+  this.collisionHeight = this.height;
+
+  this.indexX = 1;
+  this.indexY = 0;
+  this.histories.length = 0;
+  this.p.length = 0;
   this._initView();
-} ;
+};
 
 
-EnemyBeam.prototype.runStep = function( ) {
-  if( ( this.count % 1 ) == 0 ) {
-    this._addHistory( ) ;
-    while( this.histories.length > this.height ) {
-      this.hFreelist.free( this.histories[ this.histories.length - 1 ] ) ;
-      this.histories.length-- ;
-    }
-    while( this.p.length > this.height ) {
-      this.pFreelist.free( this.p[ this.p.length - 1 ] ) ;
-      this.p.length-- ;
-    }
+EnemyBeam.prototype.runStep = function() {
+  this.parent.prototype.runStep.call(this);
+  if((this.count % EnemyBeam._SPAN) == 0) {
+    this._addHistory();
+    this._freeHistoriesUntil(this.historyMax);
+    this._freePositionsUntil(this.historyMax);
   }
-  this.parent.prototype.runStep.call( this ) ;
-} ;
+};
 
 
-EnemyBeam.prototype._addHistory = function( ) {
+EnemyBeam.prototype._addHistory = function() {
 
-  var h = this.hFreelist.get( ) ;
-  h.x = this.getX( ) ;
-  h.y = this.getY( ) ;
-  if( this.histories.length > 0 ) {
-    var x1 = h.x ;
-    var y1 = h.y ;
-    var x2 = this.histories[ 0 ].x ;
-    var y2 = this.histories[ 0 ].y ;
-    var dx = x1 - x2 ;
-    var dy = y1 - y2 ; 
-    var rad = Math.atan2( dy, dx ) ;
-    var p = this.pFreelist.get( ) ;
-    p.x0 = x1 - this.imageWidth/2 * Math.sin( rad ) ;
-    p.y0 = y1 + this.imageWidth/2 * Math.cos( rad ) ;
-    p.x1 = x1 + this.imageWidth/2 * Math.sin( rad ) ;
-    p.y1 = y1 - this.imageWidth/2 * Math.cos( rad ) ;
-    p.x2 = x2 - this.imageWidth/2 * Math.sin( rad ) ;
-    p.y2 = y2 + this.imageWidth/2 * Math.cos( rad ) ;
-    p.x3 = x2 + this.imageWidth/2 * Math.sin( rad ) ;
-    p.y3 = y2 - this.imageWidth/2 * Math.cos( rad ) ;
-    if( this.p.length > 0 ) {
-      this.p[ 0 ].x0 = p.x2 ;
-      this.p[ 0 ].y0 = p.y2 ;
-      this.p[ 0 ].x1 = p.x3 ;
-      this.p[ 0 ].y1 = p.y3;
+  var h = this.hFreelist.get();
+  h.x = this.getX();
+  h.y = this.getY();
+  if(this.histories.length > 0) {
+    var x1 = h.x;
+    var y1 = h.y;
+    var x2 = this.histories[0].x;
+    var y2 = this.histories[0].y;
+    var dx = x1 - x2;
+    var dy = y1 - y2; 
+    var rad = Math.atan2(dy, dx);
+    var p = this.pFreelist.get();
+
+    p.x0 = x1 - this.width/2 * Math.sin(rad);
+    p.y0 = y1 + this.width/2 * Math.cos(rad);
+    p.x1 = x1 + this.width/2 * Math.sin(rad);
+    p.y1 = y1 - this.width/2 * Math.cos(rad);
+    p.x2 = x2 - this.width/2 * Math.sin(rad);
+    p.y2 = y2 + this.width/2 * Math.cos(rad);
+    p.x3 = x2 + this.width/2 * Math.sin(rad);
+    p.y3 = y2 - this.width/2 * Math.cos(rad);
+
+    if(this.p.length > 0) {
+      this.p[0].x0 = p.x2;
+      this.p[0].y0 = p.y2;
+      this.p[0].x1 = p.x3;
+      this.p[0].y1 = p.y3;
     }
-    this.p.unshift( p ) ;
-  }
-  this.histories.unshift( h ) ;
 
-} ;
+    this.p.unshift(p);
+  }
+  this.histories.unshift(h);
+
+};
 
 
 /**
