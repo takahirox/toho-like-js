@@ -1,4 +1,7 @@
 function Game(mainCanvas, bgCanvas) {
+  this.gs = new GameSocket(this);
+  this.gs.connect();
+
   this.surface = mainCanvas.getContext('2d');
   this.surface.fillStyle = 'white';
 
@@ -15,6 +18,10 @@ function Game(mainCanvas, bgCanvas) {
   this.oldTIme = null ;
   this.fps = null ;
   this.count = 0 ;
+
+  this.someoneState = -1;
+  this.onlineActiveNum = 0;
+  this.messegeReceiveCount = 0;
 
   this.state = 0 ;
   this.flags = 0 ;
@@ -36,6 +43,8 @@ function Game(mainCanvas, bgCanvas) {
 Game._SIDE_WIDTH = 160 ;
 Game._FPS = 60 ;
 Game._FPS_SPAN = 60 ;
+
+Game._SOMEONE_STATE_DISPLAY_COUNT = 60*5;
 
 Game._STATE_LOAD        = 0x0 ;
 Game._STATE_OPENING     = 0x1 ;
@@ -159,6 +168,29 @@ Game._SES[ Game._SE_POWERUP ]      = 'SE/powerup.wav' ;
 Game._SES[ Game._SE_POWER_EFFECT ] = 'SE/enemy_powereffect.wav' ;
 
 
+Game._SOMEONE_MESSAGES = [];
+Game._SOMEONE_MESSAGES[GameSocket._STATE_OPEN]
+  = 'opened';
+Game._SOMEONE_MESSAGES[GameSocket._STATE_CLOSE]
+  = 'closed';
+Game._SOMEONE_MESSAGES[GameSocket._STATE_BEGIN_GAME]
+  = 'began the game';
+Game._SOMEONE_MESSAGES[GameSocket._STATE_DEAD]
+  = 'dead';
+Game._SOMEONE_MESSAGES[GameSocket._STATE_DESTROY_STAGE1_MID_BOSS]
+  = 'destroyed Rumia';
+Game._SOMEONE_MESSAGES[GameSocket._STATE_DESTROY_STAGE1_BIG_BOSS]
+  = 'destroyed Rumia';
+Game._SOMEONE_MESSAGES[GameSocket._STATE_DESTROY_STAGE2_MID_BOSS]
+  = 'destroyed Dai Yousei';
+Game._SOMEONE_MESSAGES[GameSocket._STATE_DESTROY_STAGE2_BIG_BOSS]
+  = 'destroyed Chirno';
+Game._SOMEONE_MESSAGES[GameSocket._STATE_GAME_CLEAR]
+  = 'completed the game';
+Game._SOMEONE_MESSAGES[GameSocket._STATE_GAME_OVER]
+  = 'game over';
+
+
 Game.prototype.getImage = function( key ) {
   return this.images[ key ] ;
 } ;
@@ -243,6 +275,13 @@ Game.prototype._runStep = function( ) {
   this.states[ this.state ].runStep( ) ;
   this.states[ this.state ].updateDisplay( this.surface ) ;
   this._displayFps( this.surface ) ;
+  this._displayOnlineState(this.surface);
+
+  if(this.someoneState >= 0 &&
+     this.count > this.messageReceiveCount +
+                  Game._SOMEONE_STATE_DISPLAY_COUNT)
+    this.someoneState = -1;
+
   this.count++ ;
   requestAnimationFrame( this._runStep.bind( this ) ) ;
 } ;
@@ -265,11 +304,53 @@ Game.prototype._displayFps = function( surface ) {
     return ;
 
   surface.save( ) ;
-  surface.shadowColor = 'rgb( 255, 255, 255 )' ;
+  surface.fillStyle = 'rgb( 255, 255, 255 )' ;
   surface.font = '16px Arial' ;
   surface.fillText( this.fps + 'fps', this.getWidth( ) - 50, this.getHeight( ) - 15 ) ;
   surface.restore( ) ;
 } ;
+
+
+/**
+ * TODO: temporal.
+ */
+Game.prototype._displayOnlineState = function(surface) {
+  if(! this.gs.connected())
+    return;
+
+  surface.save();
+  surface.textAlign = 'right';
+  surface.fillStyle = 'rgb(255, 255, 255)';
+  surface.font = '12px Arial';
+  surface.fillText(this.onlineActiveNum + ' playing now',
+                   this.getWidth() - 5,
+                   15);
+  if(this.someoneState >= 0) {
+    surface.fillText('someone', this.getWidth() - 5, 30);
+    surface.fillText(Game._SOMEONE_MESSAGES[this.someoneState],
+                     this.getWidth() - 5,
+                     45);
+  }
+  surface.restore();
+};
+
+
+/**
+ * TODO: temporal.
+ */
+Game.prototype.sendMessageToServer = function(key) {
+  this.gs.send(key);
+};
+
+
+/**
+ * TODO: temporal.
+ */
+Game.prototype.notifyMessageReceive = function(activeNum, key) {
+  this.onlineActiveNum = activeNum;
+  this.someoneState = key;
+  this.messageReceiveCount = this.count;
+};
 
 
 Game.prototype.notifyLoadingConclusion = function( ) {
