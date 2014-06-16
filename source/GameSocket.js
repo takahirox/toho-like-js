@@ -83,8 +83,8 @@ GameSocket.prototype._keepSendDummy = function() {
 GameSocket.prototype._setIntervalForDummy = function() {
   if(! this.ws)
     return;
-  this.interval = setInterval(this._keepSendDummy.bind(this),
-                              GameSocket._DUMMY_SPAN);
+  this.interval = setTimeout(this._keepSendDummy.bind(this),
+                             GameSocket._DUMMY_SPAN);
 };
 
 
