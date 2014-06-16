@@ -107,6 +107,7 @@ StageState.prototype.init = function( params ) {
   this.fighter.setCharacterIndex( this.baseCharacterIndex ) ;
   Math.seed( this.seed ) ;
   this._soundBGM( Game._BGM_1 ) ;
+  this.sendMessageToServer(GameSocket._STATE_BEGIN_GAME);
 } ;
 
 
@@ -435,29 +436,29 @@ StageState.prototype._drawSide = function(surface) {
   surface.drawImage(this._getFaceImage(), this.getWidth() + 30, 330, 100, 100);
 
   surface.font = '16px Arial';
-  surface.fillText('Toho-like STG JS', this.getWidth( ) + 15, 50);
-  surface.fillText('for debug', this.getWidth( ) + 15, 200);
+  surface.fillText('Toho-like STG JS', this.getWidth( ) + 15, 70);
+  surface.fillText('for debug', this.getWidth( ) + 15, 210);
 
   surface.textAlign = 'right';
-  surface.fillText('Score:', this.getWidth() + 70,  80);
-  surface.fillText(this.viewScore, this.getWidth() + 140,  80);
-  surface.fillText('Power:', this.getWidth() + 70, 100);
-  surface.fillText(this.fighter.getPower(), this.getWidth() + 140, 100);
-  surface.fillText('Graze:', this.getWidth() + 70, 120);
-  surface.fillText(this.graze, this.getWidth() + 140, 120);
-  surface.fillText('Players:', this.getWidth() + 70, 140);
-  surface.fillText(this.players, this.getWidth() + 140, 140);
-  surface.fillText('Bomb:', this.getWidth() + 70, 160);
-  surface.fillText(this.bombs, this.getWidth() + 140, 160);
+  surface.fillText('Score:', this.getWidth() + 70,  100);
+  surface.fillText(this.viewScore, this.getWidth() + 140, 100);
+  surface.fillText('Power:', this.getWidth() + 70, 120);
+  surface.fillText(this.fighter.getPower(), this.getWidth() + 140, 120);
+  surface.fillText('Graze:', this.getWidth() + 70, 140);
+  surface.fillText(this.graze, this.getWidth() + 140, 140);
+  surface.fillText('Players:', this.getWidth() + 70, 160);
+  surface.fillText(this.players, this.getWidth() + 140, 160);
+  surface.fillText('Bomb:', this.getWidth() + 70, 180);
+  surface.fillText(this.bombs, this.getWidth() + 140, 180);
 
-  surface.fillText(this.count, this.getWidth() + 80, 220);
-  surface.fillText(this.bulletManager.getNum(), this.getWidth() + 80, 240);
-  surface.fillText(this.enemyManager.getNum(), this.getWidth() + 80, 260);
-  surface.fillText(this.enemyBulletManager.getNum(), this.getWidth() + 80, 280);
-  surface.fillText(this.itemManager.getNum(), this.getWidth() + 80, 300);
+  surface.fillText(this.count, this.getWidth() + 80, 230);
+  surface.fillText(this.bulletManager.getNum(), this.getWidth() + 80, 250);
+  surface.fillText(this.enemyManager.getNum(), this.getWidth() + 80, 270);
+  surface.fillText(this.enemyBulletManager.getNum(), this.getWidth() + 80, 290);
+  surface.fillText(this.itemManager.getNum(), this.getWidth() + 80, 310);
 
-  surface.fillText(parseInt(this.bgScale*1000), this.getWidth() + 140, 220);
-  surface.fillText(this.effectManager.getNum(), this.getWidth() + 140, 240);
+  surface.fillText(parseInt(this.bgScale*1000), this.getWidth() + 140, 230);
+  surface.fillText(this.effectManager.getNum(), this.getWidth() + 140, 250);
 
   surface.restore();
 };
@@ -657,6 +658,11 @@ StageState.prototype.exportPlayRecord = function( ) {
 } ;
 
 
+StageState.prototype.sendMessageToServer = function(key) {
+  this.game.sendMessageToServer(key);
+};
+
+
 StageState.prototype.notifyFighterGotPowerItem = function( fighter, item ) {
   this.setFlag( StageState._FLAG_SE_GRAZE ) ;
   this.score += 100 ;
@@ -752,6 +758,16 @@ StageState.prototype.notifyBossVanished = function( boss ) {
 
   this.clearFlag( StageState._FLAG_BOSS_EXIST ) ;
   this.score += boss.score ;
+
+  // TODO: temporal
+  if(this.stageIndex == 0 && this.bossManager.index == 1)
+    this.sendMessageToServer(GameSocket._STATE_DESTROY_STAGE1_MID_BOSS);
+  else if(this.stageIndex == 0 && this.bossManager.index == 2)
+    this.sendMessageToServer(GameSocket._STATE_DESTROY_STAGE1_BIG_BOSS);
+  else if(this.stageIndex == 1 && this.bossManager.index == 1)
+    this.sendMessageToServer(GameSocket._STATE_DESTROY_STAGE2_MID_BOSS);
+  else if(this.stageIndex == 1 && this.bossManager.index == 2)
+    this.sendMessageToServer(GameSocket._STATE_DESTROY_STAGE2_BIG_BOSS);
 } ;
 
 
@@ -786,6 +802,7 @@ StageState.prototype.notifyFighterDead = function( fighter, element ) {
   this.fighter.deadCount = this.fighter.count ;
 
   if( this.players <= 0 ) {
+    this.sendMessageToServer(GameSocket._STATE_GAME_OVER);
     // TODO: temporal
     if( this.isFlagSet( StageState._FLAG_AUTO_PLAY ) ) {
       this.game.notifyQuitStage( ) ;
@@ -802,6 +819,8 @@ StageState.prototype.notifyFighterDead = function( fighter, element ) {
   this.fighter.state = Element._STATE_ALIVE ;
   this.fighter.beDefaultPosition( ) ;
   this.fighter.deadCount = this.fighter.count ;
+
+  this.sendMessageToServer(GameSocket._STATE_DEAD);
 
 } ;
 
