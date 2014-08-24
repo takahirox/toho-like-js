@@ -95,26 +95,26 @@ function MoveVector( ) {
 
 
 MoveVector.prototype.init = function( params ) {
-  this.r       = params.r       != undefined ? params.r       : 0 ;
-  this.theta   = params.theta   != undefined ? params.theta   : 90 ;
-  this.w       = params.w       != undefined ? params.w       : 0 ;
-  this.ra      = params.ra      != undefined ? params.ra      : 0 ;
-  this.wa      = params.wa      != undefined ? params.wa      : 0 ;
-  this.raa     = params.raa     != undefined ? params.raa     : 0 ;
-  this.waa     = params.waa     != undefined ? params.waa     : 0 ;
-  this.trange  = params.trange  != undefined ? params.trange  : null ;
-  this.rrange  = params.rrange  != undefined ? params.rrange  : null ;
-  this.wrange  = params.wrange  != undefined ? params.wrange  : null ;
-  this.rarange = params.rarange != undefined ? params.rarange : null ;
-  this.warange = params.warange != undefined ? params.warange : null ;
+  this.r       = params.r       !== void 0 ? params.r       : 0 ;
+  this.theta   = params.theta   !== void 0 ? params.theta   : 90 ;
+  this.w       = params.w       !== void 0 ? params.w       : 0 ;
+  this.ra      = params.ra      !== void 0 ? params.ra      : 0 ;
+  this.wa      = params.wa      !== void 0 ? params.wa      : 0 ;
+  this.raa     = params.raa     !== void 0 ? params.raa     : 0 ;
+  this.waa     = params.waa     !== void 0 ? params.waa     : 0 ;
+  this.trange  = params.trange  !== void 0 ? params.trange  : null ;
+  this.rrange  = params.rrange  !== void 0 ? params.rrange  : null ;
+  this.wrange  = params.wrange  !== void 0 ? params.wrange  : null ;
+  this.rarange = params.rarange !== void 0 ? params.rarange : null ;
+  this.warange = params.warange !== void 0 ? params.warange : null ;
   this.element = null ;
   this.reflectCount = 0 ;
 
-  if( params.rrandom )
+  if(params.rrandom !== void 0)
     this.r = this._getRandomValue( params.rrandom ) ;
-  if( params.trandom )
+  if(params.trandom !== void 0)
     this.theta = this._getRandomValue( params.trandom ) ;
-  if( params.wrandom )
+  if(params.wrandom !== void 0)
     this.w = this._getRandomValue( params.wrandom ) ;
 } ;
 
@@ -149,15 +149,15 @@ MoveVector.prototype.runStep = function( ) {
 
 
 MoveVector.prototype._beInRange = function( value, range ) {
-  if( ! range )
-    return value ;
+  if(range === null)
+    return value;
 
-  if( range.max != undefined && value > range.max )
+  if(range.max !== void 0 && value > range.max)
     value = range.max ;
-  if( range.min != undefined && value < range.min )
+  if(range.min !== void 0 && value < range.min)
     value = range.min
-  return value ;
-} ;
+  return value;
+};
 
 
 MoveVector.prototype._getRadian = function( ) {

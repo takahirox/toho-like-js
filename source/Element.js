@@ -101,7 +101,7 @@ ElementManager.prototype.checkCollisionWith = function(
   for( var i = 0; i < this.elements.length; i++ ) {
     if( this.elements[ i ].checkCollision( element ) ) {
       callback( element, this.elements[ i ] ) ;
-      if( flag )
+      if(flag === true)
         return ;
     }
   }
@@ -116,8 +116,8 @@ ElementManager.prototype.checkCollisionWith2 = function(
   for( var i = 0; i < this.elements.length; i++ ) {
     if( element.checkCollision( this.elements[ i ] ) ) {
       callback( element, this.elements[ i ] ) ;
-      if( flag )
-        return ;
+      if(flag === true)
+        return;
     }
   }
 } ;
@@ -143,7 +143,7 @@ ElementManager.prototype.checkLoss = function( callback ) {
     } else {
       this.elements[ i ].die( ) ;
       // TODO: temporal
-      if( callback )
+      if(callback !== void 0)
         callback( this.elements[ i ] ) ;
       this.elements[ i ].free( ) ;
       this.factory.free( this.elements[ i ] ) ;
@@ -657,7 +657,7 @@ Element.prototype.init = function(params, image) {
   this.baseVectorCount = 0 ;
   // TODO: temporal
   this.vectors.length = 0 ;
-  if( params.v == undefined ) {
+  if(params.v === void 0) {
   } else if( params.v instanceof Array ) {
     for( var i = 0; i < params.v.length; i++ )
       this.vectors.push( params.v[ i ] ) ;
@@ -700,9 +700,9 @@ Element.prototype._getValueOrDefaultValue = function( value, defaultValue ) {
 
 
 Element.prototype.free = function( ) {
-  if( this.vector )
+  if(this.vector !== null)
     this.moveVectorManager.free( this.vector ) ;
-  if( this.gravity )
+  if(this.gravity !== null)
     this.moveVectorManager.free( this.gravity ) ;
 } ;
 
@@ -732,8 +732,8 @@ Element.prototype._changeVector = function( ) {
  */
 Element.prototype._initVector = function( ) {
   // save previous data
-  var preTheta ;
-  if( this.vector )
+  var preTheta = null;
+  if(this.vector !== null)
     preTheta = this.vector.theta ;
   var tmpTheta = this.vectors[ this.vectorIndex ].v.theta ;
   var tmpR     = this.vectors[ this.vectorIndex ].v.r ;
@@ -741,18 +741,18 @@ Element.prototype._initVector = function( ) {
   // for special propose
   // these functions will updates this.vectors[ this.vectorIndex ],
   // so previous data needs to be saved.
-  if( this.vectors[ this.vectorIndex ].v.aimed )
+  if(this.vectors[ this.vectorIndex ].v.aimed !== void 0)
     this._calculateAimedVector( ) ;
-  if( this.vectors[ this.vectorIndex ].v.target )
+  if(this.vectors[ this.vectorIndex ].v.target !== void 0)
     this._calculateTargetVector( ) ;
 
   // set normal vector
-  if( this.vector )
+  if(this.vector !== null)
     this.moveVectorManager.free( this.vector ) ;
   this.vector = this.moveVectorManager.create( this.vectors[ this.vectorIndex ].v ) ;
-  if( this.baseTheta )
+  if(this.baseTheta !== null)
     this.vector.theta += this.baseTheta ;
-  if( preTheta && this.vectors[ this.vectorIndex ].v.theta == undefined )
+  if(preTheta !== null && this.vectors[ this.vectorIndex ].v.theta === void 0)
     this.vector.theta = preTheta ;
 
   // restore previous data
@@ -760,9 +760,9 @@ Element.prototype._initVector = function( ) {
   this.vectors[ this.vectorIndex ].v.r = tmpR ;
 
   // set gravity vector
-  if( this.gravity )
+  if(this.gravity !== null)
     this.moveVectorManager.free( this.gravity ) ;
-  if( this.vectors[ this.vectorIndex ].v.g )
+  if(this.vectors[ this.vectorIndex ].v.g !== void 0)
     this.gravity = this.moveVectorManager.create( this.vectors[ this.vectorIndex ].v.g ) ;
   else
     this.gravity = null ;
@@ -774,13 +774,13 @@ Element.prototype._initVector = function( ) {
  */
 Element.prototype._supplyPosition = function( ) {
 
-  if( ! this.r || ! this.vector )
+  if(this.r === 0 || this.vector === null)
     return ;
 
   var ax = 0 ;
   var ay = 0 ;
 
-  if( ! this.gravity ) {
+  if(this.gravity === null) {
     ax = this.r * Math.cos( this._calculateRadian( this.vector.theta ) ) ;
     ay = this.r * Math.sin( this._calculateRadian( this.vector.theta ) ) ;
   } else {
