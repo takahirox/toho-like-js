@@ -13,11 +13,11 @@ MoveVectorManager.prototype._initFactory = function( ) {
 
 
 MoveVectorManager.prototype.reset = function( ) {
-  for( var i = 0; i < this.elements.length; i++ ) {
-    this.factory.free( this.elements[ i ] ) ;
+  for(var i = 0, len = this.elements.length; i < len; i++) {
+    this.factory.free(this.elements[i]);
   }
-  this.elements.length = 0 ;
-} ;
+  this.elements.length = 0;
+};
 
 
 MoveVectorManager.prototype.create = function( params ) {
