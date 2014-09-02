@@ -93,7 +93,9 @@ function MoveVector( ) {
   this.reflectCount = 0 ;
 }
 
+// only for reference
 MoveVector.prototype.Math = Math;
+MoveVector.prototype.Randomizer = __randomizer;
 
 
 MoveVector.prototype.init = function( params ) {
@@ -127,7 +129,7 @@ MoveVector.prototype.init = function( params ) {
  */
 MoveVector.prototype._getRandomValue = function( range ) {
   var differ = range.max - range.min ;
-  return ((this.Math.random() * differ) | 0) + range.min ;
+  return ((this.Randomizer.random() * differ) | 0) + range.min ;
 } ;
 
 

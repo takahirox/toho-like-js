@@ -53,6 +53,8 @@ function StageState( game ) {
 }
 __inherit( StageState, GameState ) ;
 
+// only for reference
+StageState.prototype.Randomizer = __randomizer;
 
 StageState.prototype._FLAG_FIGHTER_DEAD    =    0x1 ;
 StageState.prototype._FLAG_BOSS_EXIST      =    0x2 ;
@@ -105,7 +107,7 @@ StageState.prototype.init = function( params ) {
     this.baseCharacterIndex = params.characterIndex ;
   }
   this.fighter.setCharacterIndex( this.baseCharacterIndex ) ;
-  Math.seed( this.seed ) ;
+  this.Randomizer.seed( this.seed ) ;
   this._soundBGM( Game._BGM_1 ) ;
   this.sendMessageToServer(GameSocket._STATE_BEGIN_GAME);
 } ;

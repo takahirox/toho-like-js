@@ -314,7 +314,7 @@ var __stage2EnemiesParams = [ ] ;
 for( var i = 0; i < 100 ; i++ ) {
   __stage2EnemiesParams.push(
     { 'count': 100 + i * 5,
-      'x': parseInt( Math.random( ) * 480 ),
+      'x': parseInt(__randomizer.random() * 480),
       'vital': 1,
       'powerItem': i % 2 == 0 ? 1 : 0,
       'scoreItem': i % 2 == 1 ? 1 : 0,
