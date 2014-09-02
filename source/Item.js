@@ -4,11 +4,11 @@ function ItemManager( gameState ) {
 } ;
 __inherit( ItemManager, ElementManager ) ;
 
-ItemManager._MAX_NUM = 1000;
+ItemManager.prototype._MAX_NUM = 1000;
 
 
 ItemManager.prototype._initMaxNum = function() {
-  return ItemManager._MAX_NUM;
+  return this._MAX_NUM;
 };
 
 
@@ -41,19 +41,19 @@ ItemManager.prototype.createHoming = function( enemy, type ) {
 } ;
 
 
+__copyParentMethod(ItemManager, ElementManager, 'checkCollisionWith');
 ItemManager.prototype.checkCollisionWith = function( fighter ) {
-  this.parent.prototype.checkCollisionWith.call( this, fighter,
-    this._checkCollisionWithCallBack.bind( this ) ) ;
-} ;
+  this.ElementManager_checkCollisionWith(null, fighter, this);
+};
 
 
-ItemManager.prototype._checkCollisionWithCallBack = function( fighter, item ) {
-  item.die( ) ;
-  if( item.isPower( ) )
-    this.gameState.notifyFighterGotPowerItem( fighter, item ) ;
+ItemManager.prototype.notifyCollision = function(id, fighter, item) {
+  item.die();
+  if(item.isPower())
+    this.gameState.notifyFighterGotPowerItem(fighter, item);
   else
-    this.gameState.notifyFighterGotScoreItem( fighter, item ) ;
-}
+    this.gameState.notifyFighterGotScoreItem(fighter, item);
+};
 
 
 ItemManager.prototype.beHomingAll = function( fighter ) {
@@ -67,37 +67,40 @@ ItemManager.prototype.beHomingAll = function( fighter ) {
 function ItemFactory( gameState, maxX, maxY ) {
   this.parent = ElementFactory ;
   this.parent.call( this, gameState, maxX, maxY ) ;
+  this.image = null; // TODO: temporal
 } ;
 __inherit( ItemFactory, ElementFactory ) ;
 
-ItemFactory._NUM = 1000 ;
-ItemFactory._PARAMS = {
+ItemFactory.prototype._NUM = 1000 ;
+ItemFactory.prototype._PARAMS = {
   'x': 0,
   'y': 0,
   'v': { 'r': 4, 'theta': 270, 'w': 0, 'ra':-0.1, 'wa': 0 }
 } ;
 
 
-ItemFactory.prototype._initFreelist = function( ) {
-  this.freelist = new ItemFreeList( ItemFactory._NUM, this.gameState ) ; 
-} ;
+ItemFactory.prototype._initFreelist = function() {
+  this.freelist = new ItemFreeList(this._NUM, this.gameState); 
+};
 
 
 /**
  * TODO: temporal
  */
-ItemFactory.prototype.create = function( element, type ) {
-  var params = ItemFactory._PARAMS ;
-  params.x = element.getX( ) ;
-  params.y = element.getY( ) ;
-  var item = this.freelist.get( ) ;
-  item.init( params, this._getImage( type ), type ) ;
-  return item ;
-} ;
+ItemFactory.prototype.create = function(element, type) {
+  var params = this._PARAMS;
+  params.x = element.getX();
+  params.y = element.getY();
+  var item = this.freelist.get();
+  item.init(params, this._getImage(type), type);
+  return item;
+};
 
 
 ItemFactory.prototype._getImage = function(type) {
-  return this.gameState.getImage(Game._IMG_ITEM);
+  if(this.image === null)
+    this.image = this.gameState.getImage(Game._IMG_ITEM);
+  return this.image;
 };
 
 
@@ -146,30 +149,34 @@ function Item( gameState, maxX, maxY ) {
 }
 __inherit( Item, Element ) ;
 
-Item._WIDTH = 12 ;
-Item._HEIGHT = 12 ;
+// only for reference
+Item.prototype.Math = Math;
 
-Item._COLLISION_WIDTH = 50 ;
-Item._COLLISION_HEIGHT = 50 ;
+Item.prototype._WIDTH = 12 ;
+Item.prototype._HEIGHT = 12 ;
 
-Item._HOMING_SPAN = 2 ;
-Item._HOMING_R = 10 ;
+Item.prototype._COLLISION_WIDTH = 50 ;
+Item.prototype._COLLISION_HEIGHT = 50 ;
 
-Item._TYPE_POWER = 0 ;
-Item._TYPE_SCORE = 1 ;
+Item.prototype._HOMING_SPAN = 2 ;
+Item.prototype._HOMING_R = 10 ;
+
+Item.prototype._TYPE_POWER = 0 ;
+Item.prototype._TYPE_SCORE = 1 ;
 
 
-Item.prototype.init = function( params, image, type ) {
-  this.parent.prototype.init.call( this, params, image ) ;
-  this.type = type ;
+__copyParentMethod(Item, Element, 'init');
+Item.prototype.init = function(params, image, type) {
+  this.Element_init(params, image);
+  this.type = type;
   this.indexX = this.type; // TODO: temporal.
-  this.width = Item._WIDTH ;
-  this.height = Item._HEIGHT ;
-  this.collisionWidth = Item._COLLISION_WIDTH ;
-  this.collisionHeight = Item._COLLISION_HEIGHT ;
-  this.target = null ;
+  this.width = this._WIDTH;
+  this.height = this._HEIGHT;
+  this.collisionWidth = this._COLLISION_WIDTH;
+  this.collisionHeight = this._COLLISION_HEIGHT;
+  this.target = null;
   this._initView();
-} ;
+};
 
 
 Item.prototype._generateView = function() {
@@ -180,11 +187,12 @@ Item.prototype._generateView = function() {
 /**
  * TODO: temporal
  */
-Item.prototype.runStep = function( ) {
-  if( this.target && this.count % Item._HOMING_SPAN == 0 )
-    this._calculateHomingPoint( ) ;
-  this.parent.prototype.runStep.call( this ) ;
-} ;
+__copyParentMethod(Item, Element, 'runStep');
+Item.prototype.runStep = function() {
+  if(this.target && this.count % this._HOMING_SPAN == 0)
+    this._calculateHomingPoint();
+  this.Element_runStep();
+};
 
 
 Item.prototype.setTarget = function( element ) {
@@ -192,14 +200,14 @@ Item.prototype.setTarget = function( element ) {
 } ;
 
 
-Item.prototype.isPower = function( ) {
-  return this.type == Item._TYPE_POWER ;
-} ;
+Item.prototype.isPower = function() {
+  return this.type == this._TYPE_POWER;
+};
 
 
-Item.prototype.isScore = function( ) {
-  return this.type == Item._TYPE_SCORE ;
-} ;
+Item.prototype.isScore = function() {
+  return this.type == this._TYPE_SCORE;
+};
 
 
 /**
@@ -222,9 +230,9 @@ Item.prototype.checkLoss = function( ) {
 Item.prototype._calculateHomingPoint = function( ) {
   var ax = this.target.getX( ) - this.getX( ) ;
   var ay = this.target.getY( ) - this.getY( ) ;
-  var t = this._calculateTheta( Math.atan2( ay, ax ) ) ;
+  var t = this._calculateTheta( this.Math.atan2( ay, ax ) ) ;
   this.vector.theta = t ;
-  this.vector.r = Item._HOMING_R ;
+  this.vector.r = this._HOMING_R ;
   return ;
 } ;
 

@@ -82,7 +82,7 @@ ElementManager.prototype.create = function( params ) {
  * TODO: rename to add()
  */
 ElementManager.prototype.addElement = function(element) {
-  this.elements.push(element);
+  this.elements[this.elements.length] = element;
 };
 
 
@@ -97,36 +97,36 @@ ElementManager.prototype.get = function(index) {
 
 
 ElementManager.prototype.checkCollisionWith = function(
-    element, callback, flag ) {
+    id, element, caller, flag ) {
   for(var i = 0, len = this.elements.length; i < len; i++) {
-    if( this.elements[ i ].checkCollision( element ) ) {
-      callback( element, this.elements[ i ] ) ;
+    if(this.elements[i].checkCollision(element)) {
+      caller.notifyCollision(id, element, this.elements[i]);
       if(flag === true)
         return ;
     }
   }
-} ;
+};
 
 
 /**
  * TODO: temporal
  */
 ElementManager.prototype.checkCollisionWith2 = function(
-    element, callback, flag ) {
+    id, element, caller, flag) {
   for(var i = 0, len = this.elements.length; i < len; i++) {
-    if( element.checkCollision( this.elements[ i ] ) ) {
-      callback( element, this.elements[ i ] ) ;
+    if(element.checkCollision(this.elements[i])) {
+      caller.notifyCollision2(id, element, this.elements[i]);
       if(flag === true)
         return;
     }
   }
-} ;
+};
 
 
-ElementManager.prototype.checkGrazeWith = function(element, callback) {
+ElementManager.prototype.checkGrazeWith = function(id, element, caller) {
   for(var i = 0, len = this.elements.length; i < len; i++) {
     if(this.elements[i].checkGraze(element)) {
-      callback(element, this.elements[i]);
+      caller.notifyGraze(id, element, this.elements[i]);
     }
   }
 };
@@ -135,7 +135,7 @@ ElementManager.prototype.checkGrazeWith = function(element, callback) {
 /**
  * TODO: temporal. How deletes unnecessary entries?
  */
-ElementManager.prototype.checkLoss = function( callback ) {
+ElementManager.prototype.checkLoss = function(caller) {
   var j = 0 ;
   for(var i = 0, len = this.elements.length; i < len; i++ ) {
     if( ! this.elements[ i ].checkLoss( ) ) {
@@ -143,8 +143,8 @@ ElementManager.prototype.checkLoss = function( callback ) {
     } else {
       this.elements[ i ].die( ) ;
       // TODO: temporal
-      if(callback !== void 0)
-        callback( this.elements[ i ] ) ;
+      if(caller !== void 0)
+        caller.notifyCheckLoss(this.elements[i]);
       this.elements[ i ].free( ) ;
       this.factory.free( this.elements[ i ] ) ;
       j++ ;
@@ -172,12 +172,12 @@ function ElementFactory( gameState, maxX, maxY ) {
   this._initFreelist( ) ;
 } ;
 
-ElementFactory._NUM = 100 ;
+ElementFactory.prototype._NUM = 100 ;
 
 
-ElementFactory.prototype._initFreelist = function( ) {
-  this.freelist = new ElementFreeList( ElementFactory._NUM, this.gameState ) ; 
-} ;
+ElementFactory.prototype._initFreelist = function() {
+  this.freelist = new ElementFreeList(this._NUM, this.gameState); 
+};
 
 
 ElementFactory.prototype.create = function( params ) {
@@ -233,26 +233,32 @@ function ElementView(element) {
   this.indices = [];
   this.colors = [];
   this.sVertices = [];
-  this.vertices.length = ElementView._V_SIZE;
-  this.coordinates.length = ElementView._C_SIZE;
-  this.indices.length = ElementView._I_SIZE;
-  this.colors.length = ElementView._A_SIZE;
-  this.sVertices.length = ElementView._V_SIZE;
-
-  this.vSize   = ElementView._V_ITEM_SIZE;
-  this.vNum    = ElementView._V_ITEM_NUM;
-  this.vLength = ElementView._V_SIZE;
-  this.cSize   = ElementView._C_ITEM_SIZE;
-  this.cNum    = ElementView._C_ITEM_NUM;
-  this.cLength = ElementView._C_SIZE;
-  this.iSize   = ElementView._I_ITEM_SIZE;
-  this.iNum    = ElementView._I_ITEM_NUM;
-  this.iLength = ElementView._I_SIZE;
-  this.aSize   = ElementView._A_ITEM_SIZE;
-  this.aNum    = ElementView._A_ITEM_NUM;
-  this.aLength = ElementView._A_SIZE;
+  this.vertices.length    = this._V_SIZE;
+  this.coordinates.length = this._C_SIZE;
+  this.indices.length     = this._I_SIZE;
+  this.colors.length      = this._A_SIZE;
+  this.sVertices.length   = this._V_SIZE;
 };
 
+ElementView.prototype.Math = Math;
+
+ElementView.prototype._V_ITEM_SIZE = 3;
+ElementView.prototype._V_ITEM_NUM = 4;
+ElementView.prototype._V_SIZE = ElementView.prototype._V_ITEM_SIZE * ElementView.prototype._V_ITEM_NUM;
+
+ElementView.prototype._C_ITEM_SIZE = 2;
+ElementView.prototype._C_ITEM_NUM = 4;
+ElementView.prototype._C_SIZE = ElementView.prototype._C_ITEM_SIZE * ElementView.prototype._C_ITEM_NUM;
+
+ElementView.prototype._I_ITEM_SIZE = 1;
+ElementView.prototype._I_ITEM_NUM = 6;
+ElementView.prototype._I_SIZE = ElementView.prototype._I_ITEM_SIZE * ElementView.prototype._I_ITEM_NUM;
+
+ElementView.prototype._A_ITEM_SIZE = 4;
+ElementView.prototype._A_ITEM_NUM = 4;
+ElementView.prototype._A_SIZE = ElementView.prototype._A_ITEM_SIZE * ElementView.prototype._A_ITEM_NUM;
+
+// TODO: temporal
 ElementView._V_ITEM_SIZE = 3;
 ElementView._V_ITEM_NUM = 4;
 ElementView._V_SIZE = ElementView._V_ITEM_SIZE * ElementView._V_ITEM_NUM;
@@ -357,14 +363,14 @@ ElementView.prototype.getNum = function() {
 
 
 ElementView.prototype.saveVertices = function() {
-  for(var i = 0, len = this.vLength * this.getNum(); i < len; i++) {
+  for(var i = 0, len = this._V_SIZE * this.getNum(); i < len; i++) {
     this.sVertices[i] = this.vertices[i];
   }
 };
 
 
 ElementView.prototype.restoreVertices = function() {
-  for(var i = 0, len = this.vLength * this.getNum(); i < len; i++) {
+  for(var i = 0, len = this._V_SIZE * this.getNum(); i < len; i++) {
     this.vertices[i] = this.sVertices[i];
   }
 };
@@ -372,12 +378,12 @@ ElementView.prototype.restoreVertices = function() {
 
 ElementView.prototype.translate = function() {
   for(var j = 0, len = this.getNum(); j < len; j++) {
-    var o = this.vLength * j;
-    for(var i = 0; i < this.vNum; i++) {
-      this.vertices[o+i*this.vSize+0] += this._getElementX();
+    var o = this._V_SIZE * j;
+    for(var i = 0; i < this._V_ITEM_NUM; i++) {
+      this.vertices[o+i*this._V_ITEM_SIZE+0] += this._getElementX();
       // this is the trick to correspond 2D canvas coordinates.
-      this.vertices[o+i*this.vSize+1] -= this._getElementY();
-      this.vertices[o+i*this.vSize+2] += this._getElementZ();;
+      this.vertices[o+i*this._V_ITEM_SIZE+1] -= this._getElementY();
+      this.vertices[o+i*this._V_ITEM_SIZE+2] += this._getElementZ();;
     }
   }
 };
@@ -400,17 +406,17 @@ ElementView.prototype._getElementZ = function() {
 
 ElementView.prototype.rotate = function() {
   var theta = 270 - this.element.getDirectionTheta();
-  var radian = theta * Math.PI / 180;
+  var radian = theta * this.Math.PI / 180;
   for(var j = 0, len = this.getNum(); j < len; j++) {
-    var o = ElementView._V_SIZE * j;
-    for(var i = 0; i < this.vNum; i++) {
-      var x = this.vertices[o+i*this.vSize+0];
-      var y = this.vertices[o+i*this.vSize+1];
+    var o = this._V_SIZE * j;
+    for(var i = 0; i < this._V_ITEM_NUM; i++) {
+      var x = this.vertices[o+i*this._V_ITEM_SIZE+0];
+      var y = this.vertices[o+i*this._V_ITEM_SIZE+1];
 
-      this.vertices[o+i*this.vSize+0] =
-        x * Math.cos(radian) - y * Math.sin(radian);
-      this.vertices[o+i*this.vSize+1] =
-        x * Math.sin(radian) + y * Math.cos(radian);
+      this.vertices[o+i*this._V_ITEM_SIZE+0] =
+        x * this.Math.cos(radian) - y * this.Math.sin(radian);
+      this.vertices[o+i*this._V_ITEM_SIZE+1] =
+        x * this.Math.sin(radian) + y * this.Math.cos(radian);
     }
   }
 };
@@ -434,10 +440,10 @@ function ElementDrawer(e, layer, image) {
     this.elementManager = null;
     this.maxLength = 1;
   }
-  this.vArray = layer.createFloatArray(this.maxLength*ElementView._V_SIZE);
-  this.cArray = layer.createFloatArray(this.maxLength*ElementView._C_SIZE);
-  this.iArray = layer.createUintArray(this.maxLength*ElementView._I_SIZE);
-  this.aArray = layer.createFloatArray(this.maxLength*ElementView._A_SIZE);
+  this.vArray = layer.createFloatArray(this.maxLength*this.ElementView._V_SIZE);
+  this.cArray = layer.createFloatArray(this.maxLength*this.ElementView._C_SIZE);
+  this.iArray = layer.createUintArray(this.maxLength*this.ElementView._I_SIZE);
+  this.aArray = layer.createFloatArray(this.maxLength*this.ElementView._A_SIZE);
   this.vBuffer = layer.createBuffer();
   this.cBuffer = layer.createBuffer();
   this.iBuffer = layer.createBuffer();
@@ -446,6 +452,9 @@ function ElementDrawer(e, layer, image) {
   this._initTexture(layer, image);
 };
 
+// only for reference
+ElementDrawer.prototype.ElementView = ElementView.prototype;
+ElementDrawer.prototype.Layer = Layer.prototype;
 
 ElementDrawer.prototype._initTexture = function(layer, image) {
   this.texture = layer.generateTexture(image);
@@ -458,7 +467,7 @@ ElementDrawer.prototype._pourVertices = function(i, v) {
   v.translate();
 
   var num = v.getNum();
-  var vLength = v.vLength;
+  var vLength = v._V_SIZE;
   for(var k = 0; k < num; k++) {
     for(var j = 0; j < vLength; j++) {
       this.vArray[(i+k)*vLength+j] = v.vertices[k*vLength+j];
@@ -470,7 +479,7 @@ ElementDrawer.prototype._pourVertices = function(i, v) {
 
 
 ElementDrawer.prototype._pourCoordinates = function(i, v) {
-  var cLength = v.cLength;
+  var cLength = v._C_SIZE;
   for(var k = 0, len = v.getNum(); k < len; k++) {
     for(var j = 0; j < cLength; j++) {
       this.cArray[(i+k)*cLength+j] = v.coordinates[k*cLength+j];
@@ -481,7 +490,7 @@ ElementDrawer.prototype._pourCoordinates = function(i, v) {
 
 ElementDrawer.prototype._pourIndices = function(i, v) {
   // TODO: 4 is a magic number
-  var iLength = v.iLength;
+  var iLength = v._I_SIZE;
   var indices = v.indices;
   for(var k = 0, len = v.getNum(); k < len; k++) {
     for(var j = 0; j < iLength; j++) {
@@ -492,7 +501,7 @@ ElementDrawer.prototype._pourIndices = function(i, v) {
 
 
 ElementDrawer.prototype._pourColors = function(i, v) {
-  var aLength = v.aLength;
+  var aLength = v._A_SIZE;
   var colors = v.colors;
   var a = v.a;
   var d = v.d;
@@ -544,22 +553,15 @@ ElementDrawer.prototype._doPour = function(e) {
  * TODO: attempt to redoce CPU-GPU transfer.
  */
 ElementDrawer.prototype._pourBuffer = function(layer, n) {
-/*
-  layer.pourArrayBuffer(this.vBuffer, this.vArray, ElementView._V_ITEM_SIZE,
-                        n * ElementView._V_ITEM_NUM);
-  layer.pourArrayBuffer(this.cBuffer, this.cArray, ElementView._C_ITEM_SIZE,
-                        n * ElementView._C_ITEM_NUM);
-  layer.pourArrayBuffer(this.aBuffer, this.aArray, ElementView._A_ITEM_SIZE,
-                        n * ElementView._A_ITEM_NUM);
+  layer.pourArrayBuffer(this.vBuffer, this.vArray, this.ElementView._V_ITEM_SIZE,
+                        n * this.ElementView._V_ITEM_NUM);
+  layer.pourArrayBuffer(this.cBuffer, this.cArray, this.ElementView._C_ITEM_SIZE,
+                        n * this.ElementView._C_ITEM_NUM);
+  layer.pourArrayBuffer(this.aBuffer, this.aArray, this.ElementView._A_ITEM_SIZE,
+                        n * this.ElementView._A_ITEM_NUM);
   layer.pourElementArrayBuffer(this.iBuffer, this.iArray,
-                               ElementView._I_ITEM_SIZE,
-                               n * ElementView._I_ITEM_NUM);
-*/
-  // Note: using immediate value for the performance.
-  layer.pourArrayBuffer(this.vBuffer, this.vArray, 3, n * 4);
-  layer.pourArrayBuffer(this.cBuffer, this.cArray, 2, n * 4);
-  layer.pourArrayBuffer(this.aBuffer, this.aArray, 4, n * 4);
-  layer.pourElementArrayBuffer(this.iBuffer, this.iArray, 1, n * 6);
+                               this.ElementView._I_ITEM_SIZE,
+                               n * this.ElementView._I_ITEM_NUM);
 };
 
 
@@ -570,7 +572,7 @@ ElementDrawer.prototype._draw = function(layer) {
 
 
 ElementDrawer.prototype._getBlend = function() {
-  return Layer._BLEND_ALPHA;
+  return this.Layer._BLEND_ALPHA;
 };
 
 
@@ -643,17 +645,20 @@ function Element( gameState, maxX, maxY ) {
   this.view = this._generateView();
 };
 
-Element._STATE_ALIVE = 1 ;
-Element._STATE_DEAD  = 2 ;
+// only for reference
+Element.prototype.Math = Math;
 
-Element._FLAG_MOVE_STOP  =  0x1 ;
-Element._FLAG_MOVE_LEFT  =  0x2 ;
-Element._FLAG_MOVE_UP    =  0x4 ;
-Element._FLAG_MOVE_RIGHT =  0x8 ;
-Element._FLAG_MOVE_DOWN  = 0x10 ;
-Element._FLAG_SHOT       = 0x20 ;
-Element._FLAG_HIT        = 0x40 ;
-Element._FLAG_UNHITTABLE = 0x80 ;
+Element.prototype._STATE_ALIVE = 1 ;
+Element.prototype._STATE_DEAD  = 2 ;
+
+Element.prototype._FLAG_MOVE_STOP  =  0x1 ;
+Element.prototype._FLAG_MOVE_LEFT  =  0x2 ;
+Element.prototype._FLAG_MOVE_UP    =  0x4 ;
+Element.prototype._FLAG_MOVE_RIGHT =  0x8 ;
+Element.prototype._FLAG_MOVE_DOWN  = 0x10 ;
+Element.prototype._FLAG_SHOT       = 0x20 ;
+Element.prototype._FLAG_HIT        = 0x40 ;
+Element.prototype._FLAG_UNHITTABLE = 0x80 ;
 
 
 Element.prototype.init = function(params, image) {
@@ -720,9 +725,9 @@ Element.prototype._generateView = function() {
 };
 
 
-Element.prototype._getValueOrDefaultValue = function( value, defaultValue ) {
-  return value != undefined ? value : defaultValue ;
-} ;
+Element.prototype._getValueOrDefaultValue = function(value, defaultValue) {
+  return value !== void 0 ? value : defaultValue;
+};
 
 
 Element.prototype.free = function( ) {
@@ -807,14 +812,14 @@ Element.prototype._supplyPosition = function( ) {
   var ay = 0 ;
 
   if(this.gravity === null) {
-    ax = this.r * Math.cos( this._calculateRadian( this.vector.theta ) ) ;
-    ay = this.r * Math.sin( this._calculateRadian( this.vector.theta ) ) ;
+    ax = this.r * this.Math.cos( this._calculateRadian( this.vector.theta ) ) ;
+    ay = this.r * this.Math.sin( this._calculateRadian( this.vector.theta ) ) ;
   } else {
     var dx = this.vector.moveX( ) + this.gravity.moveX( ) ;
     var dy = this.vector.moveY( ) + this.gravity.moveY( ) ;
-    var t = Math.atan2( dy, dx ) ;
-    ax = this.r * Math.cos( t ) ;
-    ay = this.r * Math.sin( t ) ;
+    var t = this.Math.atan2( dy, dx ) ;
+    ax = this.r * this.Math.cos( t ) ;
+    ay = this.r * this.Math.sin( t ) ;
   }
 
   this.setX( this.getX( ) + ax ) ;
@@ -829,7 +834,7 @@ Element.prototype._supplyPosition = function( ) {
 Element.prototype._calculateAimedVector = function( ) {
   var ax = this.gameState.fighter.getCenterX( ) - this.getCenterX( ) ;
   var ay = this.gameState.fighter.getCenterY( ) - this.getCenterY( ) ;
-  this.vectors[ this.vectorIndex ].v.theta += this._calculateTheta( Math.atan2( ay, ax ) ) ;
+  this.vectors[ this.vectorIndex ].v.theta += this._calculateTheta( this.Math.atan2( ay, ax ) ) ;
 } ;
 
 
@@ -846,8 +851,8 @@ Element.prototype._calculateTargetVector = function( ) {
 
   var ax = x - this.getX( ) ;
   var ay = y - this.getY( ) ;
-  this.vectors[ this.vectorIndex ].v.theta = this._calculateTheta( Math.atan2( ay, ax ) ) ;
-  this.vectors[ this.vectorIndex ].v.r = Math.sqrt( ax * ax + ay * ay ) / this.vectors[ this.vectorIndex ].v.target.count ;
+  this.vectors[ this.vectorIndex ].v.theta = this._calculateTheta( this.Math.atan2( ay, ax ) ) ;
+  this.vectors[ this.vectorIndex ].v.r = this.Math.sqrt( ax * ax + ay * ay ) / this.vectors[ this.vectorIndex ].v.target.count ;
 } ;
 
 
@@ -855,29 +860,29 @@ Element.prototype._calculateTargetVector = function( ) {
  * TODO: temporal
  * duplicated code
  */
-Element.prototype._getRandomValue = function( range ) {
-  var differ = range.max - range.min ;
-  return parseInt( Math.random( ) * differ ) + range.min ;
-} ;
+Element.prototype._getRandomValue = function(range) {
+  var differ = range.max - range.min;
+  return ((this.Math.random() * differ) | 0) + range.min;
+};
 
 
 Element.prototype._calculateRadian = function( theta ) {
-  return theta * Math.PI / 180 ;
+  return theta * this.Math.PI / 180 ;
 } ;
 
 
-Element.prototype._calculateTheta = function( radian ) {
-  return parseInt( radian * 180 / Math.PI ) ;
-} ;
+Element.prototype._calculateTheta = function(radian) {
+  return (radian * 180 / this.Math.PI) | 0;
+};
 
 
 Element.prototype.display = function( surface, rotate, angle ) {
-  var x = Math.round( this.getLeftX( ) ) ;
-  var y = Math.round( this.getUpY( ) ) ;
+  var x = this.Math.round( this.getLeftX( ) ) ;
+  var y = this.Math.round( this.getUpY( ) ) ;
   if( rotate ) {
-    var rx = Math.round( this.getCenterX( ) ) ;
-    var ry = Math.round( this.getCenterY( ) ) ;
-    if( angle == null || angle == undefined )
+    var rx = this.Math.round( this.getCenterX( ) ) ;
+    var ry = this.Math.round( this.getCenterY( ) ) ;
+    if(angle === null || angle === void 0)
       angle = this._calculateRadian( this.getDirectionTheta( ) + 90 ) ;
     else
       angle = this._calculateRadian( angle ) ;
@@ -1240,14 +1245,14 @@ Element.prototype.getDirectionTheta = function( ) {
   // TODO: is there any simpler logics?
   var ax = this.vector.moveX( ) + this.gravity.moveX( ) ;
   var ay = this.vector.moveY( ) + this.gravity.moveY( ) ;
-  return this._calculateTheta( Math.atan2( ay, ax ) ) ;
+  return this._calculateTheta( this.Math.atan2( ay, ax ) ) ;
 } ;
 
 
 Element.prototype.getXDirection = function( ) {
   if( ! this.vector )
     return 0 ;
-  var cos = Math.cos( this._calculateRadian( this.getDirectionTheta( ) ) ) ;
+  var cos = this.Math.cos( this._calculateRadian( this.getDirectionTheta( ) ) ) ;
   if( cos > 1.00e-10 )
     return 1 ;
   else if( cos < -1.00e-10 )
@@ -1289,12 +1294,12 @@ Element.prototype.runStep = function( ) {
 
 
 Element.prototype.die = function( ) {
-  this.state = Element._STATE_DEAD ;
+  this.state = this._STATE_DEAD ;
 } ;
 
 
 Element.prototype.isDead = function( ) {
-  return this.state == Element._STATE_DEAD ;
+  return this.state == this._STATE_DEAD ;
 } ;
 
 

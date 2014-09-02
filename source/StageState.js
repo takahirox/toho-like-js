@@ -40,47 +40,47 @@ function StageState( game ) {
   this.baseCharacterIndex = 0 ;
   this.seed = null ;
 
-  this.state = StageState._STATE_SHOOTING ;
-//  this.state = StageState._STATE_TALK ;
-//  this.state = StageState._STATE_CLEAR ;
+  this.state = this._STATE_SHOOTING ;
+//  this.state = this._STATE_TALK ;
+//  this.state = this._STATE_CLEAR ;
 
   this.states = [ ] ;
-  this.states[ StageState._STATE_SHOOTING ]  = new ShootingState( this ) ;
-  this.states[ StageState._STATE_TALK ]      = new TalkState( this ) ;
-  this.states[ StageState._STATE_CLEAR ]     = new ClearState( this ) ;
-  this.states[ StageState._STATE_GAME_OVER ] = new GameOverState( this ) ;
+  this.states[ this._STATE_SHOOTING ]  = new ShootingState( this ) ;
+  this.states[ this._STATE_TALK ]      = new TalkState( this ) ;
+  this.states[ this._STATE_CLEAR ]     = new ClearState( this ) ;
+  this.states[ this._STATE_GAME_OVER ] = new GameOverState( this ) ;
 
 }
 __inherit( StageState, GameState ) ;
 
 
-StageState._FLAG_FIGHTER_DEAD    =    0x1 ;
-StageState._FLAG_BOSS_EXIST      =    0x2 ;
-StageState._FLAG_BOSS_SPELLCARD  =    0x4 ;
-StageState._FLAG_BOMB            =    0x8 ;
-StageState._FLAG_STAGE_TITLE     =   0x10 ;
-StageState._FLAG_SE_ENEMY_DAMAGE =   0x20 ;
-StageState._FLAG_SE_ENEMY_VANISH =   0x40 ;
-StageState._FLAG_SE_SHOT         =   0x80 ;
-StageState._FLAG_SE_ENEMY_SHOT   =  0x100 ;
-StageState._FLAG_SE_DEAD         =  0x200 ;
-StageState._FLAG_SE_GRAZE        =  0x400 ;
-StageState._FLAG_SE_POWERUP      =  0x800 ;
-StageState._FLAG_SE_POWER_EFFECT = 0x1000 ;
-StageState._FLAG_AUTO_PLAY       = 0x2000 ;
+StageState.prototype._FLAG_FIGHTER_DEAD    =    0x1 ;
+StageState.prototype._FLAG_BOSS_EXIST      =    0x2 ;
+StageState.prototype._FLAG_BOSS_SPELLCARD  =    0x4 ;
+StageState.prototype._FLAG_BOMB            =    0x8 ;
+StageState.prototype._FLAG_STAGE_TITLE     =   0x10 ;
+StageState.prototype._FLAG_SE_ENEMY_DAMAGE =   0x20 ;
+StageState.prototype._FLAG_SE_ENEMY_VANISH =   0x40 ;
+StageState.prototype._FLAG_SE_SHOT         =   0x80 ;
+StageState.prototype._FLAG_SE_ENEMY_SHOT   =  0x100 ;
+StageState.prototype._FLAG_SE_DEAD         =  0x200 ;
+StageState.prototype._FLAG_SE_GRAZE        =  0x400 ;
+StageState.prototype._FLAG_SE_POWERUP      =  0x800 ;
+StageState.prototype._FLAG_SE_POWER_EFFECT = 0x1000 ;
+StageState.prototype._FLAG_AUTO_PLAY       = 0x2000 ;
 
-StageState._BOMB_SPAN = 100 ;
-StageState._BOSS_SPELL_SPAN = 100 ;
-StageState._STAGE_TITLE_SPAN = 300 ;
+StageState.prototype._BOMB_SPAN = 100 ;
+StageState.prototype._BOSS_SPELL_SPAN = 100 ;
+StageState.prototype._STAGE_TITLE_SPAN = 300 ;
 
-StageState._STATE_SHOOTING  = 0x1 ;
-StageState._STATE_TALK      = 0x2 ;
-StageState._STATE_CLEAR     = 0x3 ;
-StageState._STATE_GAME_OVER = 0x4 ;
+StageState.prototype._STATE_SHOOTING  = 0x1 ;
+StageState.prototype._STATE_TALK      = 0x2 ;
+StageState.prototype._STATE_CLEAR     = 0x3 ;
+StageState.prototype._STATE_GAME_OVER = 0x4 ;
 
 
 StageState.prototype.init = function( params ) {
-  this.state = StageState._STATE_SHOOTING ;
+  this.state = this._STATE_SHOOTING ;
   if( ! this.initialized ) {
     this._initBackground();
     this._initFighter( ) ;
@@ -95,12 +95,12 @@ StageState.prototype.init = function( params ) {
     this.reset( ) ;
   }
   if( params.autoplay ) {
-    this.setFlag( StageState._FLAG_AUTO_PLAY ) ;
+    this.setFlag( this._FLAG_AUTO_PLAY ) ;
     this.autoplayParams = params.autoplayParams.params ;
     this.seed = params.autoplayParams.seed ;
     this.baseCharacterIndex = params.autoplayParams.characterIndex ;
   } else {
-    this.clearFlag( StageState._FLAG_AUTO_PLAY ) ;
+    this.clearFlag( this._FLAG_AUTO_PLAY ) ;
     this.seed = ( new Date( ) ).getTime( ) & 0xffff ;
     this.baseCharacterIndex = params.characterIndex ;
   }
@@ -172,14 +172,14 @@ StageState.prototype._initSpellCards = function( ) {
 
 
 StageState.prototype.runStep = function( ) {
-  if( this.isFlagSet( StageState._FLAG_AUTO_PLAY ) &&
+  if( this.isFlagSet( this._FLAG_AUTO_PLAY ) &&
       this.autoplayIndex < this.autoplayParams.length ) {
     this._actAsRecord( ) ;
   }
   this.replayCount++ ;
 
   // TODO: temporal
-  if( this.state == StageState._STATE_SHOOTING ) {
+  if( this.state == this._STATE_SHOOTING ) {
     this._updateBGScale( ) ;
 
     this.enemyManager.runStep( ) ;
@@ -216,25 +216,25 @@ StageState.prototype.runStep = function( ) {
     this._soundEffectDependsOnFlag( ) ;
 
     // TODO: temporal
-    if( this.isFlagSet( StageState._FLAG_FIGHTER_DEAD ) &&
-        ! this.fighter.isFlagSet( Element._FLAG_UNHITTABLE ) )
-      this.clearFlag( StageState._FLAG_FIGHTER_DEAD ) ;
-    if( this.isFlagSet( StageState._FLAG_BOMB ) &&
-        this.count > this.bombCount + StageState._BOMB_SPAN )
-      this.clearFlag( StageState._FLAG_BOMB ) ;
+    if( this.isFlagSet( this._FLAG_FIGHTER_DEAD ) &&
+        ! this.fighter.isFlagSet( this.fighter._FLAG_UNHITTABLE ) )
+      this.clearFlag( this._FLAG_FIGHTER_DEAD ) ;
+    if( this.isFlagSet( this._FLAG_BOMB ) &&
+        this.count > this.bombCount + this._BOMB_SPAN )
+      this.clearFlag( this._FLAG_BOMB ) ;
 
     // TODO: temporal
-    if( this.isFlagSet( StageState._FLAG_BOSS_SPELLCARD ) &&
-        this.count > this.bossSpellCount + StageState._BOSS_SPELL_SPAN )
-      this.clearFlag( StageState._FLAG_BOSS_SPELLCARD ) ;
+    if( this.isFlagSet( this._FLAG_BOSS_SPELLCARD ) &&
+        this.count > this.bossSpellCount + this._BOSS_SPELL_SPAN )
+      this.clearFlag( this._FLAG_BOSS_SPELLCARD ) ;
 
-    if( this.isFlagSet( StageState._FLAG_BOSS_EXIST ) )
+    if( this.isFlagSet( this._FLAG_BOSS_EXIST ) )
       this.pending++ ;
 
-    if( this.count < StageState._STAGE_TITLE_SPAN ) {
-      this.setFlag( StageState._FLAG_STAGE_TITLE ) ;
+    if( this.count < this._STAGE_TITLE_SPAN ) {
+      this.setFlag( this._FLAG_STAGE_TITLE ) ;
     } else {
-      this.clearFlag( StageState._FLAG_STAGE_TITLE ) ;
+      this.clearFlag( this._FLAG_STAGE_TITLE ) ;
     }
   }
 
@@ -250,7 +250,7 @@ StageState.prototype.runStep = function( ) {
 
   // TODO: temporal
   // this member should be moved to ShootingState?
-  if( this.state == StageState._STATE_SHOOTING ) {
+  if( this.state == this._STATE_SHOOTING ) {
     this.count++ ;
   }
 
@@ -263,7 +263,7 @@ StageState.prototype.runStep = function( ) {
 StageState.prototype._updateBGScale = function( ) {
   if( ! this.params[ this.stageIndex ].bgScale )
     return ;
-  if( this.isFlagSet( StageState._FLAG_BOSS_EXIST ) )
+  if( this.isFlagSet( this._FLAG_BOSS_EXIST ) )
     return ;
 
   for( var i = 0; i < this.params[ this.stageIndex ].bgScale.length; i++ ) {
@@ -283,40 +283,41 @@ StageState.prototype._updateBGScale = function( ) {
  * TODO: temporal
  */
 StageState.prototype._soundEffectDependsOnFlag = function( ) {
-  if( this.isFlagSet( StageState._FLAG_SE_ENEMY_VANISH ) ) {
-    this._soundEffect( Game._SE_ENEMY_VANISH ) ;
-    this.clearFlag( StageState._FLAG_SE_ENEMY_VANISH ) ;
-    if( this.isFlagSet( StageState._FLAG_SE_ENEMY_DAMAGE ) ) {
-      this.clearFlag( StageState._FLAG_SE_ENEMY_DAMAGE ) ;
+  var game = Game;
+  if( this.isFlagSet( this._FLAG_SE_ENEMY_VANISH ) ) {
+    this._soundEffect( game._SE_ENEMY_VANISH ) ;
+    this.clearFlag( this._FLAG_SE_ENEMY_VANISH ) ;
+    if( this.isFlagSet( this._FLAG_SE_ENEMY_DAMAGE ) ) {
+      this.clearFlag( this._FLAG_SE_ENEMY_DAMAGE ) ;
     }
   }
-  if( this.isFlagSet( StageState._FLAG_SE_ENEMY_DAMAGE ) ) {
-    this._soundEffect( Game._SE_ENEMY_DAMAGE ) ;
-    this.clearFlag( StageState._FLAG_SE_ENEMY_DAMAGE ) ;
+  if( this.isFlagSet( this._FLAG_SE_ENEMY_DAMAGE ) ) {
+    this._soundEffect( game._SE_ENEMY_DAMAGE ) ;
+    this.clearFlag( this._FLAG_SE_ENEMY_DAMAGE ) ;
   }
-  if( this.isFlagSet( StageState._FLAG_SE_SHOT ) ) {
-    this._soundEffect( Game._SE_SHOT ) ;
-    this.clearFlag( StageState._FLAG_SE_SHOT ) ;
+  if( this.isFlagSet( this._FLAG_SE_SHOT ) ) {
+    this._soundEffect( game._SE_SHOT ) ;
+    this.clearFlag( this._FLAG_SE_SHOT ) ;
   }
-  if( this.isFlagSet( StageState._FLAG_SE_ENEMY_SHOT ) ) {
-    this._soundEffect( Game._SE_ENEMY_SHOT ) ;
-    this.clearFlag( StageState._FLAG_SE_ENEMY_SHOT ) ;
+  if( this.isFlagSet( this._FLAG_SE_ENEMY_SHOT ) ) {
+    this._soundEffect( game._SE_ENEMY_SHOT ) ;
+    this.clearFlag( this._FLAG_SE_ENEMY_SHOT ) ;
   }
-  if( this.isFlagSet( StageState._FLAG_SE_DEAD ) ) {
-    this._soundEffect( Game._SE_DEAD ) ;
-    this.clearFlag( StageState._FLAG_SE_DEAD ) ;
+  if( this.isFlagSet( this._FLAG_SE_DEAD ) ) {
+    this._soundEffect( game._SE_DEAD ) ;
+    this.clearFlag( this._FLAG_SE_DEAD ) ;
   }
-  if( this.isFlagSet( StageState._FLAG_SE_GRAZE ) ) {
-    this._soundEffect( Game._SE_GRAZE ) ;
-    this.clearFlag( StageState._FLAG_SE_GRAZE ) ;
+  if( this.isFlagSet( this._FLAG_SE_GRAZE ) ) {
+    this._soundEffect( game._SE_GRAZE ) ;
+    this.clearFlag( this._FLAG_SE_GRAZE ) ;
   }
-  if( this.isFlagSet( StageState._FLAG_SE_POWERUP ) ) {
-    this._soundEffect( Game._SE_POWERUP ) ;
-    this.clearFlag( StageState._FLAG_SE_POWERUP ) ;
+  if( this.isFlagSet( this._FLAG_SE_POWERUP ) ) {
+    this._soundEffect( game._SE_POWERUP ) ;
+    this.clearFlag( this._FLAG_SE_POWERUP ) ;
   }
-  if( this.isFlagSet( StageState._FLAG_SE_POWER_EFFECT ) ) {
-    this._soundEffect( Game._SE_POWER_EFFECT ) ;
-    this.clearFlag( StageState._FLAG_SE_POWER_EFFECT ) ;
+  if( this.isFlagSet( this._FLAG_SE_POWER_EFFECT ) ) {
+    this._soundEffect( game._SE_POWER_EFFECT ) ;
+    this.clearFlag( this._FLAG_SE_POWER_EFFECT ) ;
   }
 } ;
 
@@ -344,7 +345,7 @@ StageState.prototype.updateDisplay = function( surface ) {
  */
 StageState.prototype._displayBG = function() {
   var darken = false;
-  if(this.isFlagSet(StageState._FLAG_BOMB) || this.spellCard) {
+  if(this.isFlagSet(this._FLAG_BOMB) || this.spellCard) {
     darken = true;
   }
   this.backgroundManager.draw(this.game.bgLayer, darken);
@@ -352,7 +353,7 @@ StageState.prototype._displayBG = function() {
 
 
 StageState.prototype._displayBossVital = function( surface ) {
-  if( ! this.isFlagSet( StageState._FLAG_BOSS_EXIST ) )
+  if( ! this.isFlagSet( this._FLAG_BOSS_EXIST ) )
     return ;
 
   surface.save( ) ;
@@ -397,7 +398,7 @@ StageState.prototype._displayElements = function( surface ) {
 
 
 StageState.prototype._displayStageTitle = function( surface ) {
-  if( ! this.isFlagSet( StageState._FLAG_STAGE_TITLE ) )
+  if( ! this.isFlagSet( this._FLAG_STAGE_TITLE ) )
     return ;
 
   surface.save( ) ;
@@ -405,8 +406,8 @@ StageState.prototype._displayStageTitle = function( surface ) {
   var alpha = 1.0 ;
   if( this.count < 100 )
     alpha = 0.01 * this.count ;
-  else if( this.count > StageState._STAGE_TITLE_SPAN - 100 )
-    alpha = 0.01 * ( StageState._STAGE_TITLE_SPAN - this.count ) ;
+  else if( this.count > this._STAGE_TITLE_SPAN - 100 )
+    alpha = 0.01 * ( this._STAGE_TITLE_SPAN - this.count ) ;
 
   surface.fillStyle = 'rgb( 0, 0, 0 )' ;
   surface.globalAlpha = alpha * 0.2 ;
@@ -467,20 +468,20 @@ StageState.prototype._drawSide = function(surface) {
 StageState.prototype._getFaceImage = function( ) {
   switch( this.fighter.characterIndex ) {
     case 0:
-      if( this.isFlagSet( StageState._FLAG_BOMB ) )
+      if( this.isFlagSet( this._FLAG_BOMB ) )
         return this.getImage( Game._IMG_REIMU_FACE_4 ) ;
-      if( this.isFlagSet( StageState._FLAG_FIGHTER_DEAD ) )
+      if( this.isFlagSet( this._FLAG_FIGHTER_DEAD ) )
         return this.getImage( Game._IMG_REIMU_FACE_3 ) ;
-      if( this.fighter.isFlagSet( Element._FLAG_SHOT ) )
+      if( this.fighter.isFlagSet( this.fighter._FLAG_SHOT ) )
         return this.getImage( Game._IMG_REIMU_FACE_2 ) ;
       return this.getImage( Game._IMG_REIMU_FACE_1 ) ;
 //    case 1:
     default:
-      if( this.isFlagSet( StageState._FLAG_BOMB ) )
+      if( this.isFlagSet( this._FLAG_BOMB ) )
         return this.getImage( Game._IMG_MARISA_FACE_4 ) ;
-      if( this.isFlagSet( StageState._FLAG_FIGHTER_DEAD ) )
+      if( this.isFlagSet( this._FLAG_FIGHTER_DEAD ) )
         return this.getImage( Game._IMG_MARISA_FACE_3 ) ;
-      if( this.fighter.isFlagSet( Element._FLAG_SHOT ) )
+      if( this.fighter.isFlagSet( this.fighter._FLAG_SHOT ) )
         return this.getImage( Game._IMG_MARISA_FACE_2 ) ;
       return this.getImage( Game._IMG_MARISA_FACE_1 ) ;
   }
@@ -488,14 +489,14 @@ StageState.prototype._getFaceImage = function( ) {
 
 
 StageState.prototype.handleKeyDown = function( e ) {
-  if( this.isFlagSet( StageState._FLAG_AUTO_PLAY ) )
+  if( this.isFlagSet( this._FLAG_AUTO_PLAY ) )
     return ;
   this.states[ this.state ].handleKeyDown( e ) ;
 } ;
 
 
 StageState.prototype.handleKeyUp = function( e ) {
-  if( this.isFlagSet( StageState._FLAG_AUTO_PLAY ) )
+  if( this.isFlagSet( this._FLAG_AUTO_PLAY ) )
     return ;
   this.states[ this.state ].handleKeyUp( e ) ;
 } ;
@@ -589,7 +590,7 @@ StageState.prototype.reset = function( ) {
 
   this.fighter.beDefaultPosition( ) ;
 
-  this.states[ StageState._STATE_TALK ].reset( ) ; // TODO: temporal
+  this.states[ this._STATE_TALK ].reset( ) ; // TODO: temporal
 
 
   this.flags = 0 ;
@@ -664,20 +665,20 @@ StageState.prototype.sendMessageToServer = function(key) {
 
 
 StageState.prototype.notifyFighterGotPowerItem = function( fighter, item ) {
-  this.setFlag( StageState._FLAG_SE_GRAZE ) ;
+  this.setFlag( this._FLAG_SE_GRAZE ) ;
   this.score += 100 ;
   fighter.incrementPower( 1 ) ;
 } ;
 
 
 StageState.prototype.notifyFighterGotScoreItem = function( fighter, item ) {
-  this.setFlag( StageState._FLAG_SE_GRAZE ) ;
+  this.setFlag( this._FLAG_SE_GRAZE ) ;
   this.score += 1000 ;
 } ;
 
 
 StageState.prototype.notifyFighterPowerUp = function( ) {
-  this.setFlag( StageState._FLAG_SE_POWERUP ) ;
+  this.setFlag( this._FLAG_SE_POWERUP ) ;
 } ;
 
 
@@ -686,7 +687,7 @@ StageState.prototype.notifyFighterDoShot = function( fighter ) {
     return ;
 
   this.bulletManager.create( fighter ) ;
-  this.setFlag( StageState._FLAG_SE_SHOT ) ;
+  this.setFlag( this._FLAG_SE_SHOT ) ;
 } ;
 
 
@@ -696,21 +697,21 @@ StageState.prototype.notifyEnemyDoShot = function( enemy, shot ) {
 
 
 StageState.prototype.notifyEnemyDidShot = function( enemy, shot ) {
-  if( ! this.isFlagSet( StageState._FLAG_BOMB ) &&
-      ! this.isFlagSet( StageState._FLAG_BOSS_SPELLCARD ) )
-    this.setFlag( StageState._FLAG_SE_ENEMY_SHOT ) ;
+  if( ! this.isFlagSet( this._FLAG_BOMB ) &&
+      ! this.isFlagSet( this._FLAG_BOSS_SPELLCARD ) )
+    this.setFlag( this._FLAG_SE_ENEMY_SHOT ) ;
 } ;
 
 
 StageState.prototype.notifyBulletHit = function( bullet, enemy ) {
   this.effectManager.createDamageEffect( enemy ) ;
-  this.setFlag( StageState._FLAG_SE_ENEMY_DAMAGE ) ;
+  this.setFlag( this._FLAG_SE_ENEMY_DAMAGE ) ;
   this.score += 10 ;
 } ;
 
 
 StageState.prototype.notifyGraze = function(fighter, bullet) {
-  this.setFlag(StageState._FLAG_SE_GRAZE);
+  this.setFlag(this._FLAG_SE_GRAZE);
   this.graze += 1;
   bullet.graze -= 1; // TODO: should be in EnemyBullet?
   this.score += 100;
@@ -724,27 +725,27 @@ StageState.prototype.notifyGraze = function(fighter, bullet) {
 StageState.prototype.notifyFighterDoBomb = function( fighter ) {
   if( this.bombs <= 0 )
     return ;
-  if( this.isFlagSet( StageState._FLAG_BOMB ) )
+  if( this.isFlagSet( this._FLAG_BOMB ) )
     return ;
   this.bombs-- ;
   this.bombCount = this.count ;
-  this.setFlag( StageState._FLAG_BOMB ) ;
+  this.setFlag( this._FLAG_BOMB ) ;
   this.enemyManager.bomb( fighter ) ;
   this.enemyBulletManager.bomb( fighter ) ;
   this.itemManager.beHomingAll( fighter ) ;
   this.spellCardManager.create( fighter ) ;
   this.bombManager.create( fighter ) ;
-  this.setFlag( StageState._FLAG_SE_POWER_EFFECT ) ;
+  this.setFlag( this._FLAG_SE_POWER_EFFECT ) ;
 } ;
 
 
 StageState.prototype.notifyEnemyVanished = function( bullet, enemy ) {
-  this.setFlag( StageState._FLAG_SE_ENEMY_VANISH ) ;
+  this.setFlag( this._FLAG_SE_ENEMY_VANISH ) ;
   // TODO: temporal
   if( enemy.powerItem )
-    this.itemManager.create( enemy, Item._TYPE_POWER ) ;
+    this.itemManager.create( enemy, Item.prototype._TYPE_POWER ) ;
   else if( enemy.scoreItem )
-    this.itemManager.create( enemy, Item._TYPE_SCORE ) ;
+    this.itemManager.create( enemy, Item.prototype._TYPE_SCORE ) ;
   this.effectManager.createExplosion(enemy);
   this.notifyDoEffect( enemy, 'shockwave', null ) ;
   this.score += 100 ;
@@ -753,10 +754,10 @@ StageState.prototype.notifyEnemyVanished = function( bullet, enemy ) {
 
 StageState.prototype.notifyBossVanished = function( boss ) {
   this.enemyBulletManager.beItem( ) ;
-  this.setFlag( StageState._FLAG_SE_ENEMY_VANISH ) ;
+  this.setFlag( this._FLAG_SE_ENEMY_VANISH ) ;
   this.spellCard = null ;
 
-  this.clearFlag( StageState._FLAG_BOSS_EXIST ) ;
+  this.clearFlag( this._FLAG_BOSS_EXIST ) ;
   this.score += boss.score ;
 
   // TODO: temporal
@@ -773,10 +774,10 @@ StageState.prototype.notifyBossVanished = function( boss ) {
 
 StageState.prototype.notifyBossVanishEnd = function( boss ) {
   if( boss.vanishedTalk ) {
-    this.state = StageState._STATE_TALK ;
+    this.state = this._STATE_TALK ;
     this.fighter.beNeutral( ) ;
   }
-//  this.state = StageState._STATE_CLEAR ;
+//  this.state = this._STATE_CLEAR ;
 } ;
 
 
@@ -784,7 +785,7 @@ StageState.prototype.notifyBossVanishEnd = function( boss ) {
  * TODO: temporal. especially name is temporal.
  */
 StageState.prototype.notifyBeginTalk = function() {
-  this.state = StageState._STATE_TALK;
+  this.state = this._STATE_TALK;
   this.fighter.beNeutral();
 };
 
@@ -794,21 +795,21 @@ StageState.prototype.notifyBeginTalk = function() {
  */
 StageState.prototype.notifyFighterDead = function( fighter, element ) {
 
-  this.setFlag( StageState._FLAG_FIGHTER_DEAD ) ;
-  this.setFlag( StageState._FLAG_SE_DEAD ) ;
+  this.setFlag( this._FLAG_FIGHTER_DEAD ) ;
+  this.setFlag( this._FLAG_SE_DEAD ) ;
   this.effectManager.createExplosion(fighter);
   this.notifyDoEffect(fighter, 'shockwave', null);
-  this.fighter.setFlag( Element._FLAG_UNHITTABLE ) ;
+  this.fighter.setFlag( this.fighter._FLAG_UNHITTABLE ) ;
   this.fighter.deadCount = this.fighter.count ;
 
   if( this.players <= 0 ) {
     this.sendMessageToServer(GameSocket._STATE_GAME_OVER);
     // TODO: temporal
-    if( this.isFlagSet( StageState._FLAG_AUTO_PLAY ) ) {
+    if( this.isFlagSet( this._FLAG_AUTO_PLAY ) ) {
       this.game.notifyQuitStage( ) ;
       return ;
     }
-    this.state = StageState._STATE_GAME_OVER ;
+    this.state = this._STATE_GAME_OVER ;
     this.states[ this.state ].init( ) ;
     this.fighter.beNeutral( ) ;
     return ;
@@ -816,7 +817,7 @@ StageState.prototype.notifyFighterDead = function( fighter, element ) {
 
   this.bombs = 2 ;
   this.players-- ;
-  this.fighter.state = Element._STATE_ALIVE ;
+  this.fighter.state = this.fighter._STATE_ALIVE ;
   this.fighter.beDefaultPosition( ) ;
   this.fighter.deadCount = this.fighter.count ;
 
@@ -850,27 +851,27 @@ StageState.prototype.notifyBossStageChanged = function( boss ) {
  * TODO: temporal
  */
 StageState.prototype.notifyBeScoreItem = function( element ) {
-  this.itemManager.createHoming( element, Item._TYPE_SCORE ) ;
+  this.itemManager.createHoming( element, Item.prototype._TYPE_SCORE ) ;
 } ;
 
 
 StageState.prototype.notifyBossBecameActive = function( boss ) {
-  this.state = StageState._STATE_SHOOTING ;
+  this.state = this._STATE_SHOOTING ;
   if( boss.spellCard ) {
     this.spellCardManager.create( boss ) ;
-    this.setFlag( StageState._FLAG_SE_POWER_EFFECT ) ;
+    this.setFlag( this._FLAG_SE_POWER_EFFECT ) ;
     this.spellCard = boss.spellCard ;
     this.bossSpellCount = this.count ;
-    this.setFlag( StageState._FLAG_BOSS_SPELLCARD ) ;
+    this.setFlag( this._FLAG_BOSS_SPELLCARD ) ;
   }
-  this.setFlag( StageState._FLAG_BOSS_EXIST ) ;
+  this.setFlag( this._FLAG_BOSS_EXIST ) ;
 } ;
 
 
 StageState.prototype.notifyBossBeginTalk = function( boss ) {
   // TODO: temporal
   if( boss.appearedTalk ) {
-    this.state = StageState._STATE_TALK ;
+    this.state = this._STATE_TALK ;
     this.fighter.beNeutral( ) ;
   } else {
     this.notifyBossBecameActive( boss ) ;
@@ -879,8 +880,8 @@ StageState.prototype.notifyBossBeginTalk = function( boss ) {
 
 
 StageState.prototype.notifyBossMovedNextStage = function( boss ) {
-  this.clearFlag( StageState._FLAG_BOSS_SPELLCARD ) ; // Just in case.
-  this.setFlag( StageState._FLAG_SE_ENEMY_VANISH ) ;
+  this.clearFlag( this._FLAG_BOSS_SPELLCARD ) ; // Just in case.
+  this.setFlag( this._FLAG_SE_ENEMY_VANISH ) ;
   this.spellCard = null ;
   this.notifyDoEffect( boss, 'shockwave', {
     'w': 5,
@@ -896,10 +897,10 @@ StageState.prototype.notifyContinue = function( ) {
   this.didContinue = true ;
   this.bombs = 2 ;
   this.players = 3 ;
-  this.fighter.state = Fighter._STATE_ALIVE ;
+  this.fighter.state = this.fighter._STATE_ALIVE ;
   this.fighter.setX( parseInt( this.getWidth( ) / 2 ) ) ;
   this.fighter.setY( this.getHeight( ) - 100 ) ;
-  this.state = StageState._STATE_SHOOTING ;
+  this.state = this._STATE_SHOOTING ;
 } ;
 
 
@@ -909,7 +910,7 @@ StageState.prototype.notifyQuit = function( ) {
 
 
 StageState.prototype.notifyGoNextStage = function( ) {
-  this.state = StageState._STATE_SHOOTING ;
+  this.state = this._STATE_SHOOTING ;
   this.count = 0 ;
   this.animationCount = 0 ;
   this.pending = 0 ;
@@ -921,7 +922,7 @@ StageState.prototype.notifyGoNextStage = function( ) {
 
 StageState.prototype.notifyGameClear = function( ) {
   // TODO: temporal
-  if( this.isFlagSet( StageState._FLAG_AUTO_PLAY ) ) {
+  if( this.isFlagSet( this._FLAG_AUTO_PLAY ) ) {
     this.game.notifyQuitStage( ) ;
   } else {
     this.game.notifyGameClear( ) ;
@@ -930,11 +931,27 @@ StageState.prototype.notifyGameClear = function( ) {
 
 
 StageState.prototype.notifyStageClear = function( ) {
-  this.clearFlag( StageState._FLAG_BOSS_SPELLCARD ) ; // Just in case.
-  this.state = StageState._STATE_CLEAR ;
+  this.clearFlag( this._FLAG_BOSS_SPELLCARD ) ; // Just in case.
+  this.state = this._STATE_CLEAR ;
   this.states[ this.state ].init( ) ; // TODO: temporal
   this.viewScore = this.score ;
 } ;
+
+
+/**
+ * TODO: rename
+ */
+StageState.prototype.isBossExist = function() {
+  return this.isFlagSet(this._FLAG_BOSS_EXIST);
+};
+
+
+/**
+ * TODO: rename
+ */
+StageState.prototype.isBombExist = function() {
+  return this.isFlagSet(this._FLAG_BOMB);
+};
 
 
 /**
@@ -1008,7 +1025,7 @@ ShootingState.prototype.handleKeyDown = function( e ) {
   var p = [ ] ;
   switch( e.keyCode ) {
     case 16: // shift
-      if( this.stage.fighter.setFlag( Fighter._FLAG_SLOW ) )
+      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_SLOW ) )
         p.push( 's' ) ;
       break ;
     case 32: // space
@@ -1016,19 +1033,19 @@ ShootingState.prototype.handleKeyDown = function( e ) {
       p.push( 'sp' ) ;
       break ;
     case 37: // left
-      if( this.stage.fighter.setFlag( Element._FLAG_MOVE_LEFT ) )
+      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_MOVE_LEFT ) )
         p.push( 'l' ) ;
       break ;
     case 38: // up
-      if( this.stage.fighter.setFlag( Element._FLAG_MOVE_UP ) )
+      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_MOVE_UP ) )
         p.push( 'u' ) ;
       break ;
     case 39: // right
-      if( this.stage.fighter.setFlag( Element._FLAG_MOVE_RIGHT ) )
+      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_MOVE_RIGHT ) )
         p.push( 'r' ) ;
       break ;
     case 40: // down
-      if( this.stage.fighter.setFlag( Element._FLAG_MOVE_DOWN ) )
+      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_MOVE_DOWN ) )
         p.push( 'd' ) ;
       break ;
     // TODO: temporal
@@ -1037,7 +1054,7 @@ ShootingState.prototype.handleKeyDown = function( e ) {
       p.push( 'x' ) ;
       break ;
     case 90: // z
-      if( this.stage.fighter.setFlag( Element._FLAG_SHOT ) )
+      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_SHOT ) )
         p.push( 'z' ) ;
       break ;
   } ;
@@ -1049,27 +1066,27 @@ ShootingState.prototype.handleKeyUp = function( e ) {
   var p = [ ] ;
   switch( e.keyCode ) {
     case 16: // shift
-      if( this.stage.fighter.clearFlag( Fighter._FLAG_SLOW ) )
+      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_SLOW ) )
         p.push( 's' ) ;
       break ;
     case 37: // left
-      if( this.stage.fighter.clearFlag( Element._FLAG_MOVE_LEFT ) )
+      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_MOVE_LEFT ) )
         p.push( 'l' ) ;
       break ;
     case 38: // up
-      if( this.stage.fighter.clearFlag( Element._FLAG_MOVE_UP ) )
+      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_MOVE_UP ) )
         p.push( 'u' ) ;
       break ;
     case 39: // right
-      if( this.stage.fighter.clearFlag( Element._FLAG_MOVE_RIGHT ) )
+      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_MOVE_RIGHT ) )
         p.push( 'r' ) ;
       break ;
     case 40: // down
-      if( this.stage.fighter.clearFlag( Element._FLAG_MOVE_DOWN ) )
+      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_MOVE_DOWN ) )
         p.push( 'd' ) ;
       break ;
     case 90: // z
-      if( this.stage.fighter.clearFlag( Element._FLAG_SHOT ) )
+      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_SHOT ) )
         p.push( 'z' ) ;
       break ;
   } ;

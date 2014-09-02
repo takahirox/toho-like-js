@@ -12,11 +12,11 @@ function EnemyManager( gameState, params ) {
 } ;
 __inherit( EnemyManager, ElementManager ) ;
 
-EnemyManager._MAX_NUM = 200;
+EnemyManager.prototype._MAX_NUM = 200;
 
 
 EnemyManager.prototype._initMaxNum = function() {
-  return EnemyManager._MAX_NUM;
+  return this._MAX_NUM;
 };
 
 
@@ -31,52 +31,54 @@ EnemyManager.prototype.initDrawer = function(layer, image) {
 };
 
 
-EnemyManager.prototype.reset = function( ) {
-  this.parent.prototype.reset.call( this ) ;
-  this.index = 0 ;
-  this.stageIndex = 0 ;
-} ;
+__copyParentMethod(EnemyManager, ElementManager, 'reset');
+EnemyManager.prototype.reset = function() {
+  this.ElementManager_reset();
+  this.index = 0;
+  this.stageIndex = 0;
+};
 
 
-EnemyManager.prototype.goNextStage = function( ) {
-  this.parent.prototype.reset.call( this ) ;
-  this.index = 0 ;
-  this.stageIndex++ ;
-} ;
+EnemyManager.prototype.goNextStage = function() {
+  this.ElementManager_reset();
+  this.index = 0;
+  this.stageIndex++;
+};
 
 
-EnemyManager.prototype.runStep = function( ) {
-  this._generateEnemy( ) ;
-  this.parent.prototype.runStep.call( this ) ;
-} ;
+__copyParentMethod(EnemyManager, ElementManager, 'runStep');
+EnemyManager.prototype.runStep = function() {
+  this._generateEnemy();
+  this.ElementManager_runStep();
+};
 
 
 EnemyManager.prototype._generateEnemy = function( ) {
-  if( this.gameState.isFlagSet( StageState._FLAG_BOSS_EXIST ) )
-    return ;
+  if(this.gameState.isBossExist())
+    return;
   while( this.index < this.params[ this.stageIndex ].length &&
          this.params[ this.stageIndex ][ this.index ].count + this.gameState.pending <= this.gameState.count ) {
-    if( ! this.gameState.isFlagSet( StageState._FLAG_BOMB ) ) // TODO: temporal
+    if(! this.gameState.isBombExist())
       this.addElement( this.factory.create( this.params[ this.stageIndex ][ this.index ] ) ) ;
     this.index++ ;
   }
 } ;
 
 
-EnemyManager.prototype.checkCollisionWith = function( fighter ) {
-  if( fighter.isFlagSet( Element._FLAG_UNHITTABLE ) )
-    return ;
+__copyParentMethod(EnemyManager, ElementManager, 'checkCollisionWith');
+EnemyManager.prototype.checkCollisionWith = function(fighter) {
+  if(fighter.isFlagSet(fighter._FLAG_UNHITTABLE))
+    return;
 
-  var self = this ;
-  this.parent.prototype.checkCollisionWith.call( this, fighter,
-    this._checkCollisionWithCallBack.bind( this ), true ) ;
-} ;
+  var self = this;
+  this.ElementManager_checkCollisionWith(null, fighter, this)
+};
 
 
-EnemyManager.prototype._checkCollisionWithCallBack = function( fighter, enemy ) {
-  fighter.die( ) ;
-  this.gameState.notifyFighterDead( fighter, enemy ) ;
-} ;
+EnemyManager.prototype.notifyCollision = function(id, fighter, enemy) {
+  fighter.die();
+  this.gameState.notifyFighterDead(fighter, enemy);
+};
 
 
 /**
@@ -94,15 +96,16 @@ EnemyManager.prototype.bomb = function( fighter ) {
 function EnemyFactory( gameState, maxX, maxY ) {
   this.parent = ElementFactory ;
   this.parent.call( this, gameState, maxX, maxY ) ;
+  this.image = null; // TODO: temporal
 } ;
 __inherit( EnemyFactory, ElementFactory ) ;
 
-EnemyFactory._NUM = 200 ;
+EnemyFactory.prototype._NUM = 200 ;
 
 
-EnemyFactory.prototype._initFreelist = function( ) {
-  this.freelist = new EnemyFreeList( EnemyFactory._NUM, this.gameState ) ;
-} ;
+EnemyFactory.prototype._initFreelist = function() {
+  this.freelist = new EnemyFreeList(this._NUM, this.gameState);
+};
 
 
 /**
@@ -115,9 +118,14 @@ EnemyFactory.prototype.create = function( params ) {
 } ;
 
 
-EnemyFactory.prototype._getImage = function( params ) {
-  return this.gameState.getImage( Game._IMG_ENEMY ) ;
-} ;
+/**
+ * TODO: temporal
+ */
+EnemyFactory.prototype._getImage = function(params) {
+  if(this.image === null)
+    this.image = this.gameState.getImage(Game._IMG_ENEMY);
+  return this.image;
+};
 
 
 
@@ -181,49 +189,53 @@ function Enemy( gameState, maxX, maxY ) {
 }
 __inherit( Enemy, Element ) ;
 
-Enemy._WIDTH = 32 ;
-Enemy._HEIGHT = 32 ;
+Enemy.prototype._WIDTH = 32 ;
+Enemy.prototype._HEIGHT = 32 ;
 
 
-Enemy.prototype.init = function( params, image ) {
-  this.parent.prototype.init.call( this, params, image ) ;
+__copyParentMethod(Enemy, Element, 'init');
+Enemy.prototype.init = function(params, image) {
+  this.Element_init(params, image);
 
   // TODO: temporal
-  this.shots.length = 0 ;
-  if( params.s == undefined ) {
-  } else if( params.s instanceof Array ) {
-    for( var i = 0; i < params.s.length; i++ )
-      this.shots.push( params.s[ i ] ) ;
+  this.shots.length = 0;
+  if(params.s === void 0) {
+//  } else if(params.s instanceof Array) {
+  } else if(params.s.length !== void 0) {
+    for(var i = 0; i < params.s.length; i++)
+      this.shots[this.shots.length] = params.s[i];
  } else {
-    this.shots.push( params.s ) ;
+    this.shots[this.shots.length] = params.s;
   }
 
   // TODO: temporal
-  this.shotIndices.length = 0 ;
-  this.baseShotCounts.length = 0 ;
-  this.endShotCounts.length = 0 ;
-  for( var i = 0; i < this.shots.length; i++ ) {
-    this.shotIndices.push( 0 ) ;
-    if( this.shots[ i ].baseCount )
-      this.baseShotCounts.push( this.shots[ i ].baseCount ) ;
+  this.shotIndices.length = 0;
+  this.baseShotCounts.length = 0;
+  this.endShotCounts.length = 0;
+  for(var i = 0; i < this.shots.length; i++) {
+    this.shotIndices[this.shotIndices.length] = 0;
+
+    if(this.shots[i].baseCount !== void 0)
+      this.baseShotCounts[this.baseShotCounts.length] = this.shots[i].baseCount;
     else
-      this.baseShotCounts.push( 0 ) ;
-    if( this.shots[ i ].endCount )
-      this.endShotCounts.push( this.shots[ i ].endCount ) ;
+      this.baseShotCounts[this.baseShotCounts.length] = 0;
+
+    if(this.shots[i].endCount !== void 0)
+      this.endShotCounts[this.endShotCounts.length] = this.shots[i].endCount;
     else
-      this.endShotCounts.push( 0 ) ;
+      this.endShotCounts[this.endShotCounts.length] = 0;
   }
 
-  this.width  = Enemy._WIDTH ;
-  this.height = Enemy._HEIGHT ;
-  this.collisionWidth  = this.width ;
-  this.collisionHeight = this.height ;
-  this.vital      = params.vital      != undefined ? params.vital      : 4 ; // TODO: temporal
-  this.powerItem  = params.powerItem  != undefined ? params.powerItem  : 0 ;
-  this.lpowerItem = params.lpowerItem != undefined ? params.lpowerItem : 0 ;
-  this.scoreItem  = params.scoreItem  != undefined ? params.scoreItem  : 0 ;
+  this.width  = this._WIDTH;
+  this.height = this._HEIGHT;
+  this.collisionWidth  = this.width;
+  this.collisionHeight = this.height;
+  this.vital      = params.vital      !== void 0 ? params.vital      : 4; // TODO: temporal
+  this.powerItem  = params.powerItem  !== void 0 ? params.powerItem  : 0;
+  this.lpowerItem = params.lpowerItem !== void 0 ? params.lpowerItem : 0;
+  this.scoreItem  = params.scoreItem  !== void 0 ? params.scoreItem  : 0;
   this._initView();
-} ;
+};
 
 
 Enemy.prototype._generateView = function() {
@@ -254,13 +266,22 @@ Enemy.prototype._shot = function( ) {
 
 
 // TODO: temporal
-Enemy.prototype.runStep = function( ) {
-  this._shot( ) ;
+__copyParentMethod(Enemy, Element, 'runStep');
+Enemy.prototype.runStep = function() {
+  this._shot();
+
+  this.Element_runStep();
+
   // for animation
-  this.parent.prototype.runStep.call( this ) ;
-  if( this.count % 5 == 0 ) {
-    this.indexX++ ;
-    if( this.indexX > 2 )
-      this.indexX = 0 ;
+  if(this.count % 5 == 0) {
+    this.indexX++;
+    if(this.indexX > 2)
+      this.indexX = 0;
   }
-} ;
+};
+
+
+// TODO: temporal
+Enemy.prototype.isVanishingOrEscaping = function() {
+  return false;
+};

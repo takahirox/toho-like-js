@@ -8,11 +8,11 @@ function BackgroundManager(gameState) {
 };
 __inherit(BackgroundManager, ElementManager);
 
-BackgroundManager._MAX_NUM = 5;
+BackgroundManager.prototype._MAX_NUM = 5;
 
 
 BackgroundManager.prototype._initMaxNum = function() {
-  return BackgroundManager._MAX_NUM;
+  return this._MAX_NUM;
 };
 
 
@@ -175,6 +175,10 @@ function BackgroundDrawer(elementManager, gl, image) {
 };
 __inherit(BackgroundDrawer, ElementDrawer);
 
+// only for reference
+BackgroundDrawer.prototype.Math = Math;
+
+
 
 BackgroundDrawer.prototype._project = function(layer) {
   layer.perspective(60, 0.1, 10.0);
@@ -182,7 +186,7 @@ BackgroundDrawer.prototype._project = function(layer) {
 
 
 BackgroundDrawer.prototype._prepareDraw = function(layer) {
-  mat4.rotate(layer.mvMatrix, Math.PI/180*50, [-1, 0, 0]);
+  mat4.rotate(layer.mvMatrix, this.Math.PI/180*50, [-1, 0, 0]);
 };
 
 
@@ -225,8 +229,9 @@ Background.prototype.display = function(surface) {
 
 
 // TODO: temporal
+Background.prototype.Element_runStep = Element.prototype.runStep;
 Background.prototype.runStep = function() {
-  this.parent.prototype.runStep.call(this);
+  this.Element_runStep();
   // TODO: should be in BackgroundView?
   this.y = (this.count%200)/200;
   this.z = -this.gameState.bgScale;

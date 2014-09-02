@@ -14,11 +14,15 @@ function EffectManager(gameState) {
 };
 __inherit(EffectManager, ElementManager);
 
-EffectManager._MAX_NUM = 200; // TODO: for each so far
+// only for reference
+EffectManager.prototype.Layer = Layer;
+EffectManager.prototype.Math = Math;
+
+EffectManager.prototype._MAX_NUM = 200; // TODO: for each so far
 
 
 EffectManager.prototype._initMaxNum = function() {
-  return EffectManager._MAX_NUM;
+  return this._MAX_NUM;
 };
 
 
@@ -136,18 +140,18 @@ EffectManager.prototype.createBigExplosion = function(enemy) {
  */
 EffectManager.prototype._generateShockWaveImage = function() {
   var cvs = document.createElement('canvas');
-  cvs.width = Layer.calculateSquareValue(ShockWaveEffect._WIDTH);
-  cvs.height = Layer.calculateSquareValue(
-                 ShockWaveEffect._HEIGHT*ShockWaveEffect._END_COUNT);
+  cvs.width = this.Layer.calculateSquareValue(this.ShockWaveEffect._WIDTH);
+  cvs.height = this.Layer.calculateSquareValue(
+                 this.ShockWaveEffect._HEIGHT*this.ShockWaveEffect._END_COUNT);
   var ctx = cvs.getContext('2d');
 
-  var w = ShockWaveEffect._WIDTH;
-  var h = ShockWaveEffect._HEIGHT;
-  for(var i = 0; i < ShockWaveEffect._END_COUNT; i++) {
+  var w = this.ShockWaveEffect._WIDTH;
+  var h = this.ShockWaveEffect._HEIGHT;
+  for(var i = 0; i < this.ShockWaveEffect._END_COUNT; i++) {
     var x = w/2;
     var y = h*i + h/2;
-    var r = ShockWaveEffect._SPEED * i;
-    var s = 1 - ShockWaveEffect._GRADATION/(ShockWaveEffect._SPEED*i);
+    var r = this.ShockWaveEffect._SPEED * i;
+    var s = 1 - this.ShockWaveEffect._GRADATION/(this.ShockWaveEffect._SPEED*i);
 
     if(r <= 1)
       r = 1;
@@ -159,7 +163,7 @@ EffectManager.prototype._generateShockWaveImage = function() {
     g.addColorStop(s, 'rgba(255, 255, 255, 0.0)');
     g.addColorStop(1.00, 'rgba(255, 255, 255, 1.0)');
     ctx.fillStyle = g;
-    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.arc(x, y, r, 0, this.Math.PI * 2);
     ctx.fill();
   }
   return cvs;
@@ -171,12 +175,12 @@ EffectManager.prototype._generateShockWaveImage = function() {
  */
 EffectManager.prototype._generateGrazeImage = function() {
   var cvs = document.createElement('canvas');
-  cvs.width = Layer.calculateSquareValue(GrazeEffect._SIZE);
-  cvs.height = Layer.calculateSquareValue(GrazeEffect._SIZE);
+  cvs.width = this.Layer.calculateSquareValue(this.GrazeEffect._SIZE);
+  cvs.height = this.Layer.calculateSquareValue(this.GrazeEffect._SIZE);
   var ctx = cvs.getContext('2d');
 
-  var w = GrazeEffect._SIZE;
-  var h = GrazeEffect._SIZE;
+  var w = this.GrazeEffect._SIZE;
+  var h = this.GrazeEffect._SIZE;
   ctx.fillStyle = 'rgb(255, 255, 255)';
   ctx.fillRect(0, 0, w, h);
   return cvs;
@@ -188,31 +192,31 @@ EffectManager.prototype._generateGrazeImage = function() {
  */
 EffectManager.prototype._generateExplosionImage = function() {
   var cvs = document.createElement('canvas');
-  cvs.width = Layer.calculateSquareValue(ExplosionEffect._WIDTH);
-  cvs.height = Layer.calculateSquareValue(
-                 ExplosionEffect._HEIGHT*ExplosionEffect._END_COUNT);
+  cvs.width = this.Layer.calculateSquareValue(this.ExplosionEffect._WIDTH);
+  cvs.height = this.Layer.calculateSquareValue(
+                 this.ExplosionEffect._HEIGHT*this.ExplosionEffect._END_COUNT);
   var ctx = cvs.getContext('2d');
 
-  var w = ExplosionEffect._WIDTH;
-  var h = ExplosionEffect._HEIGHT;
-  for(var i = 0; i < ExplosionEffect._END_COUNT; i++) {
+  var w = this.ExplosionEffect._WIDTH;
+  var h = this.ExplosionEffect._HEIGHT;
+  for(var i = 0; i < this.ExplosionEffect._END_COUNT; i++) {
     var x = w/2;
     var y = h*i + h/2;
-    var r = w/2 * i/ExplosionEffect._END_COUNT - 2;
+    var r = w/2 * i/this.ExplosionEffect._END_COUNT - 2;
     if(r <= 1)
       r = 1;
 
     ctx.beginPath();
     ctx.fillStyle = 'rgb(255, 255, 255)';
     ctx.globalAlpha = 0.5;
-    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.arc(x, y, r, 0, this.Math.PI * 2);
     ctx.fill();
 
     ctx.beginPath();
     ctx.strokeStyle = 'rgb(255, 255, 255)';
     ctx.globalAlpha = 1;
     ctx.lineWidth = 4;
-    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.arc(x, y, r, 0, this.Math.PI * 2);
     ctx.stroke();
   }
   return cvs;
@@ -224,12 +228,12 @@ EffectManager.prototype._generateExplosionImage = function() {
  */
 EffectManager.prototype._generateDamageImage = function() {
   var cvs = document.createElement('canvas');
-  cvs.width = Layer.calculateSquareValue(DamageEffect._WIDTH);
-  cvs.height = Layer.calculateSquareValue(DamageEffect._HEIGHT);
+  cvs.width = this.Layer.calculateSquareValue(this.DamageEffect._WIDTH);
+  cvs.height = this.Layer.calculateSquareValue(this.DamageEffect._HEIGHT);
   var ctx = cvs.getContext('2d');
 
-  var w = DamageEffect._WIDTH;
-  var h = DamageEffect._HEIGHT;
+  var w = this.DamageEffect._WIDTH;
+  var h = this.DamageEffect._HEIGHT;
   var x = w/2;
   var y = h/2;
   var r = w/2-4;
@@ -237,7 +241,7 @@ EffectManager.prototype._generateDamageImage = function() {
   ctx.beginPath();
   ctx.fillStyle = 'rgb(255, 255, 255)';
   ctx.globalAlpha = 0.5;
-  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.arc(x, y, r, 0, this.Math.PI * 2);
   ctx.fill();
 
   return cvs;
@@ -250,12 +254,12 @@ EffectManager.prototype._generateDamageImage = function() {
  */
 EffectManager.prototype._generateBigShockWaveImage = function() {
   var cvs = document.createElement('canvas');
-  cvs.width = Layer.calculateSquareValue(BigShockWaveEffect._WIDTH);
-  cvs.height = Layer.calculateSquareValue(BigShockWaveEffect._HEIGHT);
+  cvs.width = this.Layer.calculateSquareValue(this.BigShockWaveEffect._WIDTH);
+  cvs.height = this.Layer.calculateSquareValue(this.BigShockWaveEffect._HEIGHT);
   var ctx = cvs.getContext('2d');
 
-  var w = BigShockWaveEffect._WIDTH;
-  var h = BigShockWaveEffect._HEIGHT;
+  var w = this.BigShockWaveEffect._WIDTH;
+  var h = this.BigShockWaveEffect._HEIGHT;
   var x = w/2;
   var y = h/2;
   var r = w/2;
@@ -273,7 +277,7 @@ EffectManager.prototype._generateBigShockWaveImage = function() {
   g.addColorStop(s, 'rgba(255, 255, 255, 0.0)');
   g.addColorStop(1.00, 'rgba(255, 255, 255, 1.0)');
   ctx.fillStyle = g;
-  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.arc(x, y, r, 0, this.Math.PI * 2);
   ctx.fill();
   return cvs;
 };
@@ -284,12 +288,12 @@ EffectManager.prototype._generateBigShockWaveImage = function() {
  */
 EffectManager.prototype._generateBigExplosionImage = function() {
   var cvs = document.createElement('canvas');
-  cvs.width = Layer.calculateSquareValue(BigExplosionEffect._WIDTH);
-  cvs.height = Layer.calculateSquareValue(BigExplosionEffect._HEIGHT);
+  cvs.width = this.Layer.calculateSquareValue(this.BigExplosionEffect._WIDTH);
+  cvs.height = this.Layer.calculateSquareValue(this.BigExplosionEffect._HEIGHT);
   var ctx = cvs.getContext('2d');
 
-  var w = BigExplosionEffect._WIDTH;
-  var h = BigExplosionEffect._HEIGHT;
+  var w = this.BigExplosionEffect._WIDTH;
+  var h = this.BigExplosionEffect._HEIGHT;
   var x = w/2;
   var y = h/2;
   var r = w/2 - 2;
@@ -297,14 +301,14 @@ EffectManager.prototype._generateBigExplosionImage = function() {
   ctx.beginPath();
   ctx.fillStyle = 'rgb(255, 255, 255)';
   ctx.globalAlpha = 0.5;
-  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.arc(x, y, r, 0, this.Math.PI * 2);
   ctx.fill();
 
   ctx.beginPath();
   ctx.strokeStyle = 'rgb(255, 255, 255)';
   ctx.globalAlpha = 1;
   ctx.lineWidth = 4;
-  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.arc(x, y, r, 0, this.Math.PI * 2);
   ctx.stroke();
   return cvs;
 };
@@ -326,38 +330,39 @@ function EffectFactory(gameState, maxX, maxY) {
   this.bShockWaveFreelist = null;
   this.bExplosionFreelist = null;
   this.parent.call(this, gameState, maxX, maxY);
+  this.image = null;
 } ;
 __inherit(EffectFactory, ElementFactory);
 
-EffectFactory._SHOCKWAVE_NUM = 200 ;
-EffectFactory._GRAZE_NUM = 200 ;
-EffectFactory._DAMAGE_NUM = 200;
-EffectFactory._EXPLOSION_NUM = 200;
-EffectFactory._BIG_SHOCKWAVE_NUM = 10;
-EffectFactory._BIG_EXPLOSION_NUM = 10;
+EffectFactory.prototype._SHOCKWAVE_NUM = 200 ;
+EffectFactory.prototype._GRAZE_NUM = 200 ;
+EffectFactory.prototype._DAMAGE_NUM = 200;
+EffectFactory.prototype._EXPLOSION_NUM = 200;
+EffectFactory.prototype._BIG_SHOCKWAVE_NUM = 10;
+EffectFactory.prototype._BIG_EXPLOSION_NUM = 10;
 
 
 // TODO: temporal
-EffectFactory._PARAMS = [
+EffectFactory.prototype._PARAMS = [
  {'w': 4, 'g': 5, 'a': 0.1, 'b': 10, 'endCount': 10, 'default': true},
  {'x': 0, 'y': 0}
 ];
 
 
 EffectFactory.prototype._initFreelist = function() {
-  this.freelist = new ShockWaveEffectFreeList(EffectFactory._SHOCKWAVE_NUM,
+  this.freelist = new ShockWaveEffectFreeList(this._SHOCKWAVE_NUM,
                                               this.gameState);
-  this.grazeFreelist = new GrazeEffectFreeList(EffectFactory._GRAZE_NUM,
+  this.grazeFreelist = new GrazeEffectFreeList(this._GRAZE_NUM,
                                               this.gameState);
-  this.damageFreelist = new DamageEffectFreeList(EffectFactory._DAMAGE_NUM,
+  this.damageFreelist = new DamageEffectFreeList(this._DAMAGE_NUM,
                                                  this.gameState);
   this.explosionFreelist = new ExplosionEffectFreeList(
-                                 EffectFactory._EXPLOSION_NUM, this.gameState);
+                                 this._EXPLOSION_NUM, this.gameState);
   this.bShockWaveFreelist = new BigShockWaveEffectFreeList(
-                                  EffectFactory._BIG_SHOCKWAVE_NUM,
+                                  this._BIG_SHOCKWAVE_NUM,
                                   this.gameState);
   this.bExplosionFreelist = new BigExplosionEffectFreeList(
-                                  EffectFactory._BIG_EXPLOSION_NUM,
+                                  this._BIG_EXPLOSION_NUM,
                                   this.gameState);
 };
 
@@ -368,7 +373,7 @@ EffectFactory.prototype._initFreelist = function() {
 EffectFactory.prototype.create = function( element, type, params ) {
   // TODO: temporal
   if( ! params )
-    params = EffectFactory._PARAMS[ 0 ] ;
+    params = this._PARAMS[0];
 
   params.x = element.getX( ) ;
   params.y = element.getY( ) ;
@@ -383,7 +388,7 @@ EffectFactory.prototype.create = function( element, type, params ) {
  * TODO: temporal. combine this method with create( )?
  */
 EffectFactory.prototype.createGraze = function(fighter, bullet) {
-  params = EffectFactory._PARAMS[1];
+  params = this._PARAMS[1];
 
   params.x = fighter.getX();
   params.y = fighter.getY();
@@ -438,27 +443,37 @@ EffectFactory.prototype.createBigExplosion = function(enemy) {
 
 
 EffectFactory.prototype.free = function(element) {
-  if(element instanceof GrazeEffect)
-    this.grazeFreelist.free(element);
-  else if(element instanceof DamageEffect)
-    this.damageFreelist.free(element);
-  else if(element instanceof ExplosionEffect)
-    this.explosionFreelist.free(element);
-  else if(element instanceof BigShockWaveEffect)
-    this.bShockWaveFreelist.free(element);
-  else if(element instanceof BigExplosionEffect)
-    this.bExplosionFreelist.free(element);
-  else
-    this.freelist.free(element);
+  switch(element._ID) {
+    case this.EffectManager._ID_GRAZE:
+      this.grazeFreelist.free(element);
+      return;
+    case this.EffectManager._ID_DAMAGE:
+      this.damageFreelist.free(element);
+      return;
+    case this.EffectManager._ID_EXPLOSION:
+      this.explosionFreelist.free(element);
+      return;
+    case this.EffectManager._ID_BIG_SHOCKWAVE:
+      this.bShockWaveFreelist.free(element);
+      return;
+    case this.EffectManager._ID_BIG_EXPLOSION:
+      this.bExplosionFreelist.free(element);
+      return;
+    default: // this.EffectManager._ID_SHOCKWAVE:
+      this.freelist.free(element);
+      return;
+  }
 };
 
 
 /**
  * TODO: temporal
  */
-EffectFactory.prototype._getImage = function( params ) {
-  return this.gameState.getImage( Game._IMG_SHOCK_WAVE ) ;
-} ;
+EffectFactory.prototype._getImage = function(params) {
+  if(this.image === null)
+    this.image = this.gameState.getImage(Game._IMG_SHOCK_WAVE);
+  return this.image;
+};
 
 
 
@@ -485,7 +500,7 @@ __inherit(ShockWaveDrawer, ElementDrawer);
 
 
 ShockWaveDrawer.prototype._doPour = function(e) {
-  return (e instanceof ShockWaveEffect);
+  return (e._ID === this.elementManager._ID_SHOCKWAVE);
 };
 
 
@@ -518,20 +533,23 @@ function ShockWaveEffect( gameState, maxX, maxY ) {
   this.b = null ;
   this.default = null;
   this.endCount = null ;
-  this.preCanvas = ShockWaveEffect._PRE_CANVAS;
+  this.preCanvas = this._PRE_CANVAS;
 }
 __inherit( ShockWaveEffect, Element ) ;
 
-ShockWaveEffect._WIDTH = 200;
-ShockWaveEffect._HEIGHT = 200;
-ShockWaveEffect._END_COUNT = 10;
+// only for reference
+ShockWaveEffect.prototype.Math = Math;
 
-ShockWaveEffect._GRADATION = 20;
-ShockWaveEffect._SPEED = 10;
+ShockWaveEffect.prototype._WIDTH = 200;
+ShockWaveEffect.prototype._HEIGHT = 200;
+ShockWaveEffect.prototype._END_COUNT = 10;
 
-ShockWaveEffect._PRE_CANVAS = []; /* temporal */
-ShockWaveEffect._INNER_COLOR = 'rgba(255, 255, 255, 0.0)';
-ShockWaveEffect._OUTER_COLORS = [
+ShockWaveEffect.prototype._GRADATION = 20;
+ShockWaveEffect.prototype._SPEED = 10;
+
+ShockWaveEffect.prototype._PRE_CANVAS = []; /* temporal */
+ShockWaveEffect.prototype._INNER_COLOR = 'rgba(255, 255, 255, 0.0)';
+ShockWaveEffect.prototype._OUTER_COLORS = [
   'rgba(255, 255, 255, 0.0)',
   'rgba(255, 255, 255, 0.1)',
   'rgba(255, 255, 255, 0.2)',
@@ -546,11 +564,12 @@ ShockWaveEffect._OUTER_COLORS = [
 ];
 
 
+__copyParentMethod(ShockWaveEffect, Element, 'init');
 ShockWaveEffect.prototype.init = function(params, image, element) {
-  this.parent.prototype.init.call(this, params, image);
+  this.Element_init(params, image);
   this.element = element;
-  this.width = ShockWaveEffect._WIDTH;
-  this.height = ShockWaveEffect._HEIGHT;
+  this.width = this._WIDTH;
+  this.height = this._HEIGHT;
   this.w = params.w;
   this.g = params.g;
   this.a = params.a;
@@ -577,8 +596,8 @@ ShockWaveEffect.prototype._calculateEndCount = function(count) {
     x = this.gameState.getWidth() - x;
   if(y < this.gameState.getHeight() / 2)
     y = this.gameState.getHeight() - y;
-  var r = parseInt(Math.sqrt(x*x + y*y));
-  var count2 = parseInt(r / this.b) + this.g;
+  var r = (this.Math.sqrt(x*x + y*y) | 0);
+  var count2 = ((r / this.b) | 0) + this.g;
 
   return (count2 < count) ? count2 : count;
 
@@ -695,7 +714,7 @@ __inherit(BigShockWaveDrawer, ElementDrawer);
 
 
 BigShockWaveDrawer.prototype._doPour = function(e) {
-  return (e instanceof BigShockWaveEffect);
+  return (e._ID === this.elementManager._ID_BIG_SHOCKWAVE);
 };
 
 
@@ -739,16 +758,19 @@ function BigShockWaveEffect(gameState, maxX, maxY) {
   this.b = null;
   this.default = null;
   this.endCount = null;
-  this.preCanvas = ShockWaveEffect._PRE_CANVAS;
 }
 __inherit(BigShockWaveEffect, Element);
 
-BigShockWaveEffect._WIDTH = 512;
-BigShockWaveEffect._HEIGHT = 512;
+// only for reference
+BigShockWaveEffect.prototype.Math = Math;
+
+BigShockWaveEffect.prototype._WIDTH = 512;
+BigShockWaveEffect.prototype._HEIGHT = 512;
 
 
+__copyParentMethod(BigShockWaveEffect, Element, 'init');
 BigShockWaveEffect.prototype.init = function(params, image, element) {
-  this.parent.prototype.init.call(this, params, image);
+  this.Element_init(params, image);
   this.element = element;
   this.width = 512;
   this.height = 512;
@@ -778,8 +800,8 @@ BigShockWaveEffect.prototype._calculateEndCount = function(count) {
     x = this.gameState.getWidth() - x;
   if(y < this.gameState.getHeight() / 2)
     y = this.gameState.getHeight() - y;
-  var r = parseInt(Math.sqrt(x*x + y*y));
-  var count2 = parseInt(r / this.b) + this.g;
+  var r = (this.Math.sqrt(x*x + y*y) | 0);
+  var count2 = ((r / this.b) | 0) + this.g;
 
   return (count2 < count) ? count2 : count;
 
@@ -830,7 +852,7 @@ __inherit(ExplosionDrawer, ElementDrawer);
 
 
 ExplosionDrawer.prototype._doPour = function(e) {
-  return (e instanceof ExplosionEffect);
+  return (e._ID === this.elementManager._ID_EXPLOSION);
 };
 
 
@@ -844,8 +866,8 @@ __inherit(ExplosionView, ElementView);
 
 ExplosionView.prototype.animate = function() {
   this._initCoordinates();
-  this.a = (ExplosionEffect._END_COUNT - this.element.count + 1)/
-             ExplosionEffect._END_COUNT;
+  this.a = (this.element._END_COUNT - this.element.count + 1)/
+             this.element._END_COUNT;
 };
 
 
@@ -853,22 +875,23 @@ ExplosionView.prototype.animate = function() {
 function ExplosionEffect(gameState, maxX, maxY) {
   this.parent = Element;
   this.parent.call(this, gameState, maxX, maxY);
-  this.preCanvas = ExplosionEffect._PRE_CANVAS;
+  this.preCanvas = this._PRE_CANVAS;
 }
 __inherit(ExplosionEffect, Element);
 
-ExplosionEffect._WIDTH = 64 ;
-ExplosionEffect._HEIGHT = 64 ;
-ExplosionEffect._END_COUNT = 10;
-ExplosionEffect._PRE_CANVAS = []; /* TODO: temporal */
+ExplosionEffect.prototype._WIDTH = 64 ;
+ExplosionEffect.prototype._HEIGHT = 64 ;
+ExplosionEffect.prototype._END_COUNT = 10;
+ExplosionEffect.prototype._PRE_CANVAS = []; /* TODO: temporal */
 
 
+__copyParentMethod(ExplosionEffect, Element, 'init');
 ExplosionEffect.prototype.init = function(params, image, enemy) {
-  this.parent.prototype.init.call(this, params, image);
+  this.Element_init(params, image);
   this.setX(enemy.getX());
   this.setY(enemy.getY());
-  this.width  = ExplosionEffect._WIDTH;
-  this.height = ExplosionEffect._HEIGHT;
+  this.width  = this._WIDTH;
+  this.height = this._HEIGHT;
   this.collisionWidth  = this.width;
   this.collisionHeight = this.height;
   this.indexX = 0;
@@ -918,7 +941,7 @@ ExplosionEffect.prototype.display = function(surface) {
 
 
 ExplosionEffect.prototype.checkLoss = function() {
-  return this.count > ExplosionEffect._END_COUNT ? true : false;
+  return this.count > this._END_COUNT ? true : false;
 };
 
 
@@ -957,7 +980,7 @@ __inherit(GrazeDrawer, ElementDrawer);
 
 
 GrazeDrawer.prototype._doPour = function(e) {
-  return (e instanceof GrazeEffect);
+  return (e._ID === this.elementManager._ID_GRAZE);
 };
 
 
@@ -971,7 +994,7 @@ __inherit(GrazeView, ElementView);
 
 
 GrazeView.prototype.animate = function() {
-  this.a = 1.0 - this.element.count/GrazeEffect._END_COUNT;
+  this.a = 1.0 - this.element.count/this.element._END_COUNT;
 };
 
 
@@ -999,11 +1022,14 @@ function GrazeEffect(gameState, maxX, maxY) {
 }
 __inherit(GrazeEffect, Element);
 
-GrazeEffect._END_COUNT = 20;
-GrazeEffect._SPAN = 4;
-GrazeEffect._SIZE = 4;
-GrazeEffect._FLUCTUATION = 30;
-GrazeEffect._GAP = 5;
+// only for reference
+GrazeEffect.prototype.Math = Math;
+
+GrazeEffect.prototype._END_COUNT = 20;
+GrazeEffect.prototype._SPAN = 4;
+GrazeEffect.prototype._SIZE = 4;
+GrazeEffect.prototype._FLUCTUATION = 30;
+GrazeEffect.prototype._GAP = 5;
 
 
 GrazeEffect.prototype._generateView = function() {
@@ -1011,26 +1037,29 @@ GrazeEffect.prototype._generateView = function() {
 };
 
 
+__copyParentMethod(GrazeEffect, Element, 'init');
 GrazeEffect.prototype.init = function(params, image, element, bullet) {
-  this.parent.prototype.init.call(this, params, image);
+
+  this.Element_init(params, image);
+
   this.element = element;
 
-  this.width = GrazeEffect._SIZE;
-  this.height = GrazeEffect._SIZE;
+  this.width = this._SIZE;
+  this.height = this._SIZE;
 
   if(bullet.getVelocity()) {
     this.theta = bullet.getTheta();
   } else {
     var ax = this.element.getCenterX() - bullet.getCenterX();
     var ay = this.element.getCenterY() - bullet.getCenterY();
-    this.theta = this._calculateTheta(Math.atan2(ay, ax));
+    this.theta = this._calculateTheta(this.Math.atan2(ay, ax));
   }
   // TODO: temporal
-  this.theta += this.gameState.count % GrazeEffect._FLUCTUATION
-                - GrazeEffect._FLUCTUATION/2;
+  this.theta += this.gameState.count % this._FLUCTUATION
+                - this._FLUCTUATION/2;
 
   // TODO: temporal
-  for(var i = 0; i < GrazeEffect._GAP; i++)
+  for(var i = 0; i < this._GAP; i++)
     this.move();
 
   this._initView();
@@ -1043,10 +1072,10 @@ GrazeEffect.prototype.init = function(params, image, element, bullet) {
 GrazeEffect.prototype.move = function() {
   var x = this.getX();
   var y = this.getY();
-  x = x + Math.cos(this._calculateRadian(this.theta))
-            * GrazeEffect._SPAN;
-  y = y + Math.sin(this._calculateRadian(this.theta))
-            * GrazeEffect._SPAN;
+  x = x + this.Math.cos(this._calculateRadian(this.theta))
+            * this._SPAN;
+  y = y + this.Math.sin(this._calculateRadian(this.theta))
+            * this._SPAN;
   this.setX(x);
   this.setY(y);
 };
@@ -1066,7 +1095,7 @@ GrazeEffect.prototype.display = function(surface) {
 
 
 GrazeEffect.prototype.checkLoss = function() {
-  return this.count > GrazeEffect._END_COUNT ? true : false;
+  return this.count > this._END_COUNT ? true : false;
 };
 
 
@@ -1074,7 +1103,7 @@ GrazeEffect.prototype.checkLoss = function() {
  * TODO: temporal
  */
 GrazeEffect.prototype.getImageWidth = function() {
-  return GrazeEffect._SIZE;
+  return this._SIZE;
 };
 
 
@@ -1082,7 +1111,7 @@ GrazeEffect.prototype.getImageWidth = function() {
  * TODO: temporal
  */
 GrazeEffect.prototype.getImageHeight = function() {
-  return GrazeEffect._SIZE;
+  return this._SIZE;
 };
 
 
@@ -1108,7 +1137,7 @@ __inherit(DamageDrawer, ElementDrawer);
 
 
 DamageDrawer.prototype._doPour = function(e) {
-  return (e instanceof DamageEffect);
+  return (e._ID === this.elementManager._ID_DAMAGE);
 };
 
 
@@ -1121,7 +1150,7 @@ __inherit(DamageView, ElementView);
 
 
 DamageView.prototype.animate = function() {
-  this.a = (DamageEffect._END_COUNT - this.element.count + 1) * 0.02;
+  this.a = (this.element._END_COUNT - this.element.count + 1) * 0.02;
 };
 
 
@@ -1135,30 +1164,34 @@ function DamageEffect( gameState, maxX, maxY ) {
 }
 __inherit( DamageEffect, Element ) ;
 
-DamageEffect._WIDTH = 64 ;
-DamageEffect._HEIGHT = 64 ;
-DamageEffect._END_COUNT = 2;
+// only for reference
+DamageEffect.prototype.Math = Math;
+
+DamageEffect.prototype._WIDTH = 64 ;
+DamageEffect.prototype._HEIGHT = 64 ;
+DamageEffect.prototype._END_COUNT = 2;
 
 
-DamageEffect.prototype.init = function( params, image, enemy ) {
-  this.parent.prototype.init.call( this, params, image ) ;
-  this.enemy = enemy ;
-  this.setX( enemy.getX( ) ) ;
-  this.setY( enemy.getY( ) ) ;
-  this.width  = DamageEffect._WIDTH ;
-  this.height = DamageEffect._HEIGHT ;
-  this.collisionWidth  = this.width ;
-  this.collisionHeight = this.height ;
-  this.indexX = 0 ;
-  this.indexY = 0 ;
+__copyParentMethod(DamageEffect, Element, 'init');
+DamageEffect.prototype.init = function(params, image, enemy) {
+  this.Element_init(params, image);
+  this.enemy = enemy;
+  this.setX(enemy.getX());
+  this.setY(enemy.getY());
+  this.width  = this._WIDTH;
+  this.height = this._HEIGHT;
+  this.collisionWidth  = this.width;
+  this.collisionHeight = this.height;
+  this.indexX = 0;
+  this.indexY = 0;
 
   // TODO: temporal
   var tmp = 32;
-  this.dx = -tmp/2 + (Math.pow(this.gameState.count, 2)%32);
-  this.dy = -tmp/2 + (Math.pow(this.gameState.count, 2)%32);
+  this.dx = -tmp/2 + (this.Math.pow(this.gameState.count, 2)%32);
+  this.dy = -tmp/2 + (this.Math.pow(this.gameState.count, 2)%32);
 
   this._initView();
-} ;
+};
 
 
 DamageEffect.prototype._generateView = function() {
@@ -1169,21 +1202,24 @@ DamageEffect.prototype._generateView = function() {
 /**
  * TODO: temporal
  */
-DamageEffect.prototype.runStep = function( ) {
-  var tmp = 32 ;
-  this.dx = -tmp / 2 + parseInt( Math.random( ) * tmp ) ;
-  this.dy = -tmp / 2 + parseInt( Math.random( ) * tmp ) ;
-  this.parent.prototype.runStep.call( this ) ;
-} ;
-
-
-DamageEffect.prototype.getX = function() {
-  return this.parent.prototype.getX.call(this) + this.dx;
+__copyParentMethod(DamageEffect, Element, 'runStep');
+DamageEffect.prototype.runStep = function() {
+  var tmp = 32;
+  this.dx = -tmp / 2 + ((this.Math.random() * tmp) | 0);
+  this.dy = -tmp / 2 + ((this.Math.random() * tmp) | 0);
+  this.Element_runStep();
 };
 
 
+__copyParentMethod(DamageEffect, Element, 'getX');
+DamageEffect.prototype.getX = function() {
+  return this.Element_getX() + this.dx;
+};
+
+
+__copyParentMethod(DamageEffect, Element, 'getY');
 DamageEffect.prototype.getY = function() {
-  return this.parent.prototype.getY.call(this) + this.dy;
+  return this.Element_getY() + this.dy;
 };
 
 
@@ -1217,7 +1253,7 @@ DamageEffect.prototype.checkLoss = function( ) {
  * TODO: temporal
  */
 DamageEffect.prototype.getImageWidth = function() {
-  return DamageEffect._WIDTH;
+  return this._WIDTH;
 };
 
 
@@ -1225,7 +1261,7 @@ DamageEffect.prototype.getImageWidth = function() {
  * TODO: temporal
  */
 DamageEffect.prototype.getImageHeight = function() {
-  return DamageEffect._HEIGHT;
+  return this._HEIGHT;
 };
 
 
@@ -1253,7 +1289,7 @@ __inherit(BigExplosionDrawer, ElementDrawer);
 
 
 BigExplosionDrawer.prototype._doPour = function(e) {
-  return (e instanceof BigExplosionEffect);
+  return (e._ID === this.elementManager._ID_BIG_EXPLOSION);
 };
 
 
@@ -1266,8 +1302,8 @@ __inherit(BigExplosionView, ElementView);
 
 
 BigExplosionView.prototype.animate = function() {
-  this.a = (BigExplosionEffect._END_COUNT - this.element.count + 1)/
-             BigExplosionEffect._END_COUNT;
+  this.a = (this.element._END_COUNT - this.element.count + 1) /
+             this.element._END_COUNT;
   var w = 32 * this.element.count * 0.1;
   var h = 32 * this.element.count * 0.1;
 
@@ -1295,15 +1331,17 @@ function BigExplosionEffect(gameState, maxX, maxY) {
 };
 __inherit(BigExplosionEffect, Element);
 
-BigExplosionEffect._WIDTH = 320;
-BigExplosionEffect._HEIGHT = 320;
+BigExplosionEffect.prototype._WIDTH = 320;
+BigExplosionEffect.prototype._HEIGHT = 320;
 
-BigExplosionEffect._END_COUNT = 100;
+BigExplosionEffect.prototype._END_COUNT = 100;
 
+
+__copyParentMethod(BigExplosionEffect, Element, 'init');
 BigExplosionEffect.prototype.init = function(params, image, boss) {
-  this.parent.prototype.init.call(this, params, image);
-  this.width  = BigExplosionEffect._WIDTH;
-  this.height = BigExplosionEffect._HEIGHT;
+  this.Element_init(params, image);
+  this.width  = this._WIDTH;
+  this.height = this._HEIGHT;
   this.collisionWidth  = this.width;
   this.collisionHeight = this.height;
   this.boss = boss;
@@ -1347,7 +1385,7 @@ BigExplosionEffect.prototype.display = function(surface) {
 
 
 BigExplosionEffect.prototype.checkLoss = function() {
-  return this.count > BigExplosionEffect._END_COUNT ? true : false;
+  return this.count > this._END_COUNT ? true : false;
 };
 
 
@@ -1365,3 +1403,33 @@ BigExplosionEffect.prototype.getImageWidth = function() {
 BigExplosionEffect.prototype.getImageHeight = function() {
   return 512;
 };
+
+
+// TODO: remove the followings because they complicate the design.
+
+// TODO: temporal
+// only for reference
+EffectManager.prototype.ShockWaveEffect = ShockWaveEffect.prototype;
+EffectManager.prototype.BigShockWaveEffect = BigShockWaveEffect.prototype;
+EffectManager.prototype.ExplosionEffect = ExplosionEffect.prototype;
+EffectManager.prototype.GrazeEffect = GrazeEffect.prototype;
+EffectManager.prototype.DamageEffect = DamageEffect.prototype;
+EffectManager.prototype.BigExplosionEffect = BigExplosionEffect.prototype;
+
+// TODO: temporal
+// for _doPour() and free()
+EffectManager.prototype._ID_SHOCKWAVE     = 0;
+EffectManager.prototype._ID_BIG_SHOCKWAVE = 1;
+EffectManager.prototype._ID_EXPLOSION     = 2;
+EffectManager.prototype._ID_GRAZE         = 3;
+EffectManager.prototype._ID_DAMAGE        = 4;
+EffectManager.prototype._ID_BIG_EXPLOSION = 5;
+
+EffectFactory.prototype.EffectManager = EffectManager.prototype;
+
+ShockWaveEffect.prototype._ID    = EffectManager.prototype._ID_SHOCKWAVE;
+BigShockWaveEffect.prototype._ID = EffectManager.prototype._ID_BIG_SHOCKWAVE;
+ExplosionEffect.prototype._ID    = EffectManager.prototype._ID_EXPLOSION;
+GrazeEffect.prototype._ID        = EffectManager.prototype._ID_GRAZE;
+DamageEffect.prototype._ID       = EffectManager.prototype._ID_DAMAGE;
+BigExplosionEffect.prototype._ID = EffectManager.prototype._ID_BIG_EXPLOSION;

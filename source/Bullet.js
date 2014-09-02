@@ -6,10 +6,10 @@ function BulletManager( gameState, params ) {
 } ;
 __inherit( BulletManager, ElementManager ) ;
 
-BulletManager._MAX_NUM = 500;
+BulletManager.prototype._MAX_NUM = 500;
 
 BulletManager.prototype._initMaxNum = function() {
-  return BulletManager._MAX_NUM;
+  return this._MAX_NUM;
 };
 
 
@@ -24,10 +24,11 @@ BulletManager.prototype.initDrawer = function(layer, image) {
 };
 
 
-BulletManager.prototype.reset = function( ) {
-  this.parent.prototype.reset.call( this ) ;
-  this.laserCount = 0 ;
-} ;
+__copyParentMethod(BulletManager, ElementManager, 'reset');
+BulletManager.prototype.reset = function() {
+  this.ElementManager_reset();
+  this.laserCount = 0;
+};
 
 
 /**
@@ -54,49 +55,49 @@ BulletManager.prototype.create = function( fighter ) {
 } ;
 
 
-BulletManager.prototype.checkCollisionWithEnemies = function( enemies ) {
-  var self = this ;
-  for( var i = 0; i < enemies.length; i++ ) {
-    this.parent.prototype.checkCollisionWith.call( this, enemies[ i ],
-      this._checkCollisionWithEnemiesCallBack.bind( this ) ) ;
+__copyParentMethod(BulletManager, ElementManager, 'checkCollisionWith');
+BulletManager.prototype.checkCollisionWithEnemies = function(enemies) {
+  var self = this;
+  for(var i = 0; i < enemies.length; i++) {
+    this.ElementManager_checkCollisionWith(null, enemies[i], this);
   }
-} ;
+};
 
 
-BulletManager.prototype._checkCollisionWithEnemiesCallBack = function( enemy, bullet ) {
+BulletManager.prototype.notifyCollision = function(id, enemy, bullet) {
   // TODO: temporal
-  if( ! ( bullet instanceof Laser ) )
-    bullet.die( ) ;
+  if(bullet._ID !== this._ID_LASER)
+    bullet.die();
   // TODO: temporal
-  enemy.vital -= bullet.power ;
-  this.gameState.notifyBulletHit( bullet, enemy ) ;
-  if( enemy.vital <= 0 ) {
-    this.gameState.notifyEnemyVanished( bullet, enemy ) ;
-    enemy.die( ) ;
+  enemy.vital -= bullet.power;
+  this.gameState.notifyBulletHit(bullet, enemy);
+  if(enemy.vital <= 0) {
+    this.gameState.notifyEnemyVanished(bullet, enemy);
+    enemy.die();
   }
-} ;
+};
 
 
 /**
  * TODO: temporal
  */
-BulletManager.prototype.checkCollisionWithBoss = function( boss ) {
-  if( boss.isFlagSet( Element._FLAG_UNHITTABLE ) )
-    return ;
+__copyParentMethod(BulletManager, ElementManager, 'checkCollisionWith2');
+BulletManager.prototype.checkCollisionWithBoss = function(boss) {
+  if(boss.isFlagSet(boss._FLAG_UNHITTABLE))
+    return;
 
-  var self = this ;
-  this.parent.prototype.checkCollisionWith2.call( this, boss,
-    this._checkCollisionWithBossCallBack.bind( this ) ) ;
-} ;
+  var self = this;
+  this.ElementManager_checkCollisionWith2(null, boss, this);
+};
 
 
-BulletManager.prototype._checkCollisionWithBossCallBack = function( boss, bullet ) {
+BulletManager.prototype.notifyCollision2 = function(id, boss, bullet) {
   // TODO: temporal
-  if( ! ( bullet instanceof Laser ) )
-    bullet.die( ) ;
-  boss.vital -= bullet.power ;
-  this.gameState.notifyBulletHit( bullet, boss ) ;
-} ;
+  if(bullet._ID !== this._ID_LASER)
+    bullet.die();
+  boss.vital -= bullet.power;
+  this.gameState.notifyBulletHit(bullet, boss);
+};
 
 
 
@@ -108,19 +109,20 @@ function BulletFactory( gameState, maxX, maxY ) {
 
   this.parent.call( this, gameState, maxX, maxY ) ;
   this.types = __bulletTypes ;  // TODO: temporal
+  this.image = null; // TODO: temporal
 }
 __inherit( BulletFactory, ElementFactory ) ;
 
-BulletFactory._BULLET_NUM = 100 ;
-BulletFactory._HOMING_NUM = 100 ;
-BulletFactory._LASER_NUM  = 10 ;
+BulletFactory.prototype._BULLET_NUM = 100 ;
+BulletFactory.prototype._HOMING_NUM = 100 ;
+BulletFactory.prototype._LASER_NUM  = 10 ;
 
 
-BulletFactory.prototype._initFreelist = function( ) {
-  this.freelist       = new BulletFreeList( BulletFactory._BULLET_NUM, this.gameState ) ; 
-  this.homingFreelist = new HomingFreeList( BulletFactory._HOMING_NUM, this.gameState ) ; 
-  this.laserFreelist  = new LaserFreeList(  BulletFactory._LASER_NUM,  this.gameState ) ; 
-} ;
+BulletFactory.prototype._initFreelist = function() {
+  this.freelist       = new BulletFreeList(this._BULLET_NUM, this.gameState);
+  this.homingFreelist = new HomingFreeList(this._HOMING_NUM, this.gameState);
+  this.laserFreelist  = new LaserFreeList( this._LASER_NUM,  this.gameState);
+};
 
 
 BulletFactory.prototype.create = function( params, fighter ) {
@@ -146,18 +148,30 @@ BulletFactory.prototype.create = function( params, fighter ) {
 
 
 BulletFactory.prototype.free = function( bullet ) {
-  if( bullet instanceof Bullet )
-    this.freelist.free( bullet ) ;
-  else if( bullet instanceof Homing )
-    this.homingFreelist.free( bullet ) ;
-  else if( bullet instanceof Laser )
-    this.laserFreelist.free( bullet ) ;
-} ;
+  switch(bullet._ID) {
+    case this.BulletManager._ID_BULLET:
+      this.freelist.free( bullet ) ;
+      return;
+    case this.BulletManager._ID_LASER:
+      this.laserFreelist.free( bullet ) ;
+      return;
+    case this.BulletManager._ID_HOMING:
+      this.homingFreelist.free( bullet ) ;
+      return;
+    default:
+      // throw exception?
+  }
+};
 
 
-BulletFactory.prototype._getImage = function( params ) {
-  return this.gameState.getImage( Game._IMG_SHOT ) ;
-} ;
+/**
+ * TODO: temporal
+ */
+BulletFactory.prototype._getImage = function(params) {
+  if(this.image === null)
+    this.image = this.gameState.getImage(Game._IMG_SHOT);
+  return this.image;
+};
 
 
 
@@ -198,30 +212,33 @@ function Bullet( gameState, maxX, maxY ) {
 }
 __inherit( Bullet, Element ) ;
 
-Bullet._WIDTH = 16 ;
-Bullet._HEIGHT = 32 ;
+Bullet.prototype._WIDTH = 16 ;
+Bullet.prototype._HEIGHT = 32 ;
 
 
 /**
  * TODO: temporal. params2 should be renamed.
  */
-Bullet.prototype.init = function( params, image, params2 ) {
-  this.parent.prototype.init.call( this, params, image ) ;
-  this.setX( this.getX( ) + this.gameState.fighter.getX( ) ) ;
-  this.setY( this.getY( ) + this.gameState.fighter.getY( ) ) ;
+__copyParentMethod(Bullet, Element, 'init');
+Bullet.prototype.init = function(params, image, params2) {
+
+  this.Element_init(params, image);
+
+  this.setX(this.getX() + this.gameState.fighter.getX());
+  this.setY(this.getY() + this.gameState.fighter.getY());
 
   // TODO: temporal. Wanna combine this logic with parent init( ).
-  this.indexX = params2.indexX != undefined ? params2.indexX : 0 ;
-  this.indexY = params2.indexY != undefined ? params2.indexY : 0 ;
-  this.width  = params2.width  != undefined ? params2.width  : 0 ;
-  this.height = params2.height != undefined ? params2.height : 0 ;
-  this.collisionWidth  = params2.collisionWidth  != undefined ? params2.collisionWidth  : 0 ;
-  this.collisionHeight = params2.collisionHeight != undefined ? params2.collisionHeight : 0 ;
+  this.indexX = params2.indexX !== void 0 ? params2.indexX : 0;
+  this.indexY = params2.indexY !== void 0 ? params2.indexY : 0;
+  this.width  = params2.width  !== void 0 ? params2.width  : 0;
+  this.height = params2.height !== void 0 ? params2.height : 0;
+  this.collisionWidth  = params2.collisionWidth  !== void 0 ? params2.collisionWidth  : 0;
+  this.collisionHeight = params2.collisionHeight !== void 0 ? params2.collisionHeight : 0;
 
-  this.power  = params.power   != undefined ? params.power   : 1 ;
-  this.rotate = params2.rotate != undefined ? params2.rotate : 0 ;
+  this.power  = params.power   !== void 0 ? params.power   : 1;
+  this.rotate = params2.rotate !== void 0 ? params2.rotate : 0;
   this._initView();
-} ;
+};
 
 
 Bullet.prototype._generateView = function() {
@@ -284,8 +301,9 @@ LaserView.prototype._getElementZ = function() {
  * assumes that image height is 256 and master image size is 256.
  * TODO: temporal
  */
+__copyParentMethod(LaserView, ElementView, '_initVertices');
 LaserView.prototype._initVertices = function() {
-  this.parent.prototype._initVertices.call(this);
+  this.ElementView_initVertices();
   this.vertices[1]   = 0;
   this.vertices[4]   = 0;
   this.vertices[7]  *= 4;
@@ -297,8 +315,9 @@ LaserView.prototype._initVertices = function() {
  * assumes that image height is 256 and master image size is 256.
  * TODO: temporal
  */
+__copyParentMethod(LaserView, ElementView, '_initCoordinates');
 LaserView.prototype._initCoordinates = function() {
-  this.parent.prototype._initCoordinates.call(this);
+  this.ElementView_initCoordinates();
   this.coordinates[1] *= 2;
   this.coordinates[3] *= 2;
 };
@@ -329,28 +348,31 @@ function Laser( gameState, maxX, maxY ) {
 }
 __inherit( Laser, Element ) ;
 
-Laser._WIDTH = 16 ;
-Laser._HEIGHT = 16 ;
+Laser.prototype._WIDTH = 16 ;
+Laser.prototype._HEIGHT = 16 ;
 
 
-Laser.prototype.init = function( params, image, option, params2 ) {
-  this.parent.prototype.init.call( this, params, image ) ;
-  this.option = option ;
+__copyParentMethod(Laser, Element, 'init');
+Laser.prototype.init = function(params, image, option, params2) {
+
+  this.Element_init(params, image);
+
+  this.option = option;
 
   // TODO: temporal. Wanna combine this logic with parent init( ).
-  this.keepAlive = this._getValueOrDefaultValue( params.keep, 0 ) ;
-  this.indexX = params2.indexX != undefined ? params2.indexX : 0 ;
-  this.indexY = params2.indexY != undefined ? params2.indexY : 0 ;
-  this.width  = params2.width  != undefined ? params2.width  : 0 ;
-  this.height = params2.height != undefined ? params2.height : 0 ;
-  this.collisionWidth  = params2.collisionWidth  != undefined ? params2.collisionWidth  : 0 ;
-  this.collisionHeight = params2.collisionHeight != undefined ? params2.collisionHeight : 0 ;
+  this.keepAlive = this._getValueOrDefaultValue(params.keep, 0);
+  this.indexX = params2.indexX !== void 0 ? params2.indexX : 0;
+  this.indexY = params2.indexY !== void 0 ? params2.indexY : 0;
+  this.width  = params2.width  !== void 0 ? params2.width  : 0;
+  this.height = params2.height !== void 0 ? params2.height : 0;
+  this.collisionWidth  = params2.collisionWidth  !== void 0 ? params2.collisionWidth  : 0;
+  this.collisionHeight = params2.collisionHeight !== void 0 ? params2.collisionHeight : 0;
 
-  this.power     = params.power     != undefined ? params.power     : 1 ;
-  this.waitCount = params.waitCount != undefined ? params.waitCount : 50 ;
-  this.rotate    = params2.rotate   != undefined ? params2.rotate   : 0 ;
+  this.power     = params.power     !== void 0 ? params.power     : 1;
+  this.waitCount = params.waitCount !== void 0 ? params.waitCount : 50;
+  this.rotate    = params2.rotate   !== void 0 ? params2.rotate   : 0;
   this._initView();
-} ;
+};
 
 
 Laser.prototype._generateView = function() {
@@ -453,39 +475,43 @@ function Homing( gameState, maxX, maxY ) {
 }
 __inherit( Homing, Element ) ;
 
-Homing._SEARCH_SPAN = 1000 ;
-Homing._HOMING_SPAN = 2 ;
-Homing._HOMING_COUNT = 50 ;
-Homing._HOMING_LAG = 5 ;
-Homing._HOMING_REACH = 10 ;
+Homing.prototype.Math = Math;
 
-Homing._OUT_RANGE = 30 ;
+Homing.prototype._SEARCH_SPAN = 1000;
+Homing.prototype._HOMING_SPAN = 2;
+Homing.prototype._HOMING_COUNT = 50;
+Homing.prototype._HOMING_LAG = 5;
+Homing.prototype._HOMING_REACH = 10;
+
+Homing.prototype._OUT_RANGE = 30;
 
 
-Homing.prototype.init = function( params, image, option, params2 ) {
+__copyParentMethod(Homing, Element, 'init');
+Homing.prototype.init = function(params, image, option, params2) {
 
-  this.parent.prototype.init.call( this, params, image ) ;
-  this.option = option ;
-  this.setX( this.getX( ) + option.getCenterX( ) ) ;
-  this.setY( this.getY( ) + option.getCenterY( ) ) ;
+  this.Element_init(params, image);
+
+  this.option = option;
+  this.setX(this.getX() + option.getCenterX());
+  this.setY(this.getY() + option.getCenterY());
 
   // TODO: temporal. Wanna combine this logic with parent init( ).
-  this.keepAlive = this._getValueOrDefaultValue( params.keep, 0 ) ;
-  this.indexX = params2.indexX != undefined ? params2.indexX : 0 ;
-  this.indexY = params2.indexY != undefined ? params2.indexY : 0 ;
-  this.width  = params2.width  != undefined ? params2.width  : 0 ;
-  this.height = params2.height != undefined ? params2.height : 0 ;
-  this.collisionWidth  = params2.collisionWidth  != undefined ? params2.collisionWidth  : 0 ;
-  this.collisionHeight = params2.collisionHeight != undefined ? params2.collisionHeight : 0 ;
+  this.keepAlive = this._getValueOrDefaultValue(params.keep, 0);
+  this.indexX = params2.indexX !== void 0 ? params2.indexX : 0;
+  this.indexY = params2.indexY !== void 0 ? params2.indexY : 0;
+  this.width  = params2.width  !== void 0 ? params2.width  : 0;
+  this.height = params2.height !== void 0 ? params2.height : 0;
+  this.collisionWidth  = params2.collisionWidth  !== void 0 ? params2.collisionWidth  : 0;
+  this.collisionHeight = params2.collisionHeight !== void 0 ? params2.collisionHeight : 0;
 
-  this.power     = params.power     != undefined ? params.power     : 1 ;
-  this.waitCount = params.waitCount != undefined ? params.waitCount : 50 ;
-  this.rotate    = params2.rotate   != undefined ? params2.rotate   : false ;
+  this.power     = params.power     !== void 0 ? params.power     : 1;
+  this.waitCount = params.waitCount !== void 0 ? params.waitCount : 50;
+  this.rotate    = params2.rotate   !== void 0 ? params2.rotate   : false;
 
-  this.target = null ;
-  this.targetIsDead = false ;
+  this.target = null;
+  this.targetIsDead = false;
   this._initView();
-} ;
+};
 
 
 /**
@@ -509,13 +535,15 @@ Homing.prototype.display = function( surface ) {
 /**
  * TODO: temporal
  */
-Homing.prototype.runStep = function( ) {
-  if( this.count % Homing._SEARCH_SPAN == 0 )
-    this._searchNearestEnemy( ) ;
-  if( this.count % Homing._HOMING_SPAN == 0 )
-    this._calculateHomingPoint( ) ;
-  this.parent.prototype.runStep.call( this ) ;
-} ;
+__copyParentMethod(Homing, Element, 'runStep');
+Homing.prototype.runStep = function() {
+  if(this.count % this._SEARCH_SPAN == 0)
+    this._searchNearestEnemy();
+  if(this.count % this._HOMING_SPAN == 0)
+    this._calculateHomingPoint();
+
+  this.Element_runStep(this);
+};
 
 
 /**
@@ -530,7 +558,7 @@ Homing.prototype._searchNearestEnemy = function( ) {
   var nearest = null ;
   for( var i = 0; i < this.gameState.enemyManager.elements.length; i++ ) {
     var e = this.gameState.enemyManager.elements[ i ] ;
-    var d = Math.pow( this.getX( ) - e.getX( ), 2 ) + Math.pow( this.getY( ) - e.getY( ), 2 ) ;
+    var d = this.Math.pow( this.getX( ) - e.getX( ), 2 ) + this.Math.pow( this.getY( ) - e.getY( ), 2 ) ;
     if( d < min ) {
       min = d ;
       nearest = e ;
@@ -539,7 +567,7 @@ Homing.prototype._searchNearestEnemy = function( ) {
   if( this.gameState.bossManager.existBoss( ) ) {
     var b = this.gameState.bossManager.getBoss( ) ;
     if(! b.vanishing && ! b.escaping) {
-      var d = Math.pow( this.getX( ) - b.getX( ), 2 ) + Math.pow( this.getY( ) - b.getY( ), 2 ) ;
+      var d = this.Math.pow( this.getX( ) - b.getX( ), 2 ) + this.Math.pow( this.getY( ) - b.getY( ), 2 ) ;
       if( d < min ) {
         min = d ;
         nearest = b ;
@@ -560,16 +588,14 @@ Homing.prototype._calculateHomingPoint = function( ) {
   if( ! this.target )
     return ;
   // TODO: how handles the case if target is used for the other alive element soon again?
-  if(this.target.isDead() || this.target.isFlagSet(Element._FLAG_UNHITTABLE) ||
-  // TODO: this logic should be in Boss.
-     (this.target instanceof Boss &&
-       (this.target.vanishing || this.target.escaping))) {
+  if(this.target.isDead() || this.target.isFlagSet(this._FLAG_UNHITTABLE) ||
+      this.target.isVanishingOrEscaping()) {
     this.targetIsDead = true ;
     return ;
   }
   var ax = this.target.getX( ) - this.getX( ) ;
   var ay = this.target.getY( ) - this.getY( ) ;
-  var t = this._calculateTheta( Math.atan2( ay, ax ) ) ;
+  var t = this._calculateTheta( this.Math.atan2( ay, ax ) ) ;
 /*
   var diff = t - this.vector.theta ;
   if( Math.cos( this._calculateRadian( diff ) ) >
@@ -590,10 +616,22 @@ Homing.prototype._calculateHomingPoint = function( ) {
 
 
 Homing.prototype._outOfTheField = function( ) {
-  if( this.getX( ) < -Homing._OUT_RANGE || this.getX( ) > this.maxX + Homing._OUT_RANGE ||
-      this.getY( ) < -Homing._OUT_RANGE || this.getY( ) > this.maxY + Homing._OUT_RANGE )
+  if( this.getX( ) < -this._OUT_RANGE || this.getX( ) > this.maxX + this._OUT_RANGE ||
+      this.getY( ) < -this._OUT_RANGE || this.getY( ) > this.maxY + this._OUT_RANGE )
     return true ;
   return false ;
 } ;
 
 
+
+// TODO: remove the followings because they complicate the design.
+
+BulletManager.prototype._ID_BULLET = 0;
+BulletManager.prototype._ID_LASER  = 1;
+BulletManager.prototype._ID_HOMING = 2;
+
+BulletFactory.prototype.BulletManager = BulletManager.prototype;
+
+Bullet.prototype._ID = BulletManager.prototype._ID_BULLET;
+Laser.prototype._ID  = BulletManager.prototype._ID_LASER;
+Homing.prototype._ID = BulletManager.prototype._ID_HOMING;
