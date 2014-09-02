@@ -48,8 +48,8 @@ var init = function( ) {
   var bgCanvas = document.getElementById('bgCanvas');
   var game = new Game(mainCanvas, bgCanvas);
   __game = game ;
-  window.onkeydown = game.handleKeyDown.bind( game ) ;
-  window.onkeyup = game.handleKeyUp.bind( game ) ;
+  window.onkeydown = function(event) { game.handleKeyDown(event); };
+  window.onkeyup = function(event) { game.handleKeyUp(event); };
   game.run( ) ;
 } ;
 
