@@ -6,6 +6,10 @@ function GameSocket(game) {
   this.ws = null;
   this.params = {}; // for sent data.
   this.interval = null;
+
+  var self = this;
+  this.onMessageFunc = function(event) { self._messageCallback(event); };
+  this.dummySendFunc = function() { self._keepSendDummy(); };
 };
 
 GameSocket._URL = 'ws://safe-retreat-9152.herokuapp.com/';
@@ -38,7 +42,7 @@ GameSocket.prototype.connected = function() {
 GameSocket.prototype.connect = function() {
   try {
     this.ws = new WebSocket(GameSocket._URL);
-    this.ws.onmessage = this._messageCallback.bind(this);
+    this.ws.onmessage = this.onMessageFunc;
   } catch(e) {
     this.ws = null;
     console.log(e);
@@ -83,8 +87,7 @@ GameSocket.prototype._keepSendDummy = function() {
 GameSocket.prototype._setIntervalForDummy = function() {
   if(! this.ws)
     return;
-  this.interval = setTimeout(this._keepSendDummy.bind(this),
-                             GameSocket._DUMMY_SPAN);
+  this.interval = setTimeout(this.dummySendFunc, GameSocket._DUMMY_SPAN);
 };
 
 

@@ -8,11 +8,11 @@ function FighterManager(gameState) {
 };
 __inherit(FighterManager, ElementManager);
 
-FighterManager._MAX_NUM = 2;
+FighterManager.prototype._MAX_NUM = 2;
 
 
 FighterManager.prototype._initMaxNum = function() {
-  return FighterManager._MAX_NUM;
+  return this._MAX_NUM;
 };
 
 
@@ -75,7 +75,7 @@ FighterView.prototype.rotate = function() {
 
 FighterView.prototype.animate = function() {
   this._initCoordinates();
-  this.a = this.element.isFlagSet(Element._FLAG_UNHITTABLE) ? 0.7 : 1.0;
+  this.a = this.element.isFlagSet(this.element._FLAG_UNHITTABLE) ? 0.7 : 1.0;
 };
 
 
@@ -85,46 +85,47 @@ function Fighter(gameState, maxX, maxY, image) {
   this.parent = Element;
   this.parent.call(this, gameState, maxX, maxY);
   this.image = image;
-  this.width = Fighter._WIDTH;
-  this.height = Fighter._HEIGHT;
-  this.collisionWidth = Fighter._COLLISION_WIDTH[this.characterIndex];
-  this.collisionHeight = Fighter._COLLISION_HEIGHT[this.characterIndex];
+  this.width = this._WIDTH;
+  this.height = this._HEIGHT;
+  this.collisionWidth = this._COLLISION_WIDTH[this.characterIndex];
+  this.collisionHeight = this._COLLISION_HEIGHT[this.characterIndex];
   this.grazeWidth = this.width;
   this.grazeHeight = this.height;
   this.power = 0;
   this.powerLevel = 0;
   this.deadCount = 0;
   this.spellCard = 'Special Spell'; // TODO: temporary
-  this.setFlag(Element._FLAG_UNHITTABLE);
+  this.setFlag(this._FLAG_UNHITTABLE);
   this._initView();
 };
 __inherit(Fighter, Element);
 
 
 // TODO: temporal
-Fighter._REIMU = 0 ;
-Fighter._MARISA = 1 ;
+Fighter.prototype._REIMU = 0 ;
+Fighter.prototype._MARISA = 1 ;
 
 // TODO: prameters should be in parameter .js file.
-Fighter._SHIP_IMAGE = [ Game._IMG_REIMU_SHIP, Game._IMG_MARISA_SHIP ] ;
-Fighter._SPAN_FAST = [ 4, 5 ] ;
-Fighter._SPAN_SLOW = [ 3, 4 ] ;
-Fighter._COLLISION_WIDTH = [ 4, 6 ] ;
-Fighter._COLLISION_HEIGHT = [ 4, 6 ] ;
+Fighter.prototype._SHIP_IMAGE = [ Game._IMG_REIMU_SHIP, Game._IMG_MARISA_SHIP ] ;
+Fighter.prototype._SPAN_FAST = [ 4, 5 ] ;
+Fighter.prototype._SPAN_SLOW = [ 3, 4 ] ;
+Fighter.prototype._COLLISION_WIDTH = [ 4, 6 ] ;
+Fighter.prototype._COLLISION_HEIGHT = [ 4, 6 ] ;
 
-Fighter._FLAG_SLOW = 0x1000 ;
+Fighter.prototype._FLAG_SLOW = 0x1000 ;
 
-Fighter._UNHITABLE_COUNT = 100 ;
+Fighter.prototype._UNHITABLE_COUNT = 100 ;
 
-Fighter._WIDTH = 32 ;
-Fighter._HEIGHT = 48 ;
+Fighter.prototype._WIDTH = 32 ;
+Fighter.prototype._HEIGHT = 48 ;
 
-Fighter._ANIMATION_SPAN = 2 ;
+Fighter.prototype._ANIMATION_SPAN = 2 ;
+
 
 Fighter.prototype.reset = function( ) {
-  this.state = Element._STATE_ALIVE ;
+  this.state = this._STATE_ALIVE ;
   this.flags = 0 ;
-  this.setFlag( Element._FLAG_UNHITTABLE ) ;
+  this.setFlag( this._FLAG_UNHITTABLE ) ;
   this.power = 0 ;
   this.powerLevel = 0 ;
   this.deadCount = 0 ;
@@ -146,11 +147,11 @@ Fighter.prototype.beDefaultPosition = function( ) {
 
 
 Fighter.prototype.display = function( surface ) {
-  if( this.isFlagSet( Element._FLAG_UNHITTABLE ) )
+  if( this.isFlagSet( this._FLAG_UNHITTABLE ) )
     surface.globalAlpha = 0.7 ;
 //  surface.save( ) ;
   this.parent.prototype.display.call( this, surface ) ;
-  if( this.isFlagSet( Element._FLAG_UNHITTABLE ) )
+  if( this.isFlagSet( this._FLAG_UNHITTABLE ) )
     surface.globalAlpha = 1.0 ;
 //  surface.restore( ) ;
 } ;
@@ -160,15 +161,15 @@ Fighter.prototype.display = function( surface ) {
  * TODO: temporal
  */
 Fighter.prototype._setDirection = function( ) {
-  if( ( ! this.isFlagSet( Element._FLAG_MOVE_LEFT ) &&
-        ! this.isFlagSet( Element._FLAG_MOVE_RIGHT ) ) ||
-      (   this.isFlagSet( Element._FLAG_MOVE_LEFT ) &&
-          this.isFlagSet( Element._FLAG_MOVE_RIGHT ) ) ) {
+  if( ( ! this.isFlagSet( this._FLAG_MOVE_LEFT ) &&
+        ! this.isFlagSet( this._FLAG_MOVE_RIGHT ) ) ||
+      (   this.isFlagSet( this._FLAG_MOVE_LEFT ) &&
+          this.isFlagSet( this._FLAG_MOVE_RIGHT ) ) ) {
     this.indexY = 0 ;
-  } else if( this.isFlagSet( Element._FLAG_MOVE_LEFT ) ) {
+  } else if( this.isFlagSet( this._FLAG_MOVE_LEFT ) ) {
     this.indexY = 1 ;
     this.indexX = 7 ;
-  } else if( this.isFlagSet( Element._FLAG_MOVE_RIGHT ) ) {
+  } else if( this.isFlagSet( this._FLAG_MOVE_RIGHT ) ) {
     this.indexY = 2 ;
     this.indexX = 7 ;
   }
@@ -178,34 +179,34 @@ Fighter.prototype._setDirection = function( ) {
 Fighter.prototype.move = function( ) {
 
   this._setDirection( ) ;
-  var d = this.isFlagSet( Fighter._FLAG_SLOW )
-            ? Fighter._SPAN_SLOW[ this.characterIndex ] : Fighter._SPAN_FAST[ this.characterIndex ] ;
+  var d = this.isFlagSet( this._FLAG_SLOW )
+            ? this._SPAN_SLOW[ this.characterIndex ] : this._SPAN_FAST[ this.characterIndex ] ;
   // TODO: temporal
-  if( this.isFlagSet( Element._FLAG_MOVE_LEFT ) ) {
+  if( this.isFlagSet( this._FLAG_MOVE_LEFT ) ) {
     this.x -= d ;
   }
-  if( this.isFlagSet( Element._FLAG_MOVE_DOWN ) ) {
+  if( this.isFlagSet( this._FLAG_MOVE_DOWN ) ) {
     this.y += d ;
   }
-  if( this.isFlagSet( Element._FLAG_MOVE_RIGHT ) ) {
+  if( this.isFlagSet( this._FLAG_MOVE_RIGHT ) ) {
     this.x += d ;
   }
-  if( this.isFlagSet( Element._FLAG_MOVE_UP ) ) {
+  if( this.isFlagSet( this._FLAG_MOVE_UP ) ) {
     this.y -= d ;
   }
   this._beInTheField( ) ;
 } ;
 
-
+Fighter.prototype.Element_runStep = Element.prototype.runStep;
 Fighter.prototype.runStep = function( ) {
-  if( this.isFlagSet( Element._FLAG_UNHITTABLE ) && this.count > Fighter._UNHITABLE_COUNT + this.deadCount ) {
-    this.clearFlag( Element._FLAG_UNHITTABLE ) ;
+  if( this.isFlagSet( this._FLAG_UNHITTABLE ) && this.count > this._UNHITABLE_COUNT + this.deadCount ) {
+    this.clearFlag( this._FLAG_UNHITTABLE ) ;
   }
 
   this._shot( ) ;
 
-  this.parent.prototype.runStep.call( this ) ;
-  if( this.count % Fighter._ANIMATION_SPAN == 0 ) {
+  this.Element_runStep();
+  if( this.count % this._ANIMATION_SPAN == 0 ) {
     this.indexX++ ;
     if( ! this.indexY && this.indexX > 7 )
       this.indexX = 0 ;
@@ -216,13 +217,13 @@ Fighter.prototype.runStep = function( ) {
 
 
 Fighter.prototype._shot = function( ) {
-  if( this.isFlagSet( Element._FLAG_SHOT ) )
+  if( this.isFlagSet( this._FLAG_SHOT ) )
     this.gameState.notifyFighterDoShot( this ) ;
 } ;
 
 
 Fighter.prototype.getBulletIndex = function( ) {
-  return this.isFlagSet( Fighter._FLAG_SLOW ) ? 1 : 0 ;
+  return this.isFlagSet( this._FLAG_SLOW ) ? 1 : 0 ;
 } ;
 
 
@@ -244,8 +245,8 @@ Fighter.prototype.changeCharacter = function( ) {
 
 
 Fighter.prototype._updateFighterInfoDependingCharacterIndex = function() {
-  this.collisionWidth = Fighter._COLLISION_WIDTH[ this.characterIndex ];
-  this.collisionHeight = Fighter._COLLISION_HEIGHT[ this.characterIndex ];
+  this.collisionWidth = this._COLLISION_WIDTH[ this.characterIndex ];
+  this.collisionHeight = this._COLLISION_HEIGHT[ this.characterIndex ];
 };
 
 
@@ -320,20 +321,20 @@ Fighter.prototype.incrementPower = function( num ) {
 
 
 Fighter.prototype.beNeutral = function( ) {
-  this.clearFlag( Fighter._FLAG_SLOW ) ;
-  this.clearFlag( Element._FLAG_MOVE_LEFT ) ;
-  this.clearFlag( Element._FLAG_MOVE_UP ) ;
-  this.clearFlag( Element._FLAG_MOVE_RIGHT ) ;
-  this.clearFlag( Element._FLAG_MOVE_DOWN ) ;
-  this.clearFlag( Element._FLAG_SHOT ) ;
+  this.clearFlag( this._FLAG_SLOW ) ;
+  this.clearFlag( this._FLAG_MOVE_LEFT ) ;
+  this.clearFlag( this._FLAG_MOVE_UP ) ;
+  this.clearFlag( this._FLAG_MOVE_RIGHT ) ;
+  this.clearFlag( this._FLAG_MOVE_DOWN ) ;
+  this.clearFlag( this._FLAG_SHOT ) ;
 } ;
 
 
 /**
  * TODO: temporal. bad design.
  */
+Fighter.prototype.Element_getImageIndexY = Element.prototype.getImageIndexY;
 Fighter.prototype.getImageIndexY = function() {
-  return this.parent.prototype.getImageIndexY.call(this) + 
-           this.characterIndex * 3;
+  return this.Element_getImageIndexY() + this.characterIndex * 3;
 };
 

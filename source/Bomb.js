@@ -4,11 +4,11 @@ function BombManager( gameState ) {
 }
 __inherit( BombManager, ElementManager ) ;
 
-BombManager._MAX_NUM = 40;
+BombManager.prototype._MAX_NUM = 40;
 
 
 BombManager.prototype._initMaxNum = function() {
-  return BombManager._MAX_NUM;
+  return this._MAX_NUM;
 };
 
 
@@ -37,25 +37,26 @@ function BombFactory( gameState, maxX, maxY ) {
   this.parent.call( this, gameState, maxX, maxY ) ;
   this.params = [ ] ;
   this._initBomb( ) ;
+  this.image = null; // TODO: temporal
 }
 __inherit( BombFactory, ElementFactory ) ;
 
-BombFactory._NUM = 20 ;
-BombFactory._BULLET_NUM = 10 ;
+BombFactory.prototype._NUM = 20 ;
+BombFactory.prototype._BULLET_NUM = 10 ;
 
 
-BombFactory.prototype._initFreelist = function( ) {
-  this.freelist = new BombFreeList( BombFactory._NUM, this.gameState ) ; 
-} ;
+BombFactory.prototype._initFreelist = function() {
+  this.freelist = new BombFreeList(this._NUM, this.gameState); 
+};
 
 
-BombFactory.prototype._initBomb = function( ) {
-  var num = BombFactory._BULLET_NUM ;
-  for( var i = 0; i < num; i++ ) {
+BombFactory.prototype._initBomb = function() {
+  var num = this._BULLET_NUM;
+  for(var i = 0; i < num; i++) {
     this.params.push( {
       'x': 0,
       'y': 0,
-      'v': { 'r': 0, 'theta': parseInt( 360 / num ) * i, 'w': 1, 'ra': 0.2 }
+      'v': { 'r': 0, 'theta': ((360 / num) | 0) * i, 'w': 1, 'ra': 0.2 }
     } ) ;
   }
 } ;
@@ -74,9 +75,14 @@ BombFactory.prototype.create = function( fighter ) {
 } ;
 
 
-BombFactory.prototype._getImage = function( params ) {
-  return this.gameState.getImage( Game._IMG_BOMB ) ;
-} ;
+/**
+ * TODO: temporal
+ */
+BombFactory.prototype._getImage = function(params) {
+  if(this.image === null)
+    this.image = this.gameState.getImage(Game._IMG_BOMB);
+  return this.image;
+};
 
 
 
@@ -99,9 +105,10 @@ function BombDrawer(elementManager, layer, image) {
 };
 __inherit(BombDrawer, ElementDrawer);
 
+BombDrawer.prototype.Layer = Layer;
 
 BombDrawer.prototype._getBlend = function() {
-  return Layer._BLEND_ADD_ALPHA;
+  return this.Layer._BLEND_ADD_ALPHA;
 };
 
 
@@ -124,20 +131,21 @@ function Bomb( gameState, maxX, maxY ) {
 }
 __inherit( Bomb, Element ) ;
 
-Bomb._WIDTH  = 128 ;
-Bomb._HEIGHT = 128 ;
+Bomb.prototype._WIDTH  = 128 ;
+Bomb.prototype._HEIGHT = 128 ;
 
-Bomb._OUT_RANGE = 200 ;
+Bomb.prototype._OUT_RANGE = 200 ;
 
 
+Bomb.prototype.Element_init = Element.prototype.init;
 Bomb.prototype.init = function( params, image, fighter ) {
-  this.parent.prototype.init.call( this, params, image ) ;
+  this.Element_init(params, image);
 
   this.setX( fighter.getX( ) ) ;
   this.setY( fighter.getY( ) ) ;
 
-  this.width = Bomb._WIDTH ;
-  this.height = Bomb._HEIGHT ;
+  this.width = this._WIDTH ;
+  this.height = this._HEIGHT ;
   this.collisionWidth = this.width ;
   this.collisionHeight = this.height ;
   this.indexX = 0 ;
@@ -161,8 +169,8 @@ Bomb.prototype.display = function( surface ) {
 
 
 Bomb.prototype._outOfTheField = function( ) {
-  if( this.getX( ) < -Bomb._OUT_RANGE || this.getX( ) > this.maxX + Bomb._OUT_RANGE ||
-      this.getY( ) < -Bomb._OUT_RANGE || this.getY( ) > this.maxY + Bomb._OUT_RANGE )
+  if( this.getX( ) < -this._OUT_RANGE || this.getX( ) > this.maxX + this._OUT_RANGE ||
+      this.getY( ) < -this._OUT_RANGE || this.getY( ) > this.maxY + this._OUT_RANGE )
     return true ;
   return false ;
 } ;

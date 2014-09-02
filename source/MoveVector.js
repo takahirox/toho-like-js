@@ -4,12 +4,12 @@ function MoveVectorManager( ) {
   this._initFactory( ) ;
 }
 
-MoveVectorManager._NUM = 2000 ;
+MoveVectorManager.prototype._NUM = 2000;
 
 
-MoveVectorManager.prototype._initFactory = function( ) {
-  this.factory = new MoveVectorFactory( MoveVectorManager._NUM ) ;
-} ;
+MoveVectorManager.prototype._initFactory = function() {
+  this.factory = new MoveVectorFactory(this._NUM);
+};
 
 
 MoveVectorManager.prototype.reset = function( ) {
@@ -93,6 +93,8 @@ function MoveVector( ) {
   this.reflectCount = 0 ;
 }
 
+MoveVector.prototype.Math = Math;
+
 
 MoveVector.prototype.init = function( params ) {
   this.r       = params.r       !== void 0 ? params.r       : 0 ;
@@ -125,7 +127,7 @@ MoveVector.prototype.init = function( params ) {
  */
 MoveVector.prototype._getRandomValue = function( range ) {
   var differ = range.max - range.min ;
-  return parseInt( Math.random( ) * differ ) + range.min ;
+  return ((this.Math.random() * differ) | 0) + range.min ;
 } ;
 
 
@@ -161,17 +163,17 @@ MoveVector.prototype._beInRange = function( value, range ) {
 
 
 MoveVector.prototype._getRadian = function( ) {
-  return this.theta / 180 * Math.PI ;
+  return this.theta / 180 * this.Math.PI ;
 } ;
 
 
 MoveVector.prototype.moveX = function( ) {
-  return this.r * Math.cos( this._getRadian( ) ) ;
+  return this.r * this.Math.cos( this._getRadian( ) ) ;
 } ;
 
 
 MoveVector.prototype.moveY = function( ) {
-  return this.r * Math.sin( this._getRadian( ) ) ;
+  return this.r * this.Math.sin( this._getRadian( ) ) ;
 } ;
 
 

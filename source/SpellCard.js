@@ -26,28 +26,28 @@ function SpellCardFactory( gameState, maxX, maxY ) {
 } ;
 __inherit( SpellCardFactory, ElementFactory ) ;
 
-SpellCardFactory._NUM = 10 ;
-SpellCardFactory._FIGHTER_IMAGES = [ Game._IMG_STAND_REIMU, Game._IMG_STAND_MARISA ] ;
-SpellCardFactory._ENEMY_IMAGES   = [ Game._IMG_STAND_MOKOU, Game._IMG_STAND_RUMIA, Game._IMG_STAND_CHILNO ] ;
-SpellCardFactory._PARAMS = [
+SpellCardFactory.prototype._NUM = 10 ;
+SpellCardFactory.prototype._FIGHTER_IMAGES = [ Game._IMG_STAND_REIMU, Game._IMG_STAND_MARISA ] ;
+SpellCardFactory.prototype._ENEMY_IMAGES   = [ Game._IMG_STAND_MOKOU, Game._IMG_STAND_RUMIA, Game._IMG_STAND_CHILNO ] ;
+SpellCardFactory.prototype._PARAMS = [
   { 'x': 240, 'y': 240, 'v': { 'r': 3, 'theta':150, 'raa': -0.005, 'rrange': { 'min': 1 } } },
   { 'x': 240, 'y': 240, 'v': { 'r': 3, 'theta': 30, 'raa': -0.005, 'rrange': { 'min': 1 } } },
 ] ;
 
-SpellCardFactory.prototype._initFreelist = function( ) {
-  this.freelist = new SpellCardFreeList( SpellCardFactory._NUM, this.gameState ) ; 
-} ;
+SpellCardFactory.prototype._initFreelist = function() {
+  this.freelist = new SpellCardFreeList(this._NUM, this.gameState); 
+};
 
 
 /**
  *
  */
 SpellCardFactory.prototype.create = function( element ) {
-  var params = element instanceof Fighter ? SpellCardFactory._PARAMS[ 0 ] : SpellCardFactory._PARAMS[ 1 ] ;
-  var card = this.freelist.get( ) ;
-  card.init( params, this._getImage( element ), element ) ;
-  return card ;
-} ;
+  var params = element instanceof Fighter ? this._PARAMS[0] : this._PARAMS[1];
+  var card = this.freelist.get();
+  card.init(params, this._getImage(element), element);
+  return card;
+};
 
 
 SpellCardFactory.prototype._getImage = function( element ) {
@@ -55,19 +55,19 @@ SpellCardFactory.prototype._getImage = function( element ) {
   var vector = null ;
   if( element instanceof Fighter ) {
     vector = { 'r': 3, 'theta':150, 'raa': -0.005, 'rrange': { 'min': 1 } } ;
-    image = this.gameState.getImage( SpellCardFactory._FIGHTER_IMAGES[ element.characterIndex ] ) ;
+    image = this.gameState.getImage( this._FIGHTER_IMAGES[ element.characterIndex ] ) ;
     image.width = 400 ;
   } else {
     vector = { 'r': 3, 'theta': 30, 'raa': -0.005, 'rrange': { 'min': 1 } } ;
     // TODO: temporary
     if( element.character == 'rumia' ) {
-      image = this.gameState.getImage( SpellCardFactory._ENEMY_IMAGES[ 1 ] ) ;
+      image = this.gameState.getImage( this._ENEMY_IMAGES[ 1 ] ) ;
       image.width = 600 ;
     } else if( element.character == 'chilno' ) {
-      image = this.gameState.getImage( SpellCardFactory._ENEMY_IMAGES[ 2 ] ) ;
+      image = this.gameState.getImage( this._ENEMY_IMAGES[ 2 ] ) ;
       image.width = 550 ;
     } else {
-      image = this.gameState.getImage( SpellCardFactory._ENEMY_IMAGES[ 0 ] ) ;
+      image = this.gameState.getImage( this._ENEMY_IMAGES[ 0 ] ) ;
       image.width = 512 ;
     }
   }
@@ -102,35 +102,38 @@ function SpellCard( gameState, maxX, maxY ) {
 }
 __inherit( SpellCard, Element ) ;
 
-SpellCard._HEIGHT = 600 ;
+SpellCard.prototype._HEIGHT = 600 ;
 
 
-SpellCard.prototype.init = function( params, image, boss ) {
-  this.parent.prototype.init.call( this, params, image ) ;
-  this.boss = boss ;
-  this.width = image.width ;
+__copyParentMethod(SpellCard, Element, 'init');
+SpellCard.prototype.init = function(params, image, boss) {
+  this.Element_init(params, image);
+  this.boss = boss;
 
-  this.height = SpellCard._HEIGHT ;
-  this.collisionWidth = this.width ;
-  this.collisionHeight = this.height ;
-  this.indexX = 0 ;
-  this.indexY = 0 ;
-  this.baseX = this.getX( ) ;
-  this.baseY = this.getY( ) ;
-} ;
+  this.width = image.width;
+  this.height = this._HEIGHT;
+  this.collisionWidth = this.width;
+  this.collisionHeight = this.height;
+  this.indexX = 0;
+  this.indexY = 0;
+  this.baseX = this.getX();
+  this.baseY = this.getY();
+};
 
 
 /**
+ * still uses display() method.
  * TODO: temporal
  */
-SpellCard.prototype.display = function( surface ) {
-  surface.save( ) ;
-  surface.globalAlpha = 0.4 ;
-  this.parent.prototype.display.call( this, surface ) ;
+__copyParentMethod(SpellCard, Element, 'display');
+SpellCard.prototype.display = function(surface) {
+  surface.save();
+  surface.globalAlpha = 0.4;
+  this.Element_display(surface);
   this.displaySpellCardName(surface);
-  surface.restore( ) ;
+  surface.restore();
 //  surface.fillText( x + ':' + y, x, y ) ;
-} ;
+};
 
 
 SpellCard.prototype.displaySpellCardName = function(surface) {

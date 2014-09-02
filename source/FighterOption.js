@@ -7,11 +7,11 @@ function FighterOptionManager(gameState, fighter) {
 __inherit(FighterOptionManager, ElementManager);
 
 
-FighterOptionManager._MAX_NUM = 4;
+FighterOptionManager.prototype._MAX_NUM = 4;
 
 
 FighterOptionManager.prototype._initMaxNum = function() {
-  return FighterOptionManager._MAX_NUM;
+  return this._MAX_NUM;
 };
 
 
@@ -36,8 +36,9 @@ FighterOptionManager.prototype._init = function() {
  * keeps the elements even it resets.
  * TODO: unstraightforward.
  */
+__copyParentMethod(FighterOptionManager, ElementManager, 'reset');
 FighterOptionManager.prototype.reset = function() {
-  this.parent.prototype.reset.call(this);
+  this.ElementManager_reset();
   this._init();
 };
 
@@ -74,11 +75,11 @@ function FighterOptionFactory( gameState, maxX, maxY ) {
 } ;
 __inherit( FighterOptionFactory, ElementFactory ) ;
 
-FighterOptionFactory._NUM = 10 ;
+FighterOptionFactory.prototype._NUM = 10 ;
 
 
 FighterOptionFactory.prototype._initFreelist = function( ) {
-  this.freelist = new FighterOptionFreeList( FighterOptionFactory._NUM,
+  this.freelist = new FighterOptionFreeList( this._NUM,
                                              this.gameState ) ;
 } ;
 
@@ -133,21 +134,21 @@ FighterOptionView.prototype.getNum = function() {
 };
 
 
+__copyParentMethod(FighterOptionView, ElementView, '_getElementX');
 FighterOptionView.prototype._getElementX = function() {
-  return this.parent.prototype._getElementX.call(this) +
-           this.element.fighter.getX();
+  return this.ElementView_getElementX() + this.element.fighter.getX();
 };
 
 
+__copyParentMethod(FighterOptionView, ElementView, '_getElementY');
 FighterOptionView.prototype._getElementY = function() {
-  return this.parent.prototype._getElementY.call(this) +
-           this.element.fighter.getY();
+  return this.ElementView_getElementY() + this.element.fighter.getY();
 };
 
 
+__copyParentMethod(FighterOptionView, ElementView, '_getElementZ');
 FighterOptionView.prototype._getElementZ = function() {
-  return this.parent.prototype._getElementZ.call(this) +
-           this.element.fighter.getZ();
+  return this.ElementView_getElementZ() + this.element.fighter.getZ();
 };
 
 
@@ -157,7 +158,7 @@ FighterOptionView.prototype._getElementZ = function() {
  */
 FighterOptionView.prototype.animate = function() {
   this._initCoordinates();
-  this.a = this.element.fighter.isFlagSet(Element._FLAG_UNHITTABLE) ? 0.7 : 1.0;
+  this.a = this.element.fighter.isFlagSet(this.element._FLAG_UNHITTABLE) ? 0.7 : 1.0;
 };
 
 
@@ -173,28 +174,32 @@ function FighterOption(gameState, maxX, maxY) {
 }
 __inherit(FighterOption, Element);
 
-FighterOption._WIDTH = 16 ;
-FighterOption._HEIGHT = 16 ;
+// only for reference
+FighterOption.prototype.Math = Math;
 
-FighterOption._MOVE_SPEED = 8 ;
-FighterOption._ROTATE_SPEED = 4 ;
+FighterOption.prototype._WIDTH = 16 ;
+FighterOption.prototype._HEIGHT = 16 ;
+
+FighterOption.prototype._MOVE_SPEED = 8 ;
+FighterOption.prototype._ROTATE_SPEED = 4 ;
 
 
-FighterOption.prototype.init = function( params, image, fighter ) {
-  this.parent.prototype.init.call( this, params, image ) ;
-  this.fighter = fighter ;
+__copyParentMethod(FighterOption, Element, 'init');
+FighterOption.prototype.init = function(params, image, fighter) {
+  this.Element_init(params, image);
+  this.fighter = fighter;
 
-  this.width  = FighterOption._WIDTH ;
-  this.height = FighterOption._HEIGHT ;
-  this.collisionWidth  = this.width ;
-  this.collisionHeight = this.height ;
+  this.width  = this._WIDTH;
+  this.height = this._HEIGHT;
+  this.collisionWidth  = this.width;
+  this.collisionHeight = this.height;
 
-  this.angle  = this._getValueOrDefaultValue( params.angle, 0 ) ;
-  this.theta  = this._getValueOrDefaultValue( params.theta, 0 ) ;
-  this.d      = this._getValueOrDefaultValue( params.d, 0 ) ;
-  this.trange = this._getValueOrDefaultValue( params.trange, null ) ;
+  this.angle  = this._getValueOrDefaultValue(params.angle, 0);
+  this.theta  = this._getValueOrDefaultValue(params.theta, 0);
+  this.d      = this._getValueOrDefaultValue(params.d, 0);
+  this.trange = this._getValueOrDefaultValue(params.trange, null);
   this._initView();
-} ;
+};
 
 
 FighterOption.prototype._generateView = function() {
@@ -205,19 +210,20 @@ FighterOption.prototype._generateView = function() {
 /**
  * TODO: temporal. Should I use MoveVector?
  */
-FighterOption.prototype.runStep = function( ) {
-  if( this.fighter.hasOption( ) ) {
-    this.theta += ( this.fighter.isFlagSet( Fighter._FLAG_SLOW ) ? 1 : -1 )
-                    * this.d * FighterOption._MOVE_SPEED ;
-    if( this.theta > this.trange.max )
-      this.theta = this.trange.max ;
-    if( this.theta < this.trange.min )
-      this.theta = this.trange.min ;
-    this.setX( this.r * Math.cos( this._calculateRadian( this.theta ) ) ) ;
-    this.setY( this.r * Math.sin( this._calculateRadian( this.theta ) ) ) ;
+__copyParentMethod(FighterOption, Element, 'runStep');
+FighterOption.prototype.runStep = function() {
+  if(this.fighter.hasOption()) {
+    this.theta += (this.fighter.isFlagSet(this.fighter._FLAG_SLOW) ? 1 : -1)
+                    * this.d * this._MOVE_SPEED;
+    if(this.theta > this.trange.max)
+      this.theta = this.trange.max;
+    if(this.theta < this.trange.min)
+      this.theta = this.trange.min;
+    this.setX(this.r * this.Math.cos(this._calculateRadian(this.theta)));
+    this.setY(this.r * this.Math.sin(this._calculateRadian(this.theta)));
   }
-  this.parent.prototype.runStep.call( this ) ;
-} ;
+  this.Element_runStep();
+};
 
 
 /**
@@ -236,7 +242,7 @@ FighterOption.prototype.display = function( surface ) {
 
 
 FighterOption.prototype.getDirectionTheta = function() {
-  return (this.angle + this.count * FighterOption._ROTATE_SPEED + 90) % 360;
+  return (this.angle + this.count * this._ROTATE_SPEED + 90) % 360;
 };
 
 

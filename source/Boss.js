@@ -14,11 +14,10 @@ function BossManager( gameState, params ) {
 } ;
 __inherit( BossManager, ElementManager ) ;
 
-BossManager._MAX_NUM = 4;
-
+BossManager.prototype._MAX_NUM = 4;
 
 BossManager.prototype._initMaxNum = function() {
-  return BossManager._MAX_NUM;
+  return this._MAX_NUM;
 };
 
 
@@ -33,9 +32,9 @@ BossManager.prototype._initFactory = function( ) {
  */
 BossManager.prototype.initDrawer = function(layer, image) {
   this.drawers = [];
-  this._generateDrawer(Boss._TYPE_RUMIA, layer);
-  this._generateDrawer(Boss._TYPE_DAIYOUSEI, layer);
-  this._generateDrawer(Boss._TYPE_CHIRNO, layer);
+  this._generateDrawer(this.Boss._TYPE_RUMIA, layer);
+  this._generateDrawer(this.Boss._TYPE_DAIYOUSEI, layer);
+  this._generateDrawer(this.Boss._TYPE_CHIRNO, layer);
 };
 
 
@@ -50,13 +49,13 @@ BossManager.prototype._generateDrawer = function(key, layer) {
 BossManager.prototype._getImage = function(type) {
   var key;
   switch(type) {
-    case Boss._TYPE_RUMIA:
+    case this.Boss._TYPE_RUMIA:
       key = Game._IMG_ENEMY_RUMIA;
       break;
-    case Boss._TYPE_DAIYOUSEI:
+    case this.Boss._TYPE_DAIYOUSEI:
       key = Game._IMG_ENEMY_DAIYOUSEI;
       break;
-    case Boss._TYPE_CHIRNO:
+    case this.Boss._TYPE_CHIRNO:
       key = Game._IMG_ENEMY_CHILNO;
       break;
     // TODO: temporal
@@ -68,8 +67,9 @@ BossManager.prototype._getImage = function(type) {
 };
 
 
+__copyParentMethod(BossManager, ElementManager, 'reset');
 BossManager.prototype.reset = function() {
-  this.parent.prototype.reset.call(this);
+  this.ElementManager_reset();
   this.index = 0;
   this.stageIndex = 0;
   this.activeType = null;
@@ -87,21 +87,22 @@ BossManager.prototype.draw = function(layer) {
 };
 
 
-BossManager.prototype.goNextStage = function( ) {
-  this.parent.prototype.reset.call( this ) ;
-  this.index = 0 ;
-  this.stageIndex++ ;
-} ;
+BossManager.prototype.goNextStage = function() {
+  this.ElementManager_reset(this);
+  this.index = 0;
+  this.stageIndex++;
+};
 
 
-BossManager.prototype.runStep = function( ) {
-  this._generateBoss( ) ;
-  this.parent.prototype.runStep.call( this ) ;
-} ;
+__copyParentMethod(BossManager, ElementManager, 'runStep');
+BossManager.prototype.runStep = function() {
+  this._generateBoss();
+  this.ElementManager_runStep();
+};
 
 
 BossManager.prototype._generateBoss = function() {
-  if(this.gameState.isFlagSet(StageState._FLAG_BOSS_EXIST))
+  if(this.gameState.isBossExist())
     return;
 
   while(this.index < this.params[this.stageIndex].length &&
@@ -120,11 +121,11 @@ BossManager.prototype._generateBoss = function() {
 BossManager.prototype._str2type = function(str) {
   switch(str) {
     case 'rumia':
-      return Boss._TYPE_RUMIA;
+      return this.Boss._TYPE_RUMIA;
     case 'daiyousei':
-      return Boss._TYPE_DAIYOUSEI;
+      return this.Boss._TYPE_DAIYOUSEI;
     case 'chilno':
-      return Boss._TYPE_CHIRNO;
+      return this.Boss._TYPE_CHIRNO;
     // TODO: temporal
     default:
       return null;
@@ -135,16 +136,16 @@ BossManager.prototype._str2type = function(str) {
 /**
  * TODO: temporal
  */
+__copyParentMethod(BossManager, ElementManager, 'checkLoss');
 BossManager.prototype.checkLoss = function() {
-  this.parent.prototype.checkLoss.call(this,
-                                       this._checkLossCallBack.bind(this));
+  this.ElementManager_checkLoss(this);
 };
 
 
 /**
  * TODO: temporal
  */
-BossManager.prototype._checkLossCallBack = function(element) {
+BossManager.prototype.notifyCheckLoss = function(element) {
   if(element.dead != 'escape')
     this.gameState.notifyBossVanishEnd(element);
 };
@@ -166,17 +167,17 @@ BossManager.prototype.existBoss = function() {
 /**
  * TODO: temporal. I wanna use the parent method but bigger one should be the argument of this method.
  */
-BossManager.prototype.checkCollisionWith = function( fighter ) {
+__copyParentMethod(BossManager, ElementManager, 'checkCollisionWith');
+BossManager.prototype.checkCollisionWith = function(fighter) {
   var self = this ;
-  this.parent.prototype.checkCollisionWith.call( this, fighter,
-    this._checkCollisionWithCallBack.bind( this )  ) ;
-} ;
+  this.ElementManager_checkCollisionWith(null, fighter, this);
+};
 
 
-BossManager.prototype._checkCollisionWithCallBack = function( fighter, boss ) {
-  fighter.die( ) ;
-  this.gameState.notifyFighterDead( fighter, boss ) ;
-} ;
+BossManager.prototype.notifyCollision = function(id, fighter, boss) {
+  fighter.die();
+  this.gameState.notifyFighterDead(fighter, boss);
+};
 
 
 
@@ -186,12 +187,12 @@ function BossFactory( gameState, maxX, maxY ) {
 } ;
 __inherit( BossFactory, ElementFactory ) ;
 
-BossFactory._NUM = 2 ;
+BossFactory.prototype._NUM = 2 ;
 
 
-BossFactory.prototype._initFreelist = function( ) {
-  this.freelist = new BossFreeList( BossFactory._NUM, this.gameState ) ;
-} ;
+BossFactory.prototype._initFreelist = function() {
+  this.freelist = new BossFreeList(this._NUM, this.gameState);
+};
 
 
 BossFactory.prototype._getImage = function( params ) {
@@ -262,7 +263,8 @@ BossView.prototype.animate = function() {
  * TODO: temporal. especially name.
  */
 BossView.prototype._inVanishingEffect = function() {
-  return (Boss._VANISH_COUNT - this.element.vanishingCount + 1) * 0.01;
+  return (this.element._VANISH_COUNT -
+          this.element.vanishingCount + 1) * 0.01;
 };
 
 
@@ -315,23 +317,24 @@ function Boss( gameState, maxX, maxY ) {
 }
 __inherit( Boss, Element ) ;
 
-Boss._WIDTH = 128 ;
-Boss._HEIGHT = 128 ;
+Boss.prototype._WIDTH = 128 ;
+Boss.prototype._HEIGHT = 128 ;
 
-Boss._APPEAR_COUNT = 100 ;
-Boss._APPEAR_WAIT_COUNT = 50 ;
+Boss.prototype._APPEAR_COUNT = 100 ;
+Boss.prototype._APPEAR_WAIT_COUNT = 50 ;
 
-Boss._VANISH_COUNT = 100;
+Boss.prototype._VANISH_COUNT = 100;
 
-Boss._TYPE_RUMIA     = 0;
-Boss._TYPE_DAIYOUSEI = 1;
-Boss._TYPE_CHIRNO    = 2;
+Boss.prototype._TYPE_RUMIA     = 0;
+Boss.prototype._TYPE_DAIYOUSEI = 1;
+Boss.prototype._TYPE_CHIRNO    = 2;
 
-Boss._ESCAPE_VECTOR = {'r': 0, 'theta': 225, 'ra': 0.1};
+Boss.prototype._ESCAPE_VECTOR = {'r': 0, 'theta': 225, 'ra': 0.1};
 
 
-Boss.prototype.init = function( params, image ) {
-  this.parent.prototype.init.call( this, params, image ) ;
+__copyParentMethod(Boss, Element, 'init');
+Boss.prototype.init = function(params, image) {
+  this.Element_init(params, image);
 
   this.params = params.params ;
   this.index = 0 ;
@@ -377,7 +380,7 @@ Boss.prototype._shot = function( ) {
   if(this.vanishing || this.escaping)
     return;
 
-  var offset = Boss._APPEAR_COUNT + Boss._APPEAR_WAIT_COUNT ;
+  var offset = this._APPEAR_COUNT + this._APPEAR_WAIT_COUNT ;
   if( this.count < offset )
     return ;
   for( var i = 0; i < this.shots.length; i++ ) {
@@ -400,61 +403,65 @@ Boss.prototype._shot = function( ) {
 
 
 // TODO: temporal
-Boss.prototype.runStep = function( ) {
-  if( this.isFlagSet( Element._FLAG_UNHITTABLE ) && this.count + 1 >= Boss._APPEAR_COUNT + Boss._APPEAR_WAIT_COUNT ) {
-    this.clearFlag( Element._FLAG_UNHITTABLE )
-    if( this.index == 0 )
-      this.gameState.notifyBossBeginTalk( this ) ;
+__copyParentMethod(Boss, Element, 'runStep');
+Boss.prototype.runStep = function() {
+  if(this.isFlagSet(this._FLAG_UNHITTABLE) &&
+     this.count + 1 >= this._APPEAR_COUNT + this._APPEAR_WAIT_COUNT) {
+    this.clearFlag(this._FLAG_UNHITTABLE);
+    if(this.index == 0)
+      this.gameState.notifyBossBeginTalk(this);
     else
-      this.gameState.notifyBossBecameActive( this ) ;
+      this.gameState.notifyBossBecameActive(this);
   }
-  this._shot( ) ;
-  this._doEffect( ) ;
-  this.parent.prototype.runStep.call( this ) ;
+  this._shot();
+  this._doEffect();
+
+  this.Element_runStep();
+
   // for animation
-  this._checkState( ) ;
+  this._checkState();
   // TODO: temporal
-  if( this.getXDirection( ) == 1 ) {
-    this.indexX = 2 ;
-    this.indexY = 3 ;
-  } else if( this.getXDirection( ) == -1 ) {
-    this.indexX = 2 ;
-    this.indexY = 1 ;
+  if(this.getXDirection() == 1) {
+    this.indexX = 2;
+    this.indexY = 3;
+  } else if(this.getXDirection() == -1) {
+    this.indexX = 2;
+    this.indexY = 1;
   } else {
-    this.indexX = 0 ;
-    if( this.count % 4 == 0 ) {
-      this.indexY++ ;
-      if( this.indexY > this.animation )
-        this.indexY = 0 ;
+    this.indexX = 0;
+    if(this.count % 4 == 0) {
+      this.indexY++;
+      if(this.indexY > this.animation)
+        this.indexY = 0;
     }
   }
 
   if(this.vanishing)
     this.vanishingCount++;
-} ;
+};
 
 
 /**
  * TODO: temporal
  */
-Boss.prototype._getCountFromBase = function( params, o ) {
-  var o = o ? o : 0 ;
-  var offset = Boss._APPEAR_COUNT + Boss._APPEAR_WAIT_COUNT ;
-  return ( this.count - offset + o ) % params[ 'baseCount' ] ;
-} ;
+Boss.prototype._getCountFromBase = function(params, o) {
+  var o = o ? o : 0;
+  var offset = this._APPEAR_COUNT + this._APPEAR_WAIT_COUNT;
+  return (this.count - offset + o) % params['baseCount'];
+};
 
 
-Boss.prototype._doEffect = function( ) {
-  if( this.effects && this.effects[ 'shockwave' ] ) {
+Boss.prototype._doEffect = function() {
+  if(this.effects && this.effects['shockwave'] !== void 0) {
     // TODO: temporal
-    for( var i = 0; i < this.effects[ 'shockwave' ].length; i++ ) {
-      var params = this.effects[ 'shockwave' ][ i ] ;
-      var count = this._getCountFromBase( params ) ;
-      if( count == params[ 'count' ] )
-        this.gameState.notifyDoEffect( this, 'shockwave', params.params ) ;
+    for(var i = 0; i < this.effects['shockwave'].length; i++) {
+      var params = this.effects['shockwave'][i];
+      var count = this._getCountFromBase(params);
+      if(count == params['count'])
+        this.gameState.notifyDoEffect(this, 'shockwave', params.params);
     }
   }
-} ;
+};
 
 
 /**
@@ -496,7 +503,7 @@ Boss.prototype._initState = function( ) {
   }
 //  this.vectors = this.params[ this.index ].v ;
   this.vectors.unshift( {
-    'count': -Boss._APPEAR_WAIT_COUNT,
+    'count': -this._APPEAR_WAIT_COUNT,
     'v': {
       'r':     0,
       'theta': 0,
@@ -517,16 +524,16 @@ Boss.prototype._initState = function( ) {
       'raa':   0,
       'target': { 'x': this.params[ this.index ].x,
                   'y': this.params[ this.index ].y,
-                  'count': Boss._APPEAR_COUNT }
+                  'count': this._APPEAR_COUNT }
     }
   } ) ;
-  this.baseVectorCount = Boss._APPEAR_COUNT + Boss._APPEAR_WAIT_COUNT ;
+  this.baseVectorCount = this._APPEAR_COUNT + this._APPEAR_WAIT_COUNT ;
 
   this._initVector( ) ;
 
-  this.shots.length = 0 ;
-  if( shots == undefined ) {
-  } else if( shots instanceof Array ) {
+  this.shots.length = 0;
+  if(shots === void 0) {
+  } else if(shots instanceof Array) {
     for( var i = 0; i < shots.length; i++ )
       this.shots.push( shots[ i ] ) ;
   } else {
@@ -544,39 +551,41 @@ Boss.prototype._initState = function( ) {
   this.maxVital = this.vital ;
   this.spellCard = this.params[ this.index ].spellCard ;
   this.effects = this.params[ this.index ].e ;
-  this.setFlag( Element._FLAG_UNHITTABLE ) ;
+  this.setFlag( this._FLAG_UNHITTABLE ) ;
   this.gameState.notifyBossStageChanged( this ) ;
 
 } ;
 
 
-Boss.prototype.getXDirection = function( ) {
-  if( this.vector && this.vector.r == 0 )
-    return 0 ;
-  return this.parent.prototype.getXDirection.call( this ) ;
-} ;
+__copyParentMethod(Boss, Element, 'getXDirection');
+Boss.prototype.getXDirection = function() {
+  if(this.vector && this.vector.r == 0)
+    return 0;
+  return this.Element_getXDirection();
+};
 
 
-Boss.prototype._outOfTheField = function( ) {
-  if( this.parent.prototype._outOfTheField.call( this ) )
-    this._beInTheField( ) ;
-  return false ;
-} ;
+__copyParentMethod(Boss, Element, '_outOfTheField');
+Boss.prototype._outOfTheField = function() {
+  if(this.Element_outOfTheField())
+    this._beInTheField();
+  return false;
+};
 
 
 /**
  * TODO: temporal function name
  */
-Boss.prototype.outOfTheField = function( ) {
-  return this.parent.prototype._outOfTheField.call( this ) ;
-} ;
+Boss.prototype.outOfTheField = function() {
+  return this.Element_outOfTheField();
+};
 
 
 Boss.prototype._beginEscape = function() {
   this.escaping = true;
   this.gravity = null;
   // TODO: temporal
-  this.vector = this.moveVectorManager.create(Boss._ESCAPE_VECTOR);
+  this.vector = this.moveVectorManager.create(this._ESCAPE_VECTOR);
 
   // TODO: these parameters should move to EffectFactory.
   this.gameState.notifyDoEffect(this, 'shockwave', {
@@ -616,38 +625,40 @@ Boss.prototype._beginVanish = function() {
 
 
 Boss.prototype.inVanishing = function() {
-  return (this.vanishing && this.vanishingCount < Boss._VANISH_COUNT);
+  return (this.vanishing && this.vanishingCount < this._VANISH_COUNT);
 };
 
 
 Boss.prototype.overVanishing = function() {
-  return (this.vanishing && this.vanishingCount >= Boss._VANISH_COUNT);
+  return (this.vanishing && this.vanishingCount >= this._VANISH_COUNT);
 };
 
 
 /**
  * TODO: temporal workaround.
  */
+__copyParentMethod(Boss, Element, '_checkVectorChange');
 Boss.prototype._checkVectorChange = function() {
   if(this.escaping || this.vanishing)
     return false;
-  return this.parent.prototype._checkVectorChange.call(this);
+  return this.Element_checkVectorChange();
 };
 
 
 /**
  * TODO: temporal logic.
  */
+__copyParentMethod(Boss, Element, 'checkLoss');
 Boss.prototype.checkLoss = function() {
   if(this.escaping)
-    return this.parent.prototype._outOfTheField.call(this);
+    return this.Element_outOfTheField();
 
   if(! this.vanishing)
-    return this.parent.prototype.checkLoss.call(this);
+    return this.Element_checkLoss();
 
   var tmp = this.state;
-  this.state = Element._STATE_ALIVE;
-  var value = this.parent.prototype.checkLoss.call(this);
+  this.state = this._STATE_ALIVE;
+  var value = this.Element_checkLoss();
   this.state = tmp;
 
   if(value)
@@ -655,3 +666,18 @@ Boss.prototype.checkLoss = function() {
 
   return this.overVanishing();
 };
+
+
+// TODO: temporal
+Boss.prototype.isVanishingOrEscaping = function() {
+  return (this.vanishing || this.escaping);
+};
+
+
+
+// TODO: remove the followings because they complicate the design.
+
+// only for reference
+// TODO: temporal
+BossManager.prototype.Boss = Boss.prototype;
+

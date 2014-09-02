@@ -38,6 +38,9 @@ function Game(mainCanvas, bgCanvas) {
 
   this._changeState( Game._STATE_LOAD, { } ) ;
 
+  var self = this;
+  this.runFunc = function() { self._runStep(); };
+
 }
 
 Game._SIDE_WIDTH = 160 ;
@@ -199,30 +202,44 @@ Game.prototype.getImage = function( key ) {
 /**
  * TODO: temporal
  */
-Game.prototype.soundEffect = function( key ) {
-  if( key == Game._SE_SHOT )
-    this.sounds[ key ].volume = 0.012 ;
-  else if( key == Game._SE_SELECT )
-    this.sounds[ key ].volume = 0.04 ;
-  else if( key == Game._SE_POWER_EFFECT )
-    this.sounds[ key ].volume = 0.14 ;
-  else if( key == Game._SE_ENEMY_SHOT )
-    this.sounds[ key ].volume = 0.02 ;
-  else if( key == Game._SE_ENEMY_DAMAGE )
-    this.sounds[ key ].volume = 0.014 ;
-  else if( key == Game._SE_ENEMY_VANISH )
-    this.sounds[ key ].volume = 0.03 ;
-  else if( key == Game._SE_DEAD )
-    this.sounds[ key ].volume = 0.05 ;
-  else if( key == Game._SE_POWERUP )
-    this.sounds[ key ].volume = 0.04 ;
-  else if( key == Game._SE_GRAZE )
-    this.sounds[ key ].volume = 0.05 ;
-  else
-    this.sounds[ key ].volume = 0.1 ;
-  this.sounds[ key ].pause( ) ;
-  this.sounds[ key ].currentTime = 0 ;
-  this.sounds[ key ].play( ) ;
+Game.prototype.soundEffect = function(key) {
+  var game = Game;
+  switch(key) {
+    case game._SE_SHOT:
+      this.sounds[key].volume = 0.012;
+      break;
+    case game._SE_SELECT:
+      this.sounds[key].volume = 0.04;
+      break;
+    case game._SE_POWER_EFFECT:
+      this.sounds[key].volume = 0.14;
+      break;
+    case game._SE_ENEMY_SHOT:
+      this.sounds[key].volume = 0.02;
+      break;
+    case game._SE_ENEMY_DAMAGE:
+      this.sounds[key].volume = 0.014;
+      break;
+    case game._SE_ENEMY_VANISH:
+      this.sounds[key].volume = 0.03;
+      break;
+    case game._SE_DEAD:
+      this.sounds[key].volume = 0.05;
+      break;
+    case game._SE_POWERUP:
+      this.sounds[key].volume = 0.04;
+      break;
+    case game._SE_GRAZE:
+      this.sounds[key].volume = 0.05;
+      break;
+    default:
+      this.sounds[key].volume = 0.1;
+      break;
+  }
+
+  this.sounds[ key ].pause();
+  this.sounds[ key ].currentTime = 0;
+  this.sounds[ key ].play();
 //  this.sounds[ key ] = new Audio( this.sounds[ key ].src ) ;
 } ;
 
@@ -283,7 +300,7 @@ Game.prototype._runStep = function( ) {
     this.someoneState = -1;
 
   this.count++ ;
-  requestAnimationFrame( this._runStep.bind( this ) ) ;
+  requestAnimationFrame(this.runFunc);
 } ;
 
 
@@ -326,9 +343,12 @@ Game.prototype._displayOnlineState = function(surface) {
                    this.getWidth() - 5,
                    15);
   if(this.someoneState >= 0) {
-    surface.fillText('someone', this.getWidth() - 5, 30);
+    var x = (this.count - this.messageReceiveCount)*4 - 100;
+    if(x > 5)
+      x = 5;
+    surface.fillText('someone', this.getWidth() - x - 30, 30);
     surface.fillText(Game._SOMEONE_MESSAGES[this.someoneState],
-                     this.getWidth() - 5,
+                     this.getWidth() - x,
                      45);
   }
   surface.restore();

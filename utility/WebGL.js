@@ -18,17 +18,17 @@ function Layer(canvas) {
   this.aBuffer = this.gl.createBuffer();
 };
 
-Layer._NAMES = ['webgl', 'experimental-webgl'];
+Layer.prototype._NAMES = ['webgl', 'experimental-webgl'];
 
-Layer._BLEND_ALPHA     = 0;
-Layer._BLEND_ALPHA2    = 1;
-Layer._BLEND_ADD_ALPHA = 2;
+Layer.prototype._BLEND_ALPHA     = 0;
+Layer.prototype._BLEND_ALPHA2    = 1;
+Layer.prototype._BLEND_ADD_ALPHA = 2;
 
-Layer._SHADERS = {};
+Layer.prototype._SHADERS = {};
 
-Layer._SHADERS['shader-vs'] = {};
-Layer._SHADERS['shader-vs'].type = 'x-shader/x-vertex';
-Layer._SHADERS['shader-vs'].src = '\
+Layer.prototype._SHADERS['shader-vs'] = {};
+Layer.prototype._SHADERS['shader-vs'].type = 'x-shader/x-vertex';
+Layer.prototype._SHADERS['shader-vs'].src = '\
   attribute vec3 aVertexPosition;\
   attribute vec2 aTextureCoordinates;\
   attribute vec4 aColor;\
@@ -45,9 +45,9 @@ Layer._SHADERS['shader-vs'].src = '\
   }\
 ';
 
-Layer._SHADERS['shader-fs'] = {};
-Layer._SHADERS['shader-fs'].type = 'x-shader/x-fragment';
-Layer._SHADERS['shader-fs'].src = '\
+Layer.prototype._SHADERS['shader-fs'] = {};
+Layer.prototype._SHADERS['shader-fs'].type = 'x-shader/x-fragment';
+Layer.prototype._SHADERS['shader-fs'].src = '\
   precision mediump float;\
   varying vec2 vTextureCoordinates;\
   uniform sampler2D uSampler;\
@@ -60,7 +60,7 @@ Layer._SHADERS['shader-fs'].src = '\
 
 
 Layer.prototype._initGl = function(canvas) {
-  var names = Layer._NAMES;
+  var names = this._NAMES;
   var context = null;
   for(var i = 0; i < names.length; i++) {
     try {
@@ -121,13 +121,13 @@ Layer.prototype._compileShader = function(gl, source, type) {
 
 
 Layer.prototype._initVertexShader = function(gl) {
-  var params = Layer._SHADERS['shader-vs'];
+  var params = this._SHADERS['shader-vs'];
   return this._compileShader(gl, params.src, params.type);
 };
 
 
 Layer.prototype._initFragmentShader = function(gl) {
-  var params = Layer._SHADERS['shader-fs'];
+  var params = this._SHADERS['shader-fs'];
   return this._compileShader(gl, params.src, params.type);
 };
 
@@ -242,15 +242,15 @@ Layer.prototype.draw = function(texture, vBuffer, cBuffer, iBuffer, aBuffer,
   var param1;
   var param2;
   switch(blend) {
-    case Layer._BLEND_ALPHA2:
+    case this._BLEND_ALPHA2:
       param1 = gl.ONE;
       param2 = gl.ONE_MINUS_SRC_ALPHA;
       break;
-    case Layer._BLEND_ADD_ALPHA:
+    case this._BLEND_ADD_ALPHA:
       param1 = gl.SRC_ALPHA;
       param2 = gl.ONE;
       break;
-//  case Layer._BLEND_ALPHA:
+//  case this._BLEND_ALPHA:
 //  case null:
     default:
       param1 = gl.SRC_ALPHA;
