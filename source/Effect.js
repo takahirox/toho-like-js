@@ -1166,6 +1166,7 @@ __inherit( DamageEffect, Element ) ;
 
 // only for reference
 DamageEffect.prototype.Math = Math;
+DamageEffect.prototype.Randomizer = __randomizer;
 
 DamageEffect.prototype._WIDTH = 64 ;
 DamageEffect.prototype._HEIGHT = 64 ;
@@ -1205,8 +1206,8 @@ DamageEffect.prototype._generateView = function() {
 __copyParentMethod(DamageEffect, Element, 'runStep');
 DamageEffect.prototype.runStep = function() {
   var tmp = 32;
-  this.dx = -tmp / 2 + ((this.Math.random() * tmp) | 0);
-  this.dy = -tmp / 2 + ((this.Math.random() * tmp) | 0);
+  this.dx = -tmp / 2 + ((this.Randomizer.random() * tmp) | 0);
+  this.dy = -tmp / 2 + ((this.Randomizer.random() * tmp) | 0);
   this.Element_runStep();
 };
 

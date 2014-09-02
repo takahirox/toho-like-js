@@ -240,6 +240,7 @@ function ElementView(element) {
   this.sVertices.length   = this._V_SIZE;
 };
 
+// only for reference
 ElementView.prototype.Math = Math;
 
 ElementView.prototype._V_ITEM_SIZE = 3;
@@ -647,6 +648,7 @@ function Element( gameState, maxX, maxY ) {
 
 // only for reference
 Element.prototype.Math = Math;
+Element.prototype.Randomizer = __randomizer;
 
 Element.prototype._STATE_ALIVE = 1 ;
 Element.prototype._STATE_DEAD  = 2 ;
@@ -862,7 +864,7 @@ Element.prototype._calculateTargetVector = function( ) {
  */
 Element.prototype._getRandomValue = function(range) {
   var differ = range.max - range.min;
-  return ((this.Math.random() * differ) | 0) + range.min;
+  return ((this.Randomizer.random() * differ) | 0) + range.min;
 };
 
 

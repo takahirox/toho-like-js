@@ -31,14 +31,24 @@ ItemManager.prototype.create = function( enemy, type ) {
 } ;
 
 
+ItemManager.prototype.createPowerItem = function(enemy) {
+  this.create(enemy, this.Item._TYPE_POWER);
+};
+
+
+ItemManager.prototype.createScoreItem = function(enemy) {
+  this.create(enemy, this.Item._TYPE_SCORE);
+};
+
+
 /**
  * TODO: temporary
  */
-ItemManager.prototype.createHoming = function( enemy, type ) {
-  var item = this.factory.create( enemy, type ) ;
-  item.setTarget( this.gameState.fighter ) ;
-  this.addElement( item ) ;
-} ;
+ItemManager.prototype.createHoming = function(enemy) {
+  var item = this.factory.create(enemy, this.Item._TYPE_SCORE);
+  item.setTarget(this.gameState.fighter);
+  this.addElement(item);
+};
 
 
 __copyParentMethod(ItemManager, ElementManager, 'checkCollisionWith');
@@ -237,3 +247,6 @@ Item.prototype._calculateHomingPoint = function( ) {
 } ;
 
 
+
+// TODO: remove the followings because they complicate the design.
+ItemManager.prototype.Item = Item.prototype;

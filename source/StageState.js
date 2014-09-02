@@ -53,6 +53,8 @@ function StageState( game ) {
 }
 __inherit( StageState, GameState ) ;
 
+// only for reference
+StageState.prototype.Randomizer = __randomizer;
 
 StageState.prototype._FLAG_FIGHTER_DEAD    =    0x1 ;
 StageState.prototype._FLAG_BOSS_EXIST      =    0x2 ;
@@ -105,7 +107,7 @@ StageState.prototype.init = function( params ) {
     this.baseCharacterIndex = params.characterIndex ;
   }
   this.fighter.setCharacterIndex( this.baseCharacterIndex ) ;
-  Math.seed( this.seed ) ;
+  this.Randomizer.seed( this.seed ) ;
   this._soundBGM( Game._BGM_1 ) ;
   this.sendMessageToServer(GameSocket._STATE_BEGIN_GAME);
 } ;
@@ -743,9 +745,9 @@ StageState.prototype.notifyEnemyVanished = function( bullet, enemy ) {
   this.setFlag( this._FLAG_SE_ENEMY_VANISH ) ;
   // TODO: temporal
   if( enemy.powerItem )
-    this.itemManager.create( enemy, Item.prototype._TYPE_POWER ) ;
+    this.itemManager.createPowerItem(enemy);
   else if( enemy.scoreItem )
-    this.itemManager.create( enemy, Item.prototype._TYPE_SCORE ) ;
+    this.itemManager.createScoreItem(enemy);
   this.effectManager.createExplosion(enemy);
   this.notifyDoEffect( enemy, 'shockwave', null ) ;
   this.score += 100 ;
@@ -850,9 +852,9 @@ StageState.prototype.notifyBossStageChanged = function( boss ) {
 /**
  * TODO: temporal
  */
-StageState.prototype.notifyBeScoreItem = function( element ) {
-  this.itemManager.createHoming( element, Item.prototype._TYPE_SCORE ) ;
-} ;
+StageState.prototype.notifyBeScoreItem = function(element) {
+  this.itemManager.createHoming(element);
+};
 
 
 StageState.prototype.notifyBossBecameActive = function( boss ) {
