@@ -745,9 +745,9 @@ StageState.prototype.notifyEnemyVanished = function( bullet, enemy ) {
   this.setFlag( this._FLAG_SE_ENEMY_VANISH ) ;
   // TODO: temporal
   if( enemy.powerItem )
-    this.itemManager.create( enemy, Item.prototype._TYPE_POWER ) ;
+    this.itemManager.createPowerItem(enemy);
   else if( enemy.scoreItem )
-    this.itemManager.create( enemy, Item.prototype._TYPE_SCORE ) ;
+    this.itemManager.createScoreItem(enemy);
   this.effectManager.createExplosion(enemy);
   this.notifyDoEffect( enemy, 'shockwave', null ) ;
   this.score += 100 ;
@@ -852,9 +852,9 @@ StageState.prototype.notifyBossStageChanged = function( boss ) {
 /**
  * TODO: temporal
  */
-StageState.prototype.notifyBeScoreItem = function( element ) {
-  this.itemManager.createHoming( element, Item.prototype._TYPE_SCORE ) ;
-} ;
+StageState.prototype.notifyBeScoreItem = function(element) {
+  this.itemManager.createHoming(element);
+};
 
 
 StageState.prototype.notifyBossBecameActive = function( boss ) {
