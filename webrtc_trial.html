@@ -47,8 +47,14 @@ Tester.prototype.runStep = function() {
 };
 
 
+var keys = {
+  'id': 'sync', // temporal
+  'key': 0xFF
+};
+
 Tester.prototype.send = function(data) {
-  this.peer.send(data);
+//  this.peer.send(data);
+  this.peer.send(keys);
 };
 
 

@@ -37,7 +37,6 @@ var r = 0;
 var prevTime;
 var fps = null;
 var keys = {
-  'id': 'sync', // temporal
   'up': false,
   'down': false,
   'left': false,
@@ -972,20 +971,53 @@ Synchronizer.prototype.connect = function() {
 
 Synchronizer.prototype.sync = function() {
   this.localDone = true;
-  try {
-    this.peer.send(keys);
-  } catch(e) {
-    var self = this;
-    requestAnimationFrame(function() { self.sync(); }); // try at next frame.
-    return;
-  }
+  this.peer.send(this._buildSentData());
   if(this.remoteDone)
     this.runStep();
 };
 
 
+Synchronizer.prototype._ID_START = 0;
+Synchronizer.prototype._ID_SYNC  = 1;
+Synchronizer.prototype._FLAG_UP    = 0x01;
+Synchronizer.prototype._FLAG_DOWN  = 0x02;
+Synchronizer.prototype._FLAG_LEFT  = 0x04;
+Synchronizer.prototype._FLAG_RIGHT = 0x08;
+Synchronizer.prototype._FLAG_X     = 0x10;
+Synchronizer.prototype._FLAG_Z     = 0x20;
+Synchronizer.prototype._CONTAINER = {id: Synchronizer.prototype._ID_SYNC,
+                                     keys: 0};
+Synchronizer.prototype._buildSentData = function() {
+  var value = 0;
+  if(keys.up)
+    value |= this._FLAG_UP;
+  if(keys.down)
+    value |= this._FLAG_DOWN;
+  if(keys.left)
+    value |= this._FLAG_LEFT;
+  if(keys.right)
+    value |= this._FLAG_RIGHT;
+  if(keys.x)
+    value |= this._FLAG_X;
+  if(keys.z)
+    value |= this._FLAG_Z;
+  this._CONTAINER.keys = value;
+  return this._CONTAINER;
+};
+
+
+Synchronizer.prototype._deployReceivedData = function(data) {
+  keys2.up    = (data & this._FLAG_UP)    ? true : false;
+  keys2.down  = (data & this._FLAG_DOWN)  ? true : false;
+  keys2.left  = (data & this._FLAG_LEFT)  ? true : false;
+  keys2.right = (data & this._FLAG_RIGHT) ? true : false;
+  keys2.x     = (data & this._FLAG_X)     ? true : false;
+  keys2.z     = (data & this._FLAG_Z)     ? true : false;
+};
+
+
 Synchronizer.prototype.start = function() {
-  this.peer.send({id: 'start'});
+  this.peer.send({id: this._ID_START});
 };
 
 
@@ -1006,11 +1038,11 @@ Synchronizer.prototype.notifyClosePeer = function(e) {
 
 Synchronizer.prototype.receiveFromPeer = function(data) {
   switch(data.id) {
-    case 'start':
+    case this._ID_START:
       __start();
       break;
-    case 'sync':
-      keys2 = data;
+    case this._ID_SYNC:
+      this._deployReceivedData(data.keys);
       this.remoteDone = true;
       if(this.localDone)
         this.runStep();
