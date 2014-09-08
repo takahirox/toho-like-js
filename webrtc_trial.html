@@ -1,0 +1,102 @@
+<html>
+<head>
+<script type="text/javascript" src="utility/Peer.js"></script>
+<script type="text/javascript">
+var peer;
+//var wsURL = 'ws://localhost:5000';
+var wsURL = 'ws://boiling-anchorage-5279.herokuapp.com/';
+var callButton, startButton;
+
+function Tester() {
+  this.fpsDiv = document.getElementById('fps');
+  this.statusDiv = document.getElementById('status');
+  this.oldDate = Date.now();
+
+  this.peer = new Peer(wsURL, this);
+  this.peer.createPeerConnection();
+  this.running = false;
+  this.count = 0;
+
+  var self = this;
+  this.runStepFunc = function() {self.runStep();};
+};
+
+
+Tester.prototype.offer = function() {
+  this.peer.offer();
+};
+
+
+Tester.prototype.run = function() {
+  this.running = true;
+  this.runStep();
+};
+
+
+Tester.prototype.runStep = function() {
+  if(this.count % 60 == 0) {
+    var newDate = Date.now();
+    var fps = (1000 * 60 / (newDate - this.oldDate) | 0);
+    var text = fps + ' ' + this.count;
+    this.fpsDiv.innerText = text;
+    this.oldDate = newDate;
+  }
+
+  this.send((Math.random() * 4) | 0);
+  this.count++;
+};
+
+
+Tester.prototype.send = function(data) {
+  this.peer.send(data);
+};
+
+
+Tester.prototype.receiveFromPeer = function(data) {
+  if(! this.running)
+    return;
+  requestAnimationFrame(this.runStepFunc);
+};
+
+
+Tester.prototype.notifyWsReady = function(event) {
+  callButton.disabled = false;
+};
+
+Tester.prototype.notifyOpenPeer = function(event) {
+  this.statusDiv.innerText = 'connected';
+  callButton.disabled = true;
+  startButton.disabled = false;
+};
+
+
+var tester;
+
+function __init() {
+  tester = new Tester();
+  callButton = document.getElementById('callButton');
+  startButton = document.getElementById('startButton');
+  callButton.disabled = true;
+  startButton.disabled = true;
+}
+
+function __call() {
+  tester.offer();
+  callButton.disabled = true;
+}
+
+function __start() {
+  tester.run();
+  startButton.disabled = true;
+}
+
+</script>
+</head>
+<body onload="__init()">
+
+<button id="callButton" onclick="__call()">call</button>
+<button id="startButton" onclick="__start()">start</button>
+<div id="fps"></div> fps
+<div id="status"></div>
+</body>
+</html>
