@@ -147,9 +147,5 @@ Peer.prototype._onMessage = function(event) {
 
 
 Peer.prototype.send = function(data) {
-  try {
-    this.channel.send(JSON.stringify(data));
-  } catch(e) {
-    // temporal.
-  }
+  this.channel.send(JSON.stringify(data));
 };
