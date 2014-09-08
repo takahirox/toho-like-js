@@ -960,6 +960,8 @@ BackgroundsDrawer.prototype._prepareDraw = function(layer) {
 function Synchronizer(room) {
   this.peer = new Peer(room, wsURL, this);
   this.peer.createPeerConnection();
+  this.localDone = false;
+  this.remoteDone = false;
 }
 
 
@@ -969,7 +971,10 @@ Synchronizer.prototype.connect = function() {
 
 
 Synchronizer.prototype.sync = function() {
+  this.localDone = true;
   this.peer.send(keys);
+  if(this.remoteDone)
+    this.runStep();
 };
 
 
@@ -1000,11 +1005,19 @@ Synchronizer.prototype.receiveFromPeer = function(data) {
       break;
     case 'sync':
       keys2 = data;
+      this.remoteDone = true;
+      if(this.localDone)
+        this.runStep();
       break;
   }
-  requestAnimationFrame(tick);
 };
 
+
+Synchronizer.prototype.runStep = function() {
+  this.localDone = false;
+  this.remoteDone = false;
+  requestAnimationFrame(tick);
+};
 
 
 function drawFighter(layer) {
@@ -1288,11 +1301,13 @@ function checkStart() {
 function __run() {
   runButton.disabled = true;
   sync.start();
+  sync.runStep();
 }
 
 
 function __start() {
   runButton.disabled = true;
+  sync.runStep();
 }
 
 
