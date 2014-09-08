@@ -50,13 +50,13 @@ function Layer(canvas) {
   this.pMatrix = mat4.create();
 };
 
-Layer._NAMES = ['webgl', 'experimental-webgl'];
+Layer.prototype._NAMES = ['webgl', 'experimental-webgl'];
 
-Layer._SHADERS = {};
+Layer.prototype._SHADERS = {};
 
-Layer._SHADERS['shader-vs'] = {};
-Layer._SHADERS['shader-vs'].type = 'x-shader/x-vertex';
-Layer._SHADERS['shader-vs'].src = '\
+Layer.prototype._SHADERS['shader-vs'] = {};
+Layer.prototype._SHADERS['shader-vs'].type = 'x-shader/x-vertex';
+Layer.prototype._SHADERS['shader-vs'].src = '\
   attribute vec3 aVertexPosition;\
   attribute vec2 aTextureCoordinates;\
   attribute vec4 aColor;\
@@ -73,9 +73,9 @@ Layer._SHADERS['shader-vs'].src = '\
   }\
 ';
 
-Layer._SHADERS['shader-fs'] = {};
-Layer._SHADERS['shader-fs'].type = 'x-shader/x-fragment';
-Layer._SHADERS['shader-fs'].src = '\
+Layer.prototype._SHADERS['shader-fs'] = {};
+Layer.prototype._SHADERS['shader-fs'].type = 'x-shader/x-fragment';
+Layer.prototype._SHADERS['shader-fs'].src = '\
   precision mediump float;\
   varying vec2 vTextureCoordinates;\
   uniform sampler2D uSampler;\
@@ -88,7 +88,7 @@ Layer._SHADERS['shader-fs'].src = '\
 
 
 Layer.prototype._initGl = function(canvas) {
-  var names = Layer._NAMES;
+  var names = this._NAMES;
   var context = null;
   for(var i = 0; i < names.length; i++) {
     try {
@@ -149,13 +149,13 @@ Layer.prototype._compileShader = function(gl, source, type) {
 
 
 Layer.prototype._initVertexShader = function(gl) {
-  var params = Layer._SHADERS['shader-vs'];
+  var params = this._SHADERS['shader-vs'];
   return this._compileShader(gl, params.src, params.type);
 };
 
 
 Layer.prototype._initFragmentShader = function(gl) {
-  var params = Layer._SHADERS['shader-fs'];
+  var params = this._SHADERS['shader-fs'];
   return this._compileShader(gl, params.src, params.type);
 };
 
@@ -231,17 +231,6 @@ Layer.prototype.ortho = function(near, far) {
 
 
 
-function __theta2Radian(theta) {
-  return theta * Math.PI / 180;
-};
-
-
-function __radian2Theta(radian) {
-  return radian * 180 / Math.PI;
-};
-
-
-
 function Element() {
   this.x = 0;
   this.y = 0;
@@ -257,6 +246,7 @@ function Element() {
   this.imageH = 256; // TODO: temporal
 };
 
+Element.prototype.Math = Math;
 
 Element.prototype.init = function() {
   this._initView();
@@ -310,7 +300,7 @@ Element.prototype.getTheta = function() {
 
 
 Element.prototype.getRadian = function() {
-  return __theta2Radian(this.getTheta());
+  return this._theta2Radian(this.getTheta());
 };
 
 
@@ -320,7 +310,17 @@ Element.prototype.getATheta = function() {
 
 
 Element.prototype.getARadian = function() {
-  return __theta2Radian(this.getATheta());
+  return this._theta2Radian(this.getATheta());
+};
+
+
+Element.prototype._theta2Radian = function(theta) {
+  return theta * this.Math.PI / 180;
+};
+
+
+Element.prototype._radian2Theta = function(radian) {
+  return radian * 180 / this.Math.PI;
 };
 
 
@@ -396,28 +396,34 @@ function ElementView(element) {
   this.indices = [];
   this.colors = [];
   this.sVertices = [];
-  this.vertices.length = ElementView._V_SIZE;
-  this.coordinates.length = ElementView._C_SIZE;
-  this.indices.length = ElementView._I_SIZE;
-  this.colors.length = ElementView._A_SIZE;
-  this.sVertices.length = ElementView._V_SIZE;
+  this.vertices.length = this._V_SIZE;
+  this.coordinates.length = this._C_SIZE;
+  this.indices.length = this._I_SIZE;
+  this.colors.length = this._A_SIZE;
+  this.sVertices.length = this._V_SIZE;
 };
 
-ElementView._V_ITEM_SIZE = 3;
-ElementView._V_ITEM_NUM = 4;
-ElementView._V_SIZE = ElementView._V_ITEM_SIZE * ElementView._V_ITEM_NUM;
+ElementView.prototype.Math = Math;
 
-ElementView._C_ITEM_SIZE = 2;
-ElementView._C_ITEM_NUM = 4;
-ElementView._C_SIZE = ElementView._C_ITEM_SIZE * ElementView._C_ITEM_NUM;
+ElementView.prototype._V_ITEM_SIZE = 3;
+ElementView.prototype._V_ITEM_NUM = 4;
+ElementView.prototype._V_SIZE = ElementView.prototype._V_ITEM_SIZE *
+                                  ElementView.prototype._V_ITEM_NUM;
 
-ElementView._I_ITEM_SIZE = 1;
-ElementView._I_ITEM_NUM = 6;
-ElementView._I_SIZE = ElementView._I_ITEM_SIZE * ElementView._I_ITEM_NUM;
+ElementView.prototype._C_ITEM_SIZE = 2;
+ElementView.prototype._C_ITEM_NUM = 4;
+ElementView.prototype._C_SIZE = ElementView.prototype._C_ITEM_SIZE *
+                                  ElementView.prototype._C_ITEM_NUM;
 
-ElementView._A_ITEM_SIZE = 4;
-ElementView._A_ITEM_NUM = 4;
-ElementView._A_SIZE = ElementView._A_ITEM_SIZE * ElementView._A_ITEM_NUM;
+ElementView.prototype._I_ITEM_SIZE = 1;
+ElementView.prototype._I_ITEM_NUM = 6;
+ElementView.prototype._I_SIZE = ElementView.prototype._I_ITEM_SIZE *
+                                  ElementView.prototype._I_ITEM_NUM;
+
+ElementView.prototype._A_ITEM_SIZE = 4;
+ElementView.prototype._A_ITEM_NUM = 4;
+ElementView.prototype._A_SIZE = ElementView.prototype._A_ITEM_SIZE *
+                                  ElementView.prototype._A_ITEM_NUM;
 
 
 ElementView.prototype.init = function() {
@@ -502,38 +508,38 @@ ElementView.prototype._initColors = function() {
 
 
 ElementView.prototype.saveVertices = function() {
-  for(var i = 0; i < ElementView._V_SIZE; i++) {
+  for(var i = 0; i < this._V_SIZE; i++) {
     this.sVertices[i] = this.vertices[i];
   }
 };
 
 
 ElementView.prototype.restoreVertices = function() {
-  for(var i = 0; i < ElementView._V_SIZE; i++) {
+  for(var i = 0; i < this._V_SIZE; i++) {
     this.vertices[i] = this.sVertices[i];
   }
 };
 
 
 ElementView.prototype.translate = function() {
-  for(var i = 0; i < ElementView._V_ITEM_NUM; i++) {
-    this.vertices[i*ElementView._V_ITEM_SIZE+0] += this.element.getX();
-    this.vertices[i*ElementView._V_ITEM_SIZE+1] -= this.element.getY();
-    this.vertices[i*ElementView._V_ITEM_SIZE+2] += this.element.getZ();
+  for(var i = 0; i < this._V_ITEM_NUM; i++) {
+    this.vertices[i*this._V_ITEM_SIZE+0] += this.element.getX();
+    this.vertices[i*this._V_ITEM_SIZE+1] -= this.element.getY();
+    this.vertices[i*this._V_ITEM_SIZE+2] += this.element.getZ();
   }
 };
 
 
 ElementView.prototype.rotate = function() {
   var radian = this.element.getARadian();
-  for(var i = 0; i < ElementView._V_ITEM_NUM; i++) {
-    var x = this.vertices[i*ElementView._V_ITEM_SIZE+0];
-    var y = this.vertices[i*ElementView._V_ITEM_SIZE+1];
+  for(var i = 0; i < this._V_ITEM_NUM; i++) {
+    var x = this.vertices[i*this._V_ITEM_SIZE+0];
+    var y = this.vertices[i*this._V_ITEM_SIZE+1];
 
-    this.vertices[i*ElementView._V_ITEM_SIZE+0] =
-      x * Math.cos(radian) - y * Math.sin(radian);
-    this.vertices[i*ElementView._V_ITEM_SIZE+1] =
-      x * Math.sin(radian) + y * Math.cos(radian);
+    this.vertices[i*this._V_ITEM_SIZE+0] =
+      x * this.Math.cos(radian) - y * this.Math.sin(radian);
+    this.vertices[i*this._V_ITEM_SIZE+1] =
+      x * this.Math.sin(radian) + y * this.Math.cos(radian);
   }
 };
 
@@ -559,6 +565,9 @@ function ElementsDrawer(elementManager, gl, image) {
   this._initTexture(gl);
 };
 
+// only for reference
+ElementsDrawer.prototype.ElementView = ElementView.prototype;
+
 
 ElementsDrawer.prototype._initTexture = function(gl) {
   this.texture = gl.createTexture();
@@ -578,52 +587,52 @@ ElementsDrawer.prototype._pourVerticies = function(i, v) {
   v.saveVertices();
   v.rotate();
   v.translate();
-  for(var j = 0; j < ElementView._V_SIZE; j++) {
-    this.vArray[i*ElementView._V_SIZE+j] = v.vertices[j];
+  for(var j = 0; j < this.ElementView._V_SIZE; j++) {
+    this.vArray[i*this.ElementView._V_SIZE+j] = v.vertices[j];
   }
   v.restoreVertices();
 };
 
 
 ElementsDrawer.prototype._pourCoordinates = function(i, v) {
-  for(var j = 0; j < ElementView._C_SIZE; j++) {
-    this.cArray[i*ElementView._C_SIZE+j] = v.coordinates[j];
+  for(var j = 0; j < this.ElementView._C_SIZE; j++) {
+    this.cArray[i*this.ElementView._C_SIZE+j] = v.coordinates[j];
   }
 };
 
 
 ElementsDrawer.prototype._pourIndices = function(i, v) {
   // TODO: 4 is a magic number
-  this.iArray[i*ElementView._I_SIZE+0] = i*4 + v.indices[0];
-  this.iArray[i*ElementView._I_SIZE+1] = i*4 + v.indices[1];
-  this.iArray[i*ElementView._I_SIZE+2] = i*4 + v.indices[2];
+  this.iArray[i*this.ElementView._I_SIZE+0] = i*4 + v.indices[0];
+  this.iArray[i*this.ElementView._I_SIZE+1] = i*4 + v.indices[1];
+  this.iArray[i*this.ElementView._I_SIZE+2] = i*4 + v.indices[2];
 
-  this.iArray[i*ElementView._I_SIZE+3] = i*4 + v.indices[3];
-  this.iArray[i*ElementView._I_SIZE+4] = i*4 + v.indices[4];
-  this.iArray[i*ElementView._I_SIZE+5] = i*4 + v.indices[5];
+  this.iArray[i*this.ElementView._I_SIZE+3] = i*4 + v.indices[3];
+  this.iArray[i*this.ElementView._I_SIZE+4] = i*4 + v.indices[4];
+  this.iArray[i*this.ElementView._I_SIZE+5] = i*4 + v.indices[5];
 };
 
 
 ElementsDrawer.prototype._pourColors = function(i, v) {
-  this.aArray[i*ElementView._A_SIZE+0] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+1] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+2] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+3] = v.a;
+  this.aArray[i*this.ElementView._A_SIZE+0] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+1] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+2] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+3] = v.a;
 
-  this.aArray[i*ElementView._A_SIZE+4] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+5] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+6] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+7] = v.a;
+  this.aArray[i*this.ElementView._A_SIZE+4] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+5] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+6] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+7] = v.a;
 
-  this.aArray[i*ElementView._A_SIZE+8] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+9] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+10] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+11] = v.a;
+  this.aArray[i*this.ElementView._A_SIZE+8] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+9] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+10] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+11] = v.a;
 
-  this.aArray[i*ElementView._A_SIZE+12] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+13] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+14] = 1.0;
-  this.aArray[i*ElementView._A_SIZE+15] = v.a;
+  this.aArray[i*this.ElementView._A_SIZE+12] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+13] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+14] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+15] = v.a;
 };
 
 
@@ -647,23 +656,23 @@ ElementsDrawer.prototype._pourBuffer = function(gl) {
 
   gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, this.vArray, gl.STATIC_DRAW);
-  this.vBuffer.itemSize = ElementView._V_ITEM_SIZE;
-  this.vBuffer.numItems = length * ElementView._V_ITEM_NUM;
+  this.vBuffer.itemSize = this.ElementView._V_ITEM_SIZE;
+  this.vBuffer.numItems = length * this.ElementView._V_ITEM_NUM;
 
   gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, this.cArray, gl.STATIC_DRAW);
-  this.cBuffer.itemSize = ElementView._C_ITEM_SIZE;
-  this.cBuffer.numItems = length * ElementView._C_ITEM_NUM;
+  this.cBuffer.itemSize = this.ElementView._C_ITEM_SIZE;
+  this.cBuffer.numItems = length * this.ElementView._C_ITEM_NUM;
 
   gl.bindBuffer(gl.ARRAY_BUFFER, this.aBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, this.aArray, gl.STATIC_DRAW);
-  this.aBuffer.itemSize = ElementView._A_ITEM_SIZE;
-  this.aBuffer.numItems = length * ElementView._A_ITEM_NUM;
+  this.aBuffer.itemSize = this.ElementView._A_ITEM_SIZE;
+  this.aBuffer.numItems = length * this.ElementView._A_ITEM_NUM;
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.iArray, gl.STATIC_DRAW);
-  this.iBuffer.itemSize = ElementView._I_ITEM_SIZE;
-  this.iBuffer.numItems = length * ElementView._I_ITEM_NUM;
+  this.iBuffer.itemSize = this.ElementView._I_ITEM_SIZE;
+  this.iBuffer.numItems = length * this.ElementView._I_ITEM_NUM;
 };
 
 
@@ -748,7 +757,7 @@ __inherit(FighterView, ElementView);
 
 
 FighterView.prototype.animate = function() {
-  var num = parseInt(this.element.count/4)%8;
+  var num = ((this.element.count/4)%8) | 0;
   this.element.xIndex = num;
   this._initCoordinates();
 };
@@ -766,13 +775,13 @@ __inherit(FightersDrawer, ElementsDrawer);
 function Bullet(type) {
   this.parent = Element;
   this.parent.call(this);
-  this.w = Bullet._WIDTHS[type];
-  this.h = Bullet._HEIGHTS[type];
+  this.w = this._WIDTHS[type];
+  this.h = this._HEIGHTS[type];
 
-  var xRange = Bullet._X_INDEX_RANGE[type];
-  var yRange = Bullet._Y_INDEX_RANGE[type];
-  this.xIndex = Math.floor(Math.random()*(xRange[1]-xRange[0])) + xRange[0];
-  this.yIndex = Math.floor(Math.random()*(yRange[1]-yRange[0])) + yRange[0];
+  var xRange = this._X_INDEX_RANGE[type];
+  var yRange = this._Y_INDEX_RANGE[type];
+  this.xIndex = this.Math.floor(this.Math.random()*(xRange[1]-xRange[0])) + xRange[0];
+  this.yIndex = this.Math.floor(this.Math.random()*(yRange[1]-yRange[0])) + yRange[0];
 
   this.imageH = 512; // TODO: temporal
 
@@ -780,14 +789,16 @@ function Bullet(type) {
 };
 __inherit(Bullet, Element);
 
-Bullet._TYPE_SMALL = 0;
-Bullet._TYPE_MIDDLE = 1;
-Bullet._TYPE_LARGE = 2;
+Bullet.prototype.Math = Math;
 
-Bullet._WIDTHS = [16, 32, 64];
-Bullet._HEIGHTS = [16, 32, 64];
-Bullet._X_INDEX_RANGE = [[0, 15], [0, 7], [0, 3]];
-Bullet._Y_INDEX_RANGE = [[1, 11], [8, 12], [7, 7]];
+Bullet.prototype._TYPE_SMALL = 0;
+Bullet.prototype._TYPE_MIDDLE = 1;
+Bullet.prototype._TYPE_LARGE = 2;
+
+Bullet.prototype._WIDTHS = [16, 32, 64];
+Bullet.prototype._HEIGHTS = [16, 32, 64];
+Bullet.prototype._X_INDEX_RANGE = [[0, 15], [0, 7], [0, 3]];
+Bullet.prototype._Y_INDEX_RANGE = [[1, 11], [8, 12], [7, 7]];
 
 
 Bullet.prototype._generateView = function() {
@@ -796,15 +807,15 @@ Bullet.prototype._generateView = function() {
 
 
 Bullet.prototype.calculate = function() {
-  this.theta = parseInt(Math.random()*359);
-  this.rad = this.theta * Math.PI/180;
-  this.v = parseInt(Math.random()*10) + 1;
+  this.theta = (this.Math.random()*359) | 0;
+  this.rad = this.theta * this.Math.PI/180;
+  this.v = ((this.Math.random()*10) | 0) + 1 ;
 };
 
 
 Bullet.prototype.runStep = function() {
-  this.x += this.v * Math.cos(this.rad);
-  this.y += this.v * Math.sin(this.rad);
+  this.x += this.v * this.Math.cos(this.rad);
+  this.y += this.v * this.Math.sin(this.rad);
 
   if(this.x < -240 || this.x > 240)
     this.x = -this.x;
@@ -813,7 +824,7 @@ Bullet.prototype.runStep = function() {
 
   this.count++;
 //  if(this.count % 50 == 0)
-  if(parseInt(Math.random()*20) == 0)
+  if(((this.Math.random()*20) | 0) == 0)
     this.calculate();
 };
 
@@ -831,10 +842,11 @@ __inherit(BulletManager, ElementManager);
 function BulletView(element) {
   this.parent = ElementView;
   this.parent.call(this, element);
-  this.a = 1 - Math.floor(Math.random() * 2)/10;
+  this.a = 1 - this.Math.floor(this.Math.random() * 2)/10;
 };
 __inherit(BulletView, ElementView);
 
+BulletView.prototype.Math = Math;
 
 
 function BulletsDrawer(elementManager, gl, image) {
@@ -917,12 +929,14 @@ function BackgroundsDrawer(elementManager, gl, image) {
 };
 __inherit(BackgroundsDrawer, ElementsDrawer);
 
+BackgroundsDrawer.prototype.Math = Math;
+
 
 BackgroundsDrawer.prototype._prepareDraw = function(layer) {
   var e = this.elementManager.get(0);
 
-  mat4.rotate(layer.mvMatrix, Math.PI/180*50, [-1, 0, 0]);
-  mat4.translate(layer.mvMatrix, [-0.5, 0-(parseInt(e.count/2)%100)/100, -0.5]);
+  mat4.rotate(layer.mvMatrix, this.Math.PI/180*50, [-1, 0, 0]);
+  mat4.translate(layer.mvMatrix, [-0.5, 0-(((e.count/2) | 0)%100)/100, -0.5]);
 };
 
 
@@ -962,7 +976,7 @@ function calculateFps() {
     return;
   var newTime = Date.now();
   if(prevTime) {
-    fps = parseInt(1000 * 60 / (newTime - prevTime));
+    fps = (1000 * 60 / (newTime - prevTime)) | 0;
     var div = document.getElementById('fps');
     div.textContent = fps + 'fps';
   }
@@ -1087,17 +1101,18 @@ function startup() {
   fImage.src = 'image/reimu.png';
 
   var bImage = new Image();
+  var bp = Bullet.prototype;
   bImage.onload = function() {
     bulletManager = new BulletManager();
     bulletsDrawer = new BulletsDrawer(bulletManager, mainLayer.gl, bImage);
     for(var i = 0; i < bulletsNum; i++) {
       var type;
       if(i < smallNum)
-        type = Bullet._TYPE_SMALL;
+        type = bp._TYPE_SMALL;
       else if(i < smallNum+middleNum)
-        type = Bullet._TYPE_MIDDLE;
+        type = bp._TYPE_MIDDLE;
       else
-        type = Bullet._TYPE_LARGE;
+        type = bp._TYPE_LARGE;
 
       var b = new Bullet(type);
       b.init();
@@ -1124,33 +1139,28 @@ function startup() {
 
 
 function getNumFromInput(e) {
-  var num = parseInt(e.selectedOptions[0].value);
+  var num = e.selectedOptions[0].value | 0;
   return num
 };
 
 
 function updateBullets() {
 
-  smallNum = parseInt(
-               document.getElementById("smallNum").selectedOptions[0].value
-             );
-  middleNum = parseInt(
-               document.getElementById("middleNum").selectedOptions[0].value
-             );
-  largeNum = parseInt(
-               document.getElementById("largeNum").selectedOptions[0].value
-             );
+  smallNum = document.getElementById("smallNum").selectedOptions[0].value | 0;
+  middleNum = document.getElementById("middleNum").selectedOptions[0].value | 0;
+  largeNum = document.getElementById("largeNum").selectedOptions[0].value | 0;
   bulletsNum = smallNum + middleNum + largeNum;
 
   bulletManager.clear();
+  var bp = Bullet.prototype;
   for(var i = 0; i < bulletsNum; i++) {
       var type;
       if(i < smallNum)
-        type = Bullet._TYPE_SMALL;
+        type = bp._TYPE_SMALL;
       else if(i < smallNum+middleNum)
-        type = Bullet._TYPE_MIDDLE;
+        type = bp._TYPE_MIDDLE;
       else
-        type = Bullet._TYPE_LARGE;
+        type = bp._TYPE_LARGE;
 
       var b = new Bullet(type);
       b.init();
