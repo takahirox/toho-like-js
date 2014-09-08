@@ -972,11 +972,7 @@ Synchronizer.prototype.connect = function() {
 
 Synchronizer.prototype.sync = function() {
   this.localDone = true;
-  try {
-    this.peer.send(keys);
-  } catch(e) {
-    this.peer.send(keys); // one more try.
-  }
+  this.peer.send(keys);
   if(this.remoteDone)
     this.runStep();
 };
