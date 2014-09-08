@@ -1,0 +1,1389 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<title></title>
+<meta charset="utf-8">
+<script type="text/javascript" src="lib/glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="utility/Inherit.js"></script>
+<script type="text/javascript" src="utility/Peer.js"></script>
+<script type="text/javascript">
+
+//var wsURL = 'ws://localhost:5000';
+var wsURL = 'ws://boiling-anchorage-5279.herokuapp.com/';
+
+var mainLayer;
+var bgLayer;
+
+var fighter;
+var fighter2;
+var fighterManager;
+var fightersDrawer;
+
+var bulletManager;
+var bulletsDrawer;
+
+var background;
+var backgroundManager;
+var backgroundsDrawer;
+
+
+var smallNum = 100;
+var middleNum = 50;
+var largeNum = 10;
+
+var bulletsNum = smallNum + middleNum + largeNum;
+
+var r = 0;
+var prevTime;
+var fps = null;
+var keys = {
+  'id': 'sync', // temporal
+  'up': false,
+  'down': false,
+  'left': false,
+  'right': false,
+  'x': false,
+  'z': false
+};
+var keys2 = {
+  'up': false,
+  'down': false,
+  'left': false,
+  'right': false,
+  'x': false,
+  'z': false
+};
+
+var connectButton, runButton;
+var sync;
+
+function Layer(canvas) {
+  this.canvas = canvas;
+  this.gl = this._initGl(canvas);
+  this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  this.shader = this._initShader(this.gl);
+  this.mvMatrix = mat4.create();
+  this.pMatrix = mat4.create();
+};
+
+Layer.prototype._NAMES = ['webgl', 'experimental-webgl'];
+
+Layer.prototype._SHADERS = {};
+
+Layer.prototype._SHADERS['shader-vs'] = {};
+Layer.prototype._SHADERS['shader-vs'].type = 'x-shader/x-vertex';
+Layer.prototype._SHADERS['shader-vs'].src = '\
+  attribute vec3 aVertexPosition;\
+  attribute vec2 aTextureCoordinates;\
+  attribute vec4 aColor;\
+\
+  uniform mat4 uMVMatrix;\
+  uniform mat4 uPMatrix;\
+\
+  varying vec2 vTextureCoordinates;\
+  varying vec4 vColor;\
+  void main() {\
+    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\
+    vTextureCoordinates = aTextureCoordinates;\
+    vColor = aColor;\
+  }\
+';
+
+Layer.prototype._SHADERS['shader-fs'] = {};
+Layer.prototype._SHADERS['shader-fs'].type = 'x-shader/x-fragment';
+Layer.prototype._SHADERS['shader-fs'].src = '\
+  precision mediump float;\
+  varying vec2 vTextureCoordinates;\
+  uniform sampler2D uSampler;\
+  varying vec4 vColor;\
+  void main() {\
+    vec4 textureColor = texture2D(uSampler, vTextureCoordinates);\
+    gl_FragColor = textureColor * vColor;\
+  }\
+';
+
+
+Layer.prototype._initGl = function(canvas) {
+  var names = this._NAMES;
+  var context = null;
+  for(var i = 0; i < names.length; i++) {
+    try {
+      context = canvas.getContext(names[i]);
+    } catch(e) {
+      if(context)
+        break;
+    }
+  }
+  if(context) {
+    context.viewportWidth = canvas.width;
+    context.viewportHeight = canvas.height;
+  } else {
+    alert("Failed to create WebGL context!");
+  }
+  return context;
+};
+
+
+Layer.prototype._compileShaderFromDOM = function(gl, id) {
+  var script = document.getElementById(id);
+
+  if(!script)
+    return null;
+
+  var source = '';
+  var currentChild = script.firstChild;
+  while(currentChild) {
+    if(currentChild.nodeType == 3) { // 3 corresponds to TEXT_NODE
+      source += currentChild.textContent;
+    }
+    currentChild = currentChild.nextSibling;
+  }
+
+  return this._compileShader(gl, source, script.type);
+};
+
+
+Layer.prototype._compileShader = function(gl, source, type) {
+  var shader;
+  if(type == 'x-shader/x-fragment') {
+    shader = gl.createShader(gl.FRAGMENT_SHADER);
+  } else if(type == 'x-shader/x-vertex') {
+    shader = gl.createShader(gl.VERTEX_SHADER);
+  } else {
+    return null;
+  }
+
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+
+  if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    alert(gl.getShaderInfoLog(shader));
+    return null;
+  }
+  return shader;
+};
+
+
+Layer.prototype._initVertexShader = function(gl) {
+  var params = this._SHADERS['shader-vs'];
+  return this._compileShader(gl, params.src, params.type);
+};
+
+
+Layer.prototype._initFragmentShader = function(gl) {
+  var params = this._SHADERS['shader-fs'];
+  return this._compileShader(gl, params.src, params.type);
+};
+
+
+Layer.prototype._initShader = function(gl) {
+  var vertexShader = this._initVertexShader(gl);
+  var fragmentShader = this._initFragmentShader(gl);
+
+  var shader = gl.createProgram();
+  gl.attachShader(shader, vertexShader);
+  gl.attachShader(shader, fragmentShader);
+  gl.linkProgram(shader);
+
+  if(!gl.getProgramParameter(shader, gl.LINK_STATUS)) {
+    alert("Failed to setup shaders");
+  }
+
+  gl.useProgram(shader);
+
+  shader.vertexPositionAttribute =
+    gl.getAttribLocation(shader, 'aVertexPosition');
+  gl.enableVertexAttribArray(shader.vertexPositionAttribute);
+
+  shader.textureCoordAttribute = 
+    gl.getAttribLocation(shader, 'aTextureCoordinates');
+  gl.enableVertexAttribArray(shader.textureCoordAttribute);
+
+  shader.colorAttribute =
+    gl.getAttribLocation(shader, 'aColor');
+  gl.enableVertexAttribArray(shader.colorAttribute);
+
+  shader.pMatrixUniform =
+    gl.getUniformLocation(shader, 'uPMatrix');
+  shader.mvMatrixUniform =
+    gl.getUniformLocation(shader, 'uMVMatrix');
+
+  shader.uSamplerUniform =
+    gl.getUniformLocation(shader, 'uSampler');
+
+  return shader;
+}
+
+
+Layer.prototype.setMatrixUniforms = function(gl) {
+  gl.uniformMatrix4fv(this.shader.pMatrixUniform, false, this.pMatrix);
+  gl.uniformMatrix4fv(this.shader.mvMatrixUniform, false, this.mvMatrix);
+}
+
+
+Layer.prototype.viewport = function() {
+  this.gl.viewport(0, 0, this.gl.viewportWidth, this.gl.viewportHeight);
+};
+
+
+Layer.prototype.clear = function() {
+  this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+};
+
+
+Layer.prototype.perspective = function(theta, near, far) {
+  mat4.perspective(theta, this.gl.viewportWidth / this.gl.viewportHeight,
+                   near, far, this.pMatrix);
+};
+
+
+Layer.prototype.ortho = function(near, far) {
+  mat4.ortho(-this.gl.viewportWidth/2,
+              this.gl.viewportWidth/2,
+             -this.gl.viewportHeight/2,
+              this.gl.viewportHeight/2,
+              near, far, this.pMatrix);
+};
+
+
+
+function Element() {
+  this.x = 0;
+  this.y = 0;
+  this.z = 0;
+  this.w = 0;
+  this.h = 0;
+  this.theta = null;
+  this.xIndex = 0;
+  this.yIndex = 0;
+  this.count = 0;
+  this.view = null;
+  this.imageW = 256; // TODO: temporal
+  this.imageH = 256; // TODO: temporal
+};
+
+Element.prototype.Math = Math;
+
+Element.prototype.init = function() {
+  this._initView();
+};
+
+
+Element.prototype._initView = function() {
+  this.view = this._generateView();
+  this.view.init();
+};
+
+
+Element.prototype._generateView = function() {
+  return new ElementView(this);
+};
+
+
+Element.prototype.runStep = function() {
+  this.count++;
+};
+
+
+Element.prototype.getX = function() {
+  return this.x;
+};
+
+
+Element.prototype.getY = function() {
+  return this.y;
+};
+
+
+Element.prototype.getZ = function() {
+  return this.z;
+};
+
+
+Element.prototype.getWidth = function() {
+  return this.w;
+};
+
+
+Element.prototype.getHeight = function() {
+  return this.h;
+};
+
+
+Element.prototype.getTheta = function() {
+  return this.theta;
+};
+
+
+Element.prototype.getRadian = function() {
+  return this._theta2Radian(this.getTheta());
+};
+
+
+Element.prototype.getATheta = function() {
+  return 270-this.theta;
+};
+
+
+Element.prototype.getARadian = function() {
+  return this._theta2Radian(this.getATheta());
+};
+
+
+Element.prototype._theta2Radian = function(theta) {
+  return theta * this.Math.PI / 180;
+};
+
+
+Element.prototype._radian2Theta = function(radian) {
+  return radian * 180 / this.Math.PI;
+};
+
+
+Element.prototype.getView = function() {
+  return this.view;
+};
+
+
+Element.prototype.getImageXIndex = function() {
+  return this.xIndex;
+};
+
+
+Element.prototype.getImageYIndex = function() {
+  return this.yIndex;
+};
+
+
+Element.prototype.getImageWidth = function() {
+  return this.imageW;
+};
+
+
+Element.prototype.getImageHeight = function() {
+  return this.imageH;
+};
+
+
+
+function ElementManager() {
+  this.elements = [];
+  this.maxLength = 1000;
+};
+
+
+ElementManager.prototype.clear = function() {
+  this.elements.length = 0;
+};
+
+
+ElementManager.prototype.get = function(index) {
+  return this.elements[index];
+};
+
+
+ElementManager.prototype.add = function(element) {
+  this.elements.push(element);
+};
+
+
+ElementManager.prototype.getMaxLength = function() {
+  return this.maxLength;
+};
+
+
+ElementManager.prototype.getLength = function() {
+  return this.elements.length;
+};
+
+
+ElementManager.prototype.runStep = function() {
+  for(var i = 0; i < this.getLength(); i++)
+    this.get(i).runStep();
+};
+
+
+
+function ElementView(element) {
+  this.element = element;
+  this.a = 1.0;
+  this.vertices = [];
+  this.coordinates = [];
+  this.indices = [];
+  this.colors = [];
+  this.sVertices = [];
+  this.vertices.length = this._V_SIZE;
+  this.coordinates.length = this._C_SIZE;
+  this.indices.length = this._I_SIZE;
+  this.colors.length = this._A_SIZE;
+  this.sVertices.length = this._V_SIZE;
+};
+
+ElementView.prototype.Math = Math;
+
+ElementView.prototype._V_ITEM_SIZE = 3;
+ElementView.prototype._V_ITEM_NUM = 4;
+ElementView.prototype._V_SIZE = ElementView.prototype._V_ITEM_SIZE *
+                                  ElementView.prototype._V_ITEM_NUM;
+
+ElementView.prototype._C_ITEM_SIZE = 2;
+ElementView.prototype._C_ITEM_NUM = 4;
+ElementView.prototype._C_SIZE = ElementView.prototype._C_ITEM_SIZE *
+                                  ElementView.prototype._C_ITEM_NUM;
+
+ElementView.prototype._I_ITEM_SIZE = 1;
+ElementView.prototype._I_ITEM_NUM = 6;
+ElementView.prototype._I_SIZE = ElementView.prototype._I_ITEM_SIZE *
+                                  ElementView.prototype._I_ITEM_NUM;
+
+ElementView.prototype._A_ITEM_SIZE = 4;
+ElementView.prototype._A_ITEM_NUM = 4;
+ElementView.prototype._A_SIZE = ElementView.prototype._A_ITEM_SIZE *
+                                  ElementView.prototype._A_ITEM_NUM;
+
+
+ElementView.prototype.init = function() {
+  this._initVertices();
+  this._initCoordinates();
+  this._initIndices();
+  this._initColors();
+};
+
+
+ElementView.prototype._initVertices = function() {
+  var w = this.element.getWidth()/2;
+  var h = this.element.getHeight()/2;
+
+  this.vertices[0]  = -w;
+  this.vertices[1]  = -h;
+  this.vertices[2]  = -1.0;
+  this.vertices[3]  =  w;
+  this.vertices[4]  = -h;
+  this.vertices[5]  = -1.0;
+  this.vertices[6]  =  w;
+  this.vertices[7]  =  h;
+  this.vertices[8]  = -1.0;
+  this.vertices[9]  = -w;
+  this.vertices[10] =  h;
+  this.vertices[11] = -1.0;
+};
+
+
+ElementView.prototype._initCoordinates = function() {
+  var w = this.element.getWidth()/this.element.getImageWidth();
+  var h = this.element.getHeight()/this.element.getImageHeight();
+
+  var x1 = w * this.element.getImageXIndex();
+  var y1 = h * this.element.getImageYIndex();
+  var x2 = x1 + w;
+  var y2 = y1 + h;
+
+  this.coordinates[0] = x1;
+  this.coordinates[1] = y2;
+  this.coordinates[2] = x2;
+  this.coordinates[3] = y2;
+  this.coordinates[4] = x2;
+  this.coordinates[5] = y1;
+  this.coordinates[6] = x1;
+  this.coordinates[7] = y1;
+};
+
+
+ElementView.prototype._initIndices = function() {
+  this.indices[0] = 0;
+  this.indices[1] = 1;
+  this.indices[2] = 2;
+
+  this.indices[3] = 0;
+  this.indices[4] = 2;
+  this.indices[5] = 3;
+};
+
+
+ElementView.prototype._initColors = function() {
+  this.colors[0] = 1.0;
+  this.colors[1] = 1.0;
+  this.colors[2] = 1.0;
+  this.colors[3] = 1.0;
+
+  this.colors[4] = 1.0;
+  this.colors[5] = 1.0;
+  this.colors[6] = 1.0;
+  this.colors[7] = 1.0;
+
+  this.colors[8] = 1.0;
+  this.colors[9] = 1.0;
+  this.colors[10] = 1.0;
+  this.colors[11] = 1.0;
+
+  this.colors[12] = 1.0;
+  this.colors[13] = 1.0;
+  this.colors[14] = 1.0;
+  this.colors[15] = 1.0;
+};
+
+
+ElementView.prototype.saveVertices = function() {
+  for(var i = 0; i < this._V_SIZE; i++) {
+    this.sVertices[i] = this.vertices[i];
+  }
+};
+
+
+ElementView.prototype.restoreVertices = function() {
+  for(var i = 0; i < this._V_SIZE; i++) {
+    this.vertices[i] = this.sVertices[i];
+  }
+};
+
+
+ElementView.prototype.translate = function() {
+  for(var i = 0; i < this._V_ITEM_NUM; i++) {
+    this.vertices[i*this._V_ITEM_SIZE+0] += this.element.getX();
+    this.vertices[i*this._V_ITEM_SIZE+1] -= this.element.getY();
+    this.vertices[i*this._V_ITEM_SIZE+2] += this.element.getZ();
+  }
+};
+
+
+ElementView.prototype.rotate = function() {
+  var radian = this.element.getARadian();
+  for(var i = 0; i < this._V_ITEM_NUM; i++) {
+    var x = this.vertices[i*this._V_ITEM_SIZE+0];
+    var y = this.vertices[i*this._V_ITEM_SIZE+1];
+
+    this.vertices[i*this._V_ITEM_SIZE+0] =
+      x * this.Math.cos(radian) - y * this.Math.sin(radian);
+    this.vertices[i*this._V_ITEM_SIZE+1] =
+      x * this.Math.sin(radian) + y * this.Math.cos(radian);
+  }
+};
+
+
+ElementView.prototype.animate = function() {
+};
+
+
+
+function ElementsDrawer(elementManager, gl, image) {
+  this.elementManager = elementManager;
+  var maxLength = elementManager.getMaxLength();
+  this.vArray = new Float32Array(maxLength*12);
+  this.cArray = new Float32Array(maxLength*8);
+  this.iArray = new Uint16Array(maxLength*6);
+  this.aArray = new Float32Array(maxLength*16);
+  this.vBuffer = gl.createBuffer();
+  this.cBuffer = gl.createBuffer();
+  this.iBuffer = gl.createBuffer();
+  this.aBuffer = gl.createBuffer();
+  this.image = image;
+  this.texture = null;
+  this._initTexture(gl);
+};
+
+// only for reference
+ElementsDrawer.prototype.ElementView = ElementView.prototype;
+
+
+ElementsDrawer.prototype._initTexture = function(gl) {
+  this.texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, this.texture)
+//  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,
+                this.image);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+};
+
+
+ElementsDrawer.prototype._pourVerticies = function(i, v) {
+  v.saveVertices();
+  v.rotate();
+  v.translate();
+  for(var j = 0; j < this.ElementView._V_SIZE; j++) {
+    this.vArray[i*this.ElementView._V_SIZE+j] = v.vertices[j];
+  }
+  v.restoreVertices();
+};
+
+
+ElementsDrawer.prototype._pourCoordinates = function(i, v) {
+  for(var j = 0; j < this.ElementView._C_SIZE; j++) {
+    this.cArray[i*this.ElementView._C_SIZE+j] = v.coordinates[j];
+  }
+};
+
+
+ElementsDrawer.prototype._pourIndices = function(i, v) {
+  // TODO: 4 is a magic number
+  this.iArray[i*this.ElementView._I_SIZE+0] = i*4 + v.indices[0];
+  this.iArray[i*this.ElementView._I_SIZE+1] = i*4 + v.indices[1];
+  this.iArray[i*this.ElementView._I_SIZE+2] = i*4 + v.indices[2];
+
+  this.iArray[i*this.ElementView._I_SIZE+3] = i*4 + v.indices[3];
+  this.iArray[i*this.ElementView._I_SIZE+4] = i*4 + v.indices[4];
+  this.iArray[i*this.ElementView._I_SIZE+5] = i*4 + v.indices[5];
+};
+
+
+ElementsDrawer.prototype._pourColors = function(i, v) {
+  this.aArray[i*this.ElementView._A_SIZE+0] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+1] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+2] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+3] = v.a;
+
+  this.aArray[i*this.ElementView._A_SIZE+4] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+5] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+6] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+7] = v.a;
+
+  this.aArray[i*this.ElementView._A_SIZE+8] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+9] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+10] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+11] = v.a;
+
+  this.aArray[i*this.ElementView._A_SIZE+12] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+13] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+14] = 1.0;
+  this.aArray[i*this.ElementView._A_SIZE+15] = v.a;
+};
+
+
+ElementsDrawer.prototype._pourArray = function() {
+  var length = this.elementManager.getLength();
+
+  for(var i = 0; i < length; i++) {
+    var e = this.elementManager.get(i);
+    var v = e.getView();
+    v.animate();
+    this._pourVerticies(i, v);
+    this._pourCoordinates(i, v);
+    this._pourIndices(i, v);
+    this._pourColors(i, v);
+  }
+};
+
+
+ElementsDrawer.prototype._pourBuffer = function(gl) {
+  var length = this.elementManager.getLength();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, this.vArray, gl.STATIC_DRAW);
+  this.vBuffer.itemSize = this.ElementView._V_ITEM_SIZE;
+  this.vBuffer.numItems = length * this.ElementView._V_ITEM_NUM;
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, this.cArray, gl.STATIC_DRAW);
+  this.cBuffer.itemSize = this.ElementView._C_ITEM_SIZE;
+  this.cBuffer.numItems = length * this.ElementView._C_ITEM_NUM;
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.aBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, this.aArray, gl.STATIC_DRAW);
+  this.aBuffer.itemSize = this.ElementView._A_ITEM_SIZE;
+  this.aBuffer.numItems = length * this.ElementView._A_ITEM_NUM;
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.iArray, gl.STATIC_DRAW);
+  this.iBuffer.itemSize = this.ElementView._I_ITEM_SIZE;
+  this.iBuffer.numItems = length * this.ElementView._I_ITEM_NUM;
+};
+
+
+ElementsDrawer.prototype._draw = function(layer) {
+  var gl = layer.gl;
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+  gl.vertexAttribPointer(layer.shader.vertexPositionAttribute,
+                         this.vBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.aBuffer);
+  gl.vertexAttribPointer(layer.shader.colorAttribute,
+                         this.aBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.cBuffer);
+  gl.vertexAttribPointer(layer.shader.textureCoordAttribute,
+                         this.cBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, this.texture);
+  gl.uniform1i(layer.shader.uSamplerUniform, 0);
+
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.enable(gl.BLEND);
+  gl.disable(gl.DEPTH_TEST);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+  layer.setMatrixUniforms(gl);
+  gl.drawElements(gl.TRIANGLES, this.iBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+};
+
+
+ElementsDrawer.prototype._prepareDraw = function(layer) {
+};
+
+
+ElementsDrawer.prototype.draw = function(layer) {
+  this._pourArray();
+  this._pourBuffer(layer.gl);
+  mat4.identity(layer.mvMatrix);
+  this._prepareDraw(layer);
+  this._draw(layer);
+};
+
+
+
+function Fighter() {
+  this.parent = Element;
+  this.parent.call(this);
+  this.w = 32;
+  this.h = 48;
+  this.theta = 270;
+};
+__inherit(Fighter, Element);
+
+
+Fighter.prototype._generateView = function(gl, image) {
+  return new FighterView(this);
+};
+
+
+Fighter.prototype.runStep = function() {
+  this.count++;
+};
+
+
+
+function FighterManager() {
+  this.parent = ElementManager;
+  this.parent.call(this);
+  this.maxLength = 2;
+};
+__inherit(FighterManager, ElementManager);
+
+
+
+function FighterView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+};
+__inherit(FighterView, ElementView);
+
+
+FighterView.prototype.animate = function() {
+  var num = ((this.element.count/4)%8) | 0;
+  this.element.xIndex = num;
+  this._initCoordinates();
+};
+
+
+
+function FightersDrawer(elementManager, gl, image) {
+  this.parent = ElementsDrawer;
+  this.parent.call(this, elementManager, gl, image);
+};
+__inherit(FightersDrawer, ElementsDrawer);
+
+
+
+function Bullet(type) {
+  this.parent = Element;
+  this.parent.call(this);
+  this.w = this._WIDTHS[type];
+  this.h = this._HEIGHTS[type];
+
+  var xRange = this._X_INDEX_RANGE[type];
+  var yRange = this._Y_INDEX_RANGE[type];
+  this.xIndex = this.Math.floor(this.Math.random()*(xRange[1]-xRange[0])) + xRange[0];
+  this.yIndex = this.Math.floor(this.Math.random()*(yRange[1]-yRange[0])) + yRange[0];
+
+  this.imageH = 512; // TODO: temporal
+
+  this.calculate();
+};
+__inherit(Bullet, Element);
+
+Bullet.prototype.Math = Math;
+
+Bullet.prototype._TYPE_SMALL = 0;
+Bullet.prototype._TYPE_MIDDLE = 1;
+Bullet.prototype._TYPE_LARGE = 2;
+
+Bullet.prototype._WIDTHS = [16, 32, 64];
+Bullet.prototype._HEIGHTS = [16, 32, 64];
+Bullet.prototype._X_INDEX_RANGE = [[0, 15], [0, 7], [0, 3]];
+Bullet.prototype._Y_INDEX_RANGE = [[1, 11], [8, 12], [7, 7]];
+
+
+Bullet.prototype._generateView = function() {
+  return new BulletView(this);
+};
+
+
+Bullet.prototype.calculate = function() {
+  this.theta = (this.Math.random()*359) | 0;
+  this.rad = this.theta * this.Math.PI/180;
+  this.v = ((this.Math.random()*10) | 0) + 1 ;
+};
+
+
+Bullet.prototype.runStep = function() {
+  this.x += this.v * this.Math.cos(this.rad);
+  this.y += this.v * this.Math.sin(this.rad);
+
+  if(this.x < -240 || this.x > 240)
+    this.x = -this.x;
+  if(this.y < -240 || this.y > 240)
+    this.y = -this.y;
+
+  this.count++;
+//  if(this.count % 50 == 0)
+  if(((this.Math.random()*20) | 0) == 0)
+    this.calculate();
+};
+
+
+
+function BulletManager() {
+  this.parent = ElementManager;
+  this.parent.call(this);
+  this.maxLength = 5000;
+};
+__inherit(BulletManager, ElementManager);
+
+
+
+function BulletView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+  this.a = 1 - this.Math.floor(this.Math.random() * 2)/10;
+};
+__inherit(BulletView, ElementView);
+
+BulletView.prototype.Math = Math;
+
+
+function BulletsDrawer(elementManager, gl, image) {
+  this.parent= ElementsDrawer;
+  this.parent.call(this, elementManager, gl, image);
+};
+__inherit(BulletsDrawer, ElementsDrawer);
+
+
+
+function Background() {
+  this.parent = Element;
+  this.parent.call(this);
+  this.theta = 270;
+};
+__inherit(Background, Element);
+
+
+Background.prototype._generateView = function() {
+  return new BackgroundView(this);
+};
+
+
+
+function BackgroundManager() {
+  this.parent = ElementManager;
+  this.parent.call(this);
+  this.maxLength = 2;
+};
+__inherit(BackgroundManager, ElementManager);
+
+
+
+function BackgroundView(element) {
+  this.parent = ElementView;
+  this.parent.call(this, element);
+};
+__inherit(BackgroundView, ElementView);
+
+
+
+BackgroundView.prototype._initVertices = function() {
+  this.vertices[0] = 0.0;
+  this.vertices[1] = 0.0;
+  this.vertices[2] = 0.0;
+
+  this.vertices[3] = 1.0;
+  this.vertices[4] = 0.0;
+  this.vertices[5] = 0.0;
+
+  this.vertices[6] = 1.0;
+  this.vertices[7] = 4.0;
+  this.vertices[8] = 0.0;
+
+  this.vertices[9] = 0.0;
+  this.vertices[10] = 4.0;
+  this.vertices[11] = 0.0;
+};
+
+
+BackgroundView.prototype._initCoordinates = function() {
+  this.coordinates[0] = 0.0;
+  this.coordinates[1] = 4.0;
+
+  this.coordinates[2] = 1.0;
+  this.coordinates[3] = 4.0;
+
+  this.coordinates[4] = 1.0;
+  this.coordinates[5] = 0.0;
+
+  this.coordinates[6] = 0.0;
+  this.coordinates[7] = 0.0;
+};
+
+
+
+function BackgroundsDrawer(elementManager, gl, image) {
+  this.parent = ElementsDrawer;
+  this.parent.call(this, elementManager, gl, image);
+};
+__inherit(BackgroundsDrawer, ElementsDrawer);
+
+BackgroundsDrawer.prototype.Math = Math;
+
+
+BackgroundsDrawer.prototype._prepareDraw = function(layer) {
+  var e = this.elementManager.get(0);
+
+  mat4.rotate(layer.mvMatrix, this.Math.PI/180*50, [-1, 0, 0]);
+  mat4.translate(layer.mvMatrix, [-0.5, 0-(((e.count/2) | 0)%100)/100, -0.5]);
+};
+
+
+
+function Synchronizer(room) {
+  this.peer = new Peer(room, wsURL, this);
+  this.peer.createPeerConnection();
+}
+
+
+Synchronizer.prototype.connect = function() {
+  this.peer.offer();
+};
+
+
+Synchronizer.prototype.sync = function() {
+  this.peer.send(keys);
+};
+
+
+Synchronizer.prototype.start = function() {
+  this.peer.send({id: 'start'});
+};
+
+
+Synchronizer.prototype.notifyWsReady = function(e) {
+  connectButton.disabled = false;
+};
+
+
+Synchronizer.prototype.notifyOpenPeer = function(e) {
+  __connected();
+};
+
+
+Synchronizer.prototype.notifyClosePeer = function(e) {
+  __disconnected();
+};
+
+
+Synchronizer.prototype.receiveFromPeer = function(data) {
+  switch(data.id) {
+    case 'start':
+      __start();
+      break;
+    case 'sync':
+      keys2 = data;
+      break;
+  }
+  requestAnimationFrame(tick);
+};
+
+
+
+function drawFighter(layer) {
+  layer.ortho(0.1, 10.0);
+  fightersDrawer.draw(layer);
+};
+
+
+function drawBullets(layer) {
+  layer.ortho(0.1, 10.0);
+  bulletsDrawer.draw(layer);
+};
+
+
+function drawBackground(layer) {
+  layer.perspective(60, 0.1, 10.0);
+  backgroundsDrawer.draw(layer);
+};
+
+
+function draw() {
+  bgLayer.viewport();
+  bgLayer.clear();
+  drawBackground(bgLayer);
+
+//  mainLayer.viewport();
+//  mainLayer.clear();
+  drawFighter(mainLayer);
+  drawBullets(mainLayer);
+}
+
+
+function calculateFps() {
+  if(r % 60 != 0)
+    return;
+  var newTime = Date.now();
+  if(prevTime) {
+    fps = (1000 * 60 / (newTime - prevTime)) | 0;
+    var div = document.getElementById('fps');
+    div.textContent = fps + 'fps';
+  }
+  prevTime = newTime;
+}
+
+
+function tick() {
+  handleMove(keys, fighter);
+  handleMove(keys2, fighter2);
+  fighterManager.runStep();
+  bulletManager.runStep();
+  backgroundManager.runStep();
+  draw();
+  calculateFps();
+  r+=1;
+  sync.sync();
+//  requestAnimationFrame(tick);
+}
+
+
+function handleKeydown(e) {
+  switch( e.keyCode ) {
+    case 37: // left
+      keys.left = true;
+      break;
+    case 38: // up
+      keys.up = true;
+      break;
+    case 39: // right
+      keys.right = true;
+      break;
+    case 40: // down
+      keys.down = true;
+      break;
+    case 88: // x
+      keys.x = true;
+      break;
+    case 90: // z
+      keys.z = true;
+      break;
+  };
+  e.preventDefault();
+};
+
+
+function handleKeyup(e) {
+  switch( e.keyCode ) {
+    case 37: // left
+      keys.left = false;
+      break;
+    case 38: // up
+      keys.up = false;
+      break;
+    case 39: // right
+      keys.right = false;
+      break;
+    case 40: // down
+      keys.down = false;
+      break;
+    case 88: // x
+      keys.x = false;
+      break;
+    case 90: // z
+      keys.z = false;
+      break;
+  };
+  e.preventDefault();
+};
+
+
+function handleMove(keys, fighter) {
+  var d = 4;
+  if(keys.left)
+    fighter.x -= d;
+  if(keys.up)
+    fighter.y -= d;
+  if(keys.right)
+    fighter.x += d;
+  if(keys.down)
+    fighter.y += d;
+/*
+  if(keys.x)
+    fighter.z -= d;
+  if(keys.z)
+    fighter.z += d;
+*/
+
+  if(fighter.x < -240)
+    fighter.x = -240;
+  if(fighter.x > 240)
+    fighter.x = 240;
+
+  if(fighter.y < -240)
+    fighter.y = -240;
+  if(fighter.y > 240)
+    fighter.y = 240;
+
+};
+
+
+var done = 0;
+function startup() {
+  var array = location.href.split('?');
+  if(array.length <= 1) {
+    location.href = array[0] + '?' + (Math.random() * 10000 | 0);
+    return -1;
+  }
+  var room = parseInt(array[1]);
+  document.getElementById('room').innerText = room;
+
+  connectButton = document.getElementById('connectButton');
+  runButton = document.getElementById('runButton');
+
+  connectButton.disabled = true;
+  runButton.disabled = true;
+
+  sync = new Synchronizer(room);
+
+  var mainCanvas = document.getElementById("mainCanvas");
+  mainLayer = new Layer(mainCanvas, 1.0);
+
+  var bgCanvas = document.getElementById("bgCanvas");
+//  bgLayer = new Layer(bgCanvas);
+  bgLayer = mainLayer;
+
+  var fImage = new Image();
+  fImage.onload = function() {
+    fighterManager = new FighterManager();
+    fightersDrawer = new FightersDrawer(fighterManager, mainLayer.gl, fImage);
+
+    fighter = new Fighter();
+    fighter.init();
+    fighterManager.add(fighter);
+
+    fighter2 = new Fighter();
+    fighter2.init();
+    fighterManager.add(fighter2);
+
+    done++;
+    checkStart();
+  };
+  fImage.src = 'image/reimu.png';
+
+  var bImage = new Image();
+  var bp = Bullet.prototype;
+  bImage.onload = function() {
+    bulletManager = new BulletManager();
+    bulletsDrawer = new BulletsDrawer(bulletManager, mainLayer.gl, bImage);
+    for(var i = 0; i < bulletsNum; i++) {
+      var type;
+      if(i < smallNum)
+        type = bp._TYPE_SMALL;
+      else if(i < smallNum+middleNum)
+        type = bp._TYPE_MIDDLE;
+      else
+        type = bp._TYPE_LARGE;
+
+      var b = new Bullet(type);
+      b.init();
+      bulletManager.add(b);
+    }
+    done++;
+    checkStart();
+  };
+  bImage.src = 'image/bullet_pack.png';
+
+  var bgImage = new Image();
+  bgImage.onload = function() {
+    backgroundManager = new BackgroundManager();
+    backgroundsDrawer = new BackgroundsDrawer(backgroundManager, bgLayer.gl,
+                                              bgImage);
+    background = new Background();
+    background.init();
+    backgroundManager.add(background);
+    done++;
+    checkStart();
+  };
+  bgImage.src = 'image/bg1.png';
+
+//  tick();
+}
+
+
+function getNumFromInput(e) {
+  var num = e.selectedOptions[0].value | 0;
+  return num
+};
+
+
+function updateBullets() {
+
+  smallNum = document.getElementById("smallNum").selectedOptions[0].value | 0;
+  middleNum = document.getElementById("middleNum").selectedOptions[0].value | 0;
+  largeNum = document.getElementById("largeNum").selectedOptions[0].value | 0;
+  bulletsNum = smallNum + middleNum + largeNum;
+
+  bulletManager.clear();
+  var bp = Bullet.prototype;
+  for(var i = 0; i < bulletsNum; i++) {
+      var type;
+      if(i < smallNum)
+        type = bp._TYPE_SMALL;
+      else if(i < smallNum+middleNum)
+        type = bp._TYPE_MIDDLE;
+      else
+        type = bp._TYPE_LARGE;
+
+      var b = new Bullet(type);
+      b.init();
+      bulletManager.add(b);
+  }
+};
+
+
+function __connect() {
+  sync.connect();
+  connectButton.disabled = true;
+  __updateStatus('connecting');
+}
+
+
+function __connected() {
+  connectButton.disabled = true;
+  done++;
+  checkStart();
+  __updateStatus('connected');
+}
+
+
+function __disconnected() {
+  __updateStatus('disconnected');
+}
+
+
+function checkStart() {
+  if(done >= 4) {
+    runButton.disabled = false;
+  }
+}
+
+
+function __run() {
+  runButton.disabled = true;
+  sync.start();
+}
+
+
+function __start() {
+  runButton.disabled = true;
+}
+
+
+function __updateStatus(str) {
+  var div = document.getElementById('status');
+  div.innerText = str;
+}
+
+
+window.onkeydown = handleKeydown;
+window.onkeyup = handleKeyup;
+
+</script>
+</head>
+
+<body onload="startup();">
+
+Room No. <span id="room"></span>
+
+<div id="canvasdiv" style="position:relative; width:480px; height:480px">
+<canvas id="mainCanvas" width="480" height="480"
+ style="z-index: 2; position:absolute;left0px;top0px;"></canvas>
+<canvas id="bgCanvas" width="480" height="480"
+ style="z-index: 1; position:absolute;left0px;top0px;"></canvas>
+</div>
+
+<div id="fps"></div>
+<div id="status"></div>
+
+<div>
+<button id="connectButton" onclick="__connect()">connect</button>
+<button id="runButton" onclick="__run()">run</button>
+small
+<select id="smallNum" onchange="updateBullets()">
+<option>3000</option>
+<option>2000</option>
+<option>1000</option>
+<option>500</option>
+<option selected>100</option>
+<option>10</option>
+<option>1</option>
+<option>0</option>
+</select>
+middle
+<select id="middleNum" onchange="updateBullets()">
+<option>1000</option>
+<option>500</option>
+<option>100</option>
+<option selected>50</option>
+<option>10</option>
+<option>1</option>
+<option>0</option>
+</select>
+large
+<select id="largeNum" onchange="updateBullets()">
+<option>300</option>
+<option>200</option>
+<option>100</option>
+<option>50</option>
+<option selected>10</option>
+<option>1</option>
+<option>0</option>
+</select>
+</div>
+
+<p>
+Turn your hardware acceleration on to use this benchmark.<br />
+See &quot;chrome://gpu&quot; and &quot;chrome://flags&quot; on your chrome to check if your hardware acceleration is enabled.
+</p>
+
+<p>
+Note
+</p>
+<ul>
+<li>No packet loss support.</li>
+<li>No bullets sync(bullets independently move on each node).</li>
+</ul>
+
+<p>
+Thanks
+</p>
+<ul>
+<li>Reimu    <a href="http://commons.nicovideo.jp/material/nc70557">http://commons.nicovideo.jp/material/nc70557</a></li>
+<li>Bullet   <a href="http://commons.nicovideo.jp/material/nc74535">http://commons.nicovideo.jp/material/nc74535</a></li>
+<li>BG       <a href="http://gi0.net/">http://gi0.net/</a></li>
+</ul>
+
+<p>
+This game is made by <a href="http://twitter.com/superhoge">@suprehoge</a>
+</p>
+
+
+</body>
+</html>

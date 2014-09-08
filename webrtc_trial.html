@@ -7,12 +7,12 @@ var peer;
 var wsURL = 'ws://boiling-anchorage-5279.herokuapp.com/';
 var callButton, startButton;
 
-function Tester() {
+function Tester(room) {
   this.fpsDiv = document.getElementById('fps');
   this.statusDiv = document.getElementById('status');
   this.oldDate = Date.now();
 
-  this.peer = new Peer(wsURL, this);
+  this.peer = new Peer(room, wsURL, this);
   this.peer.createPeerConnection();
   this.running = false;
   this.count = 0;
@@ -37,7 +37,7 @@ Tester.prototype.runStep = function() {
   if(this.count % 60 == 0) {
     var newDate = Date.now();
     var fps = (1000 * 60 / (newDate - this.oldDate) | 0);
-    var text = fps + ' ' + this.count;
+    var text = '@' + this.count + ': ' + fps;
     this.fpsDiv.innerText = text;
     this.oldDate = newDate;
   }
@@ -63,6 +63,7 @@ Tester.prototype.notifyWsReady = function(event) {
   callButton.disabled = false;
 };
 
+
 Tester.prototype.notifyOpenPeer = function(event) {
   this.statusDiv.innerText = 'connected';
   callButton.disabled = true;
@@ -70,10 +71,24 @@ Tester.prototype.notifyOpenPeer = function(event) {
 };
 
 
+Tester.prototype.notifyClosePeer = function(event) {
+  this.statusDiv.innerText = 'disconnected';
+};
+
+
 var tester;
 
 function __init() {
-  tester = new Tester();
+  // TODO: temporal
+  var array = location.href.split('?');
+  if(array.length <= 1) {
+    location.href = array[0] + '?' + ((Math.random() * 10000) | 0);
+    return -1;
+  }
+  var room = parseInt(array[1]);
+  document.getElementById('room').innerText = room;
+
+  tester = new Tester(room);
   callButton = document.getElementById('callButton');
   startButton = document.getElementById('startButton');
   callButton.disabled = true;
@@ -94,9 +109,11 @@ function __start() {
 </head>
 <body onload="__init()">
 
+Room No <span id="room"></span>
 <button id="callButton" onclick="__call()">call</button>
 <button id="startButton" onclick="__start()">start</button>
-<div id="fps"></div> fps
+<br>
+<span id="fps"></span> fps
 <div id="status"></div>
 </body>
 </html>

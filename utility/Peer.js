@@ -1,4 +1,5 @@
-function Peer(wsURL, receiver) {
+function Peer(room, wsURL, receiver) {
+  this.room = room;
   this.id = (Math.random() * 10000000) | 0; // TODO: temporal
   this.ws = new WebSocket(wsURL);
   this.receiver = receiver;
@@ -12,6 +13,7 @@ function Peer(wsURL, receiver) {
   this.onDataChannelFunc = function(event) {self._onDataChannel(event);};
   this.onMessageFunc = function(event) {self._onMessage(event);};
   this.onOpenFunc = function(event) {self._onOpen(event);};
+  this.onCloseFunc = function(event) {self._onClose(event);};
 
   this.ws.onmessage = function(event) {self._gotSignal(event);};
   this.ws.onopen = function(event) {self._wsReady(event);};
@@ -31,6 +33,7 @@ Peer.prototype._wsReady = function(event) {
 
 Peer.prototype.sendSignal = function(params) {
   params.id = this.id;
+  params.room = this.room;
   var str = JSON.stringify(params);
   this.ws.send(str);
   this.log(str);
@@ -41,7 +44,7 @@ Peer.prototype._gotSignal = function(event) {
   var params = JSON.parse(event.data);
 
   // TODO: temporal
-  if(params.id === this.id)
+  if(params.id === this.id || (params.room !== null && params.room !== this.room))
     return;
 
   switch(params.type) {
@@ -85,6 +88,7 @@ Peer.prototype.offer = function() {
                                            {reliable: false});
   this.channel.onmessage = this.onMessageFunc;
   this.channel.onopen = this.onOpenFunc;
+  this.channel.onclose = this.onCloseFunc;
   this.pc.createOffer(this.gotSDPFunc);
 };
 
@@ -122,6 +126,7 @@ Peer.prototype._onDataChannel = function(event) {
   this.channel = event.channel;
   this.channel.onmessage = this.onMessageFunc;
   this.channel.onopen = this.onOpenFunc;
+  this.channel.onclose = this.onCloseFunc;
 };
 
 
@@ -130,12 +135,17 @@ Peer.prototype._onOpen = function(event) {
 };
 
 
+Peer.prototype._onClose = function(event) {
+  this.receiver.notifyClosePeer(event);
+};
+
+
 Peer.prototype._onMessage = function(event) {
   this.log(event.data);
-  this.receiver.receiveFromPeer(event.data);
+  this.receiver.receiveFromPeer(JSON.parse(event.data));
 };
 
 
 Peer.prototype.send = function(data) {
-  this.channel.send(data);
+  this.channel.send(JSON.stringify(data));
 };
