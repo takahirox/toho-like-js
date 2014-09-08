@@ -972,7 +972,13 @@ Synchronizer.prototype.connect = function() {
 
 Synchronizer.prototype.sync = function() {
   this.localDone = true;
-  this.peer.send(keys);
+  try {
+    this.peer.send(keys);
+  } catch(e) {
+    var self = this;
+    requestAnimationFrame(function() { self.sync(); }); // try at next frame.
+    return;
+  }
   if(this.remoteDone)
     this.runStep();
 };
