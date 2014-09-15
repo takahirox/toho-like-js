@@ -169,8 +169,14 @@ BossManager.prototype.existBoss = function() {
  */
 __copyParentMethod(BossManager, ElementManager, 'checkCollisionWith');
 BossManager.prototype.checkCollisionWith = function(fighter) {
-  var self = this ;
   this.ElementManager_checkCollisionWith(null, fighter, this);
+};
+
+
+BossManager.prototype.checkCollisionWithFighters = function(fighters) {
+  for(var i = 0; i < fighters.length; i++) {
+    this.checkCollisionWith(fighters[i]);
+  }
 };
 
 

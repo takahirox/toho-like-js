@@ -2,7 +2,7 @@ function BulletManager( gameState, params ) {
   this.parent = ElementManager ;
   this.parent.call( this, gameState ) ;
   this.params = params ;
-  this.laserCount = 0 ; // TODO: temporal
+  this.laserCounts = [0, 0]; // TODO: temporal
 } ;
 __inherit( BulletManager, ElementManager ) ;
 
@@ -27,7 +27,9 @@ BulletManager.prototype.initDrawer = function(layer, image) {
 __copyParentMethod(BulletManager, ElementManager, 'reset');
 BulletManager.prototype.reset = function() {
   this.ElementManager_reset();
-  this.laserCount = 0;
+  for(var i = 0; i < this.laserCounts.length; i++) {
+    this.laserCounts[i] = 0;
+  }
 };
 
 
@@ -38,10 +40,11 @@ BulletManager.prototype.create = function( fighter ) {
   var params = this.params[ fighter.characterIndex ][ fighter.getBulletIndex( ) ][ fighter.getPowerLevel( ) ] ;
   var flag = false ;
   var count = 0 ;
+  var id = fighter.getID();
   for( var i = 0; i < params.length; i++ ) {
     // TODO: temporal
     if( ( params[ i ].laser || params[ i ].homing ) && params[ i ].nextCount ) {
-      if( this.count < this.laserCount + params[ i ].nextCount ) {
+      if( this.count < this.laserCounts[id] + params[ i ].nextCount ) {
         continue ;
       }
       flag = true ;
@@ -51,7 +54,7 @@ BulletManager.prototype.create = function( fighter ) {
     this.addElement( this.factory.create( params[ i ], fighter ) ) ;
   }
   if( flag )
-    this.laserCount = count ;
+    this.laserCounts[id] = count ;
 } ;
 
 
@@ -129,20 +132,20 @@ BulletFactory.prototype.create = function( params, fighter ) {
   if( params.laser ) {
     var laser = this.laserFreelist.get( ) ;
     laser.init( params, this._getImage( params ), 
-                this.gameState.fighterOptionManager.elements[ params.option ], // TODO: temporal
-                this.types[ 3 ] ) ; // TODO: temporal
+                fighter.getOption(params.option), // TODO: temporal
+                this.types[ 3 ]) ; // TODO: temporal
     return laser ;
   }
   if( params.homing ) {
     var homing = this.homingFreelist.get( ) ;
     homing.init( params, this._getImage( params ),
-                 this.gameState.fighterOptionManager.elements[ params.option ], // TODO: temporal
-                 this.types[ 2 ] ) ; // TODO: temporal
+                 fighter.getOption(params.option), // TODO: temporal
+                 this.types[ 2 ]) ; // TODO: temporal
     return homing ;
   }
   var key = fighter.characterIndex ;
   var bullet = this.freelist.get( ) ;
-  bullet.init( params, this._getImage( params ), this.types[ key ] ) ;
+  bullet.init( params, this._getImage( params ), this.types[ key ], fighter ) ;
   return bullet ;
 } ;
 
@@ -209,6 +212,7 @@ function Bullet( gameState, maxX, maxY ) {
   this.parent.call( this, gameState, maxX, maxY ) ;
   this.rotate = null ;
   this.power = null ;
+  this.fighter = null;
 }
 __inherit( Bullet, Element ) ;
 
@@ -220,12 +224,13 @@ Bullet.prototype._HEIGHT = 32 ;
  * TODO: temporal. params2 should be renamed.
  */
 __copyParentMethod(Bullet, Element, 'init');
-Bullet.prototype.init = function(params, image, params2) {
+Bullet.prototype.init = function(params, image, params2, fighter) {
 
+  this.fighter = fighter;
   this.Element_init(params, image);
 
-  this.setX(this.getX() + this.gameState.fighter.getX());
-  this.setY(this.getY() + this.gameState.fighter.getY());
+  this.setX(this.getX() + this.fighter.getX());
+  this.setY(this.getY() + this.fighter.getY());
 
   // TODO: temporal. Wanna combine this logic with parent init( ).
   this.indexX = params2.indexX !== void 0 ? params2.indexX : 0;

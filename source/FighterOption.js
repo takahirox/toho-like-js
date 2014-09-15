@@ -1,7 +1,7 @@
-function FighterOptionManager(gameState, fighter) {
+function FighterOptionManager(gameState, fighters) {
   this.parent = ElementManager;
   this.parent.call(this, gameState);
-  this.fighter = fighter;
+  this.fighters = fighters;
   this._init();
 };
 __inherit(FighterOptionManager, ElementManager);
@@ -17,18 +17,21 @@ FighterOptionManager.prototype._initMaxNum = function() {
 
 FighterOptionManager.prototype._init = function() {
   // TODO: move these parameters to outside.
-  this.create(this.fighter,
-              {'r':  32,
-               'angle': 180,
-               'theta': 180,
-                'd':  1,
-                'trange': {'min': 180, 'max': 250}});
-  this.create(this.fighter,
-             {'r':  32,
-              'angle':   0,
-              'theta': 360,
-              'd': -1,
-              'trange': {'min': 290, 'max': 360}});
+  for(var i = 0; i < this.fighters.length; i++) {
+    var fighter = this.fighters[i];
+    this.create(fighter,
+                {'r':  32,
+                 'angle': 180,
+                 'theta': 180,
+                  'd':  1,
+                  'trange': {'min': 180, 'max': 250}});
+    this.create(fighter,
+               {'r':  32,
+                'angle':   0,
+                'theta': 360,
+                'd': -1,
+                'trange': {'min': 290, 'max': 360}});
+  }
 };
 
 
@@ -64,7 +67,9 @@ FighterOptionManager.prototype._getImage = function() {
 
 
 FighterOptionManager.prototype.create = function(fighter, params) {
-  this.addElement(this.factory.create(fighter, params, this._getImage()));
+  var o = this.factory.create(fighter, params, this._getImage());
+  fighter.addOption(o);
+  this.addElement(o);
 };
 
 

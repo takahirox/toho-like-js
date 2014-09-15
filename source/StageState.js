@@ -2,7 +2,8 @@ function StageState( game ) {
   this.parent = GameState ;
   this.parent.call( this, game ) ;
 
-  this.fighter              = null ;
+  this.fighter              = null; // me
+  this.fighter2             = null; // other
   this.fighterManager       = null;
   this.fighterOptionManager = null ;
   this.bulletManager        = null ;
@@ -38,6 +39,7 @@ function StageState( game ) {
   this.autoplayIndex = 0 ;
   this.autoplayParams = [ ] ;
   this.baseCharacterIndex = 0 ;
+  this.baseCharacterIndex2 = 0 ;
   this.seed = null ;
 
   this.state = this._STATE_SHOOTING ;
@@ -50,11 +52,29 @@ function StageState( game ) {
   this.states[ this._STATE_CLEAR ]     = new ClearState( this ) ;
   this.states[ this._STATE_GAME_OVER ] = new GameOverState( this ) ;
 
+  this.keyFlag = 0;
+  this.keyFlags = new FIFOQueue();
+
+  this.keyFlag2 = 0;
+  this.keyFlags2 = new FIFOQueue();
+
+  this.runStepDone = 0;
+
 }
 __inherit( StageState, GameState ) ;
 
 // only for reference
 StageState.prototype.Randomizer = __randomizer;
+
+StageState.prototype._BUTTON_LAG = 1;
+StageState.prototype._BUTTON_LEFT  = 0x01;
+StageState.prototype._BUTTON_UP    = 0x02;
+StageState.prototype._BUTTON_RIGHT = 0x04;
+StageState.prototype._BUTTON_DOWN  = 0x08;
+StageState.prototype._BUTTON_Z     = 0x10;
+StageState.prototype._BUTTON_X     = 0x20;
+StageState.prototype._BUTTON_SHIFT = 0x40;
+StageState.prototype._BUTTON_SPACE = 0x80;
 
 StageState.prototype._FLAG_FIGHTER_DEAD    =    0x1 ;
 StageState.prototype._FLAG_BOSS_EXIST      =    0x2 ;
@@ -83,6 +103,17 @@ StageState.prototype._STATE_GAME_OVER = 0x4 ;
 
 StageState.prototype.init = function( params ) {
   this.state = this._STATE_SHOOTING ;
+
+  this.keyFlag = 0;
+  this.keyFlag2 = 0;
+  this.keyFlags.length = 0;
+  this.keyFlags2.length = 0;
+  for(var i = 0; i < this._BUTTON_LAG; i++) {
+    this.keyFlags.push(0);
+    this.keyFlags2.push(0);
+  }
+  this.runStepDone = 0;
+
   if( ! this.initialized ) {
     this._initBackground();
     this._initFighter( ) ;
@@ -103,10 +134,14 @@ StageState.prototype.init = function( params ) {
     this.baseCharacterIndex = params.autoplayParams.characterIndex ;
   } else {
     this.clearFlag( this._FLAG_AUTO_PLAY ) ;
-    this.seed = ( new Date( ) ).getTime( ) & 0xffff ;
+    this.seed = params.seed;
     this.baseCharacterIndex = params.characterIndex ;
+    this.baseCharacterIndex2 = params.characterIndex2;
   }
-  this.fighter.setCharacterIndex( this.baseCharacterIndex ) ;
+  this.fighter.setCharacterIndex(this.baseCharacterIndex);
+  if(this.game.isMultiPlay()) {
+    this.fighter2.setCharacterIndex(this.baseCharacterIndex2);
+  }
   this.Randomizer.seed( this.seed ) ;
   this._soundBGM( Game._BGM_1 ) ;
   this.sendMessageToServer(GameSocket._STATE_BEGIN_GAME);
@@ -126,9 +161,15 @@ StageState.prototype._initFighter = function() {
   this.fighterManager.initDrawer(this.game.bgLayer, null);
 
  // TODO: temporal
-  this.fighter = this.fighterManager.getFighter();
+  if(this.game.isMultiPlay()) {
+    this.fighter = this.fighterManager.getMe(this.game.isMaster());
+    this.fighter2 = this.fighterManager.getOther(this.game.isMaster());
+  } else {
+    this.fighter = this.fighterManager.getFighter();
+  }
 
-  this.fighterOptionManager = new FighterOptionManager(this, this.fighter);
+  this.fighterOptionManager = new FighterOptionManager(
+                                    this, this.fighterManager.elements);
   this.fighterOptionManager.initDrawer(this.game.bgLayer, null);
 };
 
@@ -173,10 +214,22 @@ StageState.prototype._initSpellCards = function( ) {
 } ;
 
 
+StageState.prototype._start = function() {
+  this.peer.send({id: this._PEER_ID_START, seed: this.seed});
+};
+
+
 StageState.prototype.runStep = function( ) {
   if( this.isFlagSet( this._FLAG_AUTO_PLAY ) &&
       this.autoplayIndex < this.autoplayParams.length ) {
     this._actAsRecord( ) ;
+  // TODO: temporal
+  } else if(! this.isFlagSet(this._FLAG_AUTO_PLAY)) {
+    this.keyFlags.push(this.keyFlag);
+    this._deployKeyFlag(this.keyFlags.shift(), this.fighter);
+    if(this.game.isMultiPlay()) {
+      this._deployKeyFlag(this.keyFlags2.shift(), this.fighter2);
+    }
   }
   this.replayCount++ ;
 
@@ -189,21 +242,21 @@ StageState.prototype.runStep = function( ) {
     this.bossManager.runStep( ) ;
     this.enemyBulletManager.runStep( ) ;
     this.itemManager.runStep( ) ;
-    this.fighter.runStep( ) ;
+    this.fighterManager.runStep( ) ;
     this.fighterOptionManager.runStep( ) ;
     this.bulletManager.runStep( ) ;
     this.bombManager.runStep( ) ;
     this.spellCardManager.runStep( ) ;
 
-    this.enemyBulletManager.checkGrazeWith(this.fighter);
+    this.enemyBulletManager.checkGrazeWithFighters(this.fighterManager.elements);
 
-    this.bulletManager.checkCollisionWithEnemies( this.enemyManager.elements ) ;
-    this.enemyManager.checkCollisionWith( this.fighter ) ;
-    this.enemyBulletManager.checkCollisionWith( this.fighter ) ;
-    this.itemManager.checkCollisionWith( this.fighter ) ;
-    if( this.bossManager.existBoss( ) ) {
-      this.bulletManager.checkCollisionWithBoss( this.bossManager.getBoss( ) ) ;
-      this.bossManager.checkCollisionWith( this.fighter ) ;
+    this.bulletManager.checkCollisionWithEnemies(this.enemyManager.elements);
+    this.enemyManager.checkCollisionWithFighters(this.fighterManager.elements);
+    this.enemyBulletManager.checkCollisionWithFighters(this.fighterManager.elements);
+    this.itemManager.checkCollisionWithFighters(this.fighterManager.elements);
+    if( this.bossManager.existBoss()) {
+      this.bulletManager.checkCollisionWithBoss(this.bossManager.getBoss());
+      this.bossManager.checkCollisionWithFighters(this.fighterManager.elements);
     }
 
     this.enemyManager.checkLoss( ) ;
@@ -256,7 +309,19 @@ StageState.prototype.runStep = function( ) {
     this.count++ ;
   }
 
+  // TODO: temporal
+  if(this.game.isMultiPlay())
+    this._sync();
+
+  // TODO: temporal
+  this.keyFlag = this.states[this.state].resetButton(this.keyFlag);
 } ;
+
+
+// TODO: temporal
+StageState.prototype.doRunNextStep = function() {
+  return this.game.isMultiPlay() ? false : true;
+};
 
 
 /**
@@ -493,14 +558,16 @@ StageState.prototype._getFaceImage = function( ) {
 StageState.prototype.handleKeyDown = function( e ) {
   if( this.isFlagSet( this._FLAG_AUTO_PLAY ) )
     return ;
-  this.states[ this.state ].handleKeyDown( e ) ;
+//  this.states[ this.state ].handleKeyDown( e ) ;
+  this.keyFlag = this._pushButton(e, this.keyFlag);
 } ;
 
 
 StageState.prototype.handleKeyUp = function( e ) {
   if( this.isFlagSet( this._FLAG_AUTO_PLAY ) )
     return ;
-  this.states[ this.state ].handleKeyUp( e ) ;
+//  this.states[ this.state ].handleKeyUp( e ) ;
+  this.keyFlag = this._releaseButton(e, this.keyFlag);
 } ;
 
 
@@ -515,9 +582,9 @@ StageState.prototype._actAsRecord = function( ) {
       var e = { } ;
       e.keyCode = this._toCharCode( key ) ;
       if( this.autoplayParams[ this.autoplayIndex ][ key ] ) {
-        this.states[ this.state ].handleKeyDown( e ) ;
+        this.states[ this.state ].handleKeyDown(e, this.fighter);
       } else {
-        this.states[ this.state ].handleKeyUp( e ) ;
+        this.states[ this.state ].handleKeyUp(e, this.fighter);
       }
     }
     this.autoplayIndex++ ;
@@ -577,7 +644,7 @@ StageState.prototype.reset = function( ) {
   this.spellCard = null ;
   this.didContinue = false ;
 
-  this.fighter.reset( ) ;
+  this.fighterManager.reset( ) ;
   this.fighterOptionManager.reset( ) ;
   this.enemyManager.reset( ) ;
   this.effectManager.reset( ) ;
@@ -590,10 +657,7 @@ StageState.prototype.reset = function( ) {
   this.spellCardManager.reset( ) ;
   this.backgroundManager.reset();
 
-  this.fighter.beDefaultPosition( ) ;
-
   this.states[ this._STATE_TALK ].reset( ) ; // TODO: temporal
-
 
   this.flags = 0 ;
 
@@ -706,6 +770,7 @@ StageState.prototype.notifyEnemyDidShot = function( enemy, shot ) {
 
 
 StageState.prototype.notifyBulletHit = function( bullet, enemy ) {
+  console.log(this.count);
   this.effectManager.createDamageEffect( enemy ) ;
   this.setFlag( this._FLAG_SE_ENEMY_DAMAGE ) ;
   this.score += 10 ;
@@ -755,7 +820,7 @@ StageState.prototype.notifyEnemyVanished = function( bullet, enemy ) {
 
 
 StageState.prototype.notifyBossVanished = function( boss ) {
-  this.enemyBulletManager.beItem( ) ;
+  this.enemyBulletManager.beItem(this.fighterManager.getClosestFighter(boss)); // TODO: temporal
   this.setFlag( this._FLAG_SE_ENEMY_VANISH ) ;
   this.spellCard = null ;
 
@@ -777,7 +842,7 @@ StageState.prototype.notifyBossVanished = function( boss ) {
 StageState.prototype.notifyBossVanishEnd = function( boss ) {
   if( boss.vanishedTalk ) {
     this.state = this._STATE_TALK ;
-    this.fighter.beNeutral( ) ;
+    this.fighterManager.beNeutral( ) ;
   }
 //  this.state = this._STATE_CLEAR ;
 } ;
@@ -788,7 +853,7 @@ StageState.prototype.notifyBossVanishEnd = function( boss ) {
  */
 StageState.prototype.notifyBeginTalk = function() {
   this.state = this._STATE_TALK;
-  this.fighter.beNeutral();
+  this.fighterManager.beNeutral();
 };
 
 
@@ -801,8 +866,8 @@ StageState.prototype.notifyFighterDead = function( fighter, element ) {
   this.setFlag( this._FLAG_SE_DEAD ) ;
   this.effectManager.createExplosion(fighter);
   this.notifyDoEffect(fighter, 'shockwave', null);
-  this.fighter.setFlag( this.fighter._FLAG_UNHITTABLE ) ;
-  this.fighter.deadCount = this.fighter.count ;
+  fighter.setFlag( fighter._FLAG_UNHITTABLE ) ;
+  fighter.deadCount = fighter.count ;
 
   if( this.players <= 0 ) {
     this.sendMessageToServer(GameSocket._STATE_GAME_OVER);
@@ -813,15 +878,15 @@ StageState.prototype.notifyFighterDead = function( fighter, element ) {
     }
     this.state = this._STATE_GAME_OVER ;
     this.states[ this.state ].init( ) ;
-    this.fighter.beNeutral( ) ;
+    fighter.beNeutral( ) ;
     return ;
   }
 
   this.bombs = 2 ;
   this.players-- ;
-  this.fighter.state = this.fighter._STATE_ALIVE ;
-  this.fighter.beDefaultPosition( ) ;
-  this.fighter.deadCount = this.fighter.count ;
+  fighter.state = fighter._STATE_ALIVE ;
+  fighter.beDefaultPosition( ) ;
+  fighter.deadCount = fighter.count ;
 
   this.sendMessageToServer(GameSocket._STATE_DEAD);
 
@@ -845,15 +910,15 @@ StageState.prototype.notifyBossAppeared = function( boss ) {
 
 StageState.prototype.notifyBossStageChanged = function( boss ) {
 //  this.enemyBulletManager.removeBulletsOfEnemy( boss ) ;
-  this.enemyBulletManager.beItem( ) ;
+  this.enemyBulletManager.beItem(this.fighterManager.getClosestFighter(boss)); // TODO: temporal
 } ;
 
 
 /**
  * TODO: temporal
  */
-StageState.prototype.notifyBeScoreItem = function(element) {
-  this.itemManager.createHoming(element);
+StageState.prototype.notifyBeScoreItem = function(fighter, element) {
+  this.itemManager.createHoming(fighter, element);
 };
 
 
@@ -874,7 +939,7 @@ StageState.prototype.notifyBossBeginTalk = function( boss ) {
   // TODO: temporal
   if( boss.appearedTalk ) {
     this.state = this._STATE_TALK ;
-    this.fighter.beNeutral( ) ;
+    this.fighterManager.beNeutral( ) ;
   } else {
     this.notifyBossBecameActive( boss ) ;
   }
@@ -898,10 +963,8 @@ StageState.prototype.notifyBossMovedNextStage = function( boss ) {
 StageState.prototype.notifyContinue = function( ) {
   this.didContinue = true ;
   this.bombs = 2 ;
-  this.players = 3 ;
-  this.fighter.state = this.fighter._STATE_ALIVE ;
-  this.fighter.setX( parseInt( this.getWidth( ) / 2 ) ) ;
-  this.fighter.setY( this.getHeight( ) - 100 ) ;
+  this.players = 3; // TODO: template
+  this.fighterManager.recoverWhenContinue();
   this.state = this._STATE_SHOOTING ;
 } ;
 
@@ -964,6 +1027,178 @@ StageState.prototype.getWidth = function( ) {
 } ;
 
 
+StageState.prototype._pushButton = function(e, flag) {
+  switch(e.keyCode) {
+    case 16: // shift
+      flag |= this._BUTTON_SHIFT;
+      break;
+    case 32: // space
+      flag |= this._BUTTON_SPACE;
+      break;
+    case 37: // left
+      flag |= this._BUTTON_LEFT;
+      break;
+    case 38: // up
+      flag |= this._BUTTON_UP;
+      break;
+    case 39: // right
+      flag |= this._BUTTON_RIGHT;
+      break;
+    case 40: // down
+      flag |= this._BUTTON_DOWN;
+      break;
+    // TODO: temporal
+    case 88: // x
+      flag |= this._BUTTON_X;
+      break;
+    case 90: // z
+      flag |= this._BUTTON_Z;
+      break;
+  };
+  return flag;
+};
+
+
+StageState.prototype._releaseButton = function(e, flag) {
+  switch(e.keyCode) {
+    case 16: // shift
+      flag &= ~this._BUTTON_SHIFT;
+      break;
+    case 32: // space
+      flag &= ~this._BUTTON_SPACE;
+      break;
+    case 37: // left
+      flag &= ~this._BUTTON_LEFT;
+      break;
+    case 38: // up
+      flag &= ~this._BUTTON_UP;
+      break;
+    case 39: // right
+      flag &= ~this._BUTTON_RIGHT;
+      break;
+    case 40: // down
+      flag &= ~this._BUTTON_DOWN;
+      break;
+    case 88: // x
+      flag &= ~this._BUTTON_X;
+      break;
+    case 90: // z
+      flag &= ~this._BUTTON_Z;
+      break;
+  };
+  return flag;
+};
+
+
+// TODO: temporal
+StageState.prototype._deployKeyFlag = function(flag, fighter) {
+  var e = {};
+
+  e.keyCode = 16;
+  if(flag & this._BUTTON_SHIFT) {
+    this.states[this.state].handleKeyDown(e, fighter);
+  } else {
+    this.states[this.state].handleKeyUp(e, fighter);
+  }
+
+  e.keyCode = 32;
+  if(flag & this._BUTTON_SPACE) {
+    this.states[this.state].handleKeyDown(e, fighter);
+  } else {
+    this.states[this.state].handleKeyUp(e, fighter);
+  }
+
+  e.keyCode = 37;
+  if(flag & this._BUTTON_LEFT) {
+    this.states[this.state].handleKeyDown(e, fighter);
+  } else {
+    this.states[this.state].handleKeyUp(e, fighter);
+  }
+
+  e.keyCode = 38;
+  if(flag & this._BUTTON_UP) {
+    this.states[this.state].handleKeyDown(e, fighter);
+  } else {
+    this.states[this.state].handleKeyUp(e, fighter);
+  }
+
+  e.keyCode = 39;
+  if(flag & this._BUTTON_RIGHT) {
+    this.states[this.state].handleKeyDown(e, fighter);
+  } else {
+    this.states[this.state].handleKeyUp(e, fighter);
+  }
+
+  e.keyCode = 40;
+  if(flag & this._BUTTON_DOWN) {
+    this.states[this.state].handleKeyDown(e, fighter);
+  } else {
+    this.states[this.state].handleKeyUp(e, fighter);
+  }
+
+  e.keyCode = 88;
+  if(flag & this._BUTTON_X) {
+    this.states[this.state].handleKeyDown(e, fighter);
+  } else {
+    this.states[this.state].handleKeyUp(e, fighter);
+  }
+
+  e.keyCode = 90;
+  if(flag & this._BUTTON_Z) {
+    this.states[this.state].handleKeyDown(e, fighter);
+  } else {
+    this.states[this.state].handleKeyUp(e, fighter);
+  }
+
+};
+
+
+StageState.prototype._sync = function() {
+  this.runStepDone++;
+  var p = {};
+  p.k = this.keyFlag;
+  this.game.sync(p);
+  this._runNextStepIfPossible();
+};
+
+
+StageState.prototype.receiveFromPeer = function(data) {
+  this.runStepDone++;
+  this.keyFlags2.push(data.k);
+  this._runNextStepIfPossible();
+};
+
+
+StageState.prototype._runNextStepIfPossible = function() {
+  if(this.runStepDone >= 2) {
+    this.runStepDone = 0;
+    this.game.runNextStep();
+  }
+};
+
+
+/**
+ * TODO: optimize
+ */
+function FIFOQueue() {
+  this.values = [];
+}
+
+FIFOQueue.prototype.push = function(value) {
+  this.values[this.values.length] = value;
+};
+
+
+FIFOQueue.prototype.shift = function() {
+  var value = this.values[0];
+  for(var i = 0; i < this.values.length-1; i++) {
+    this.values[i] = this.values[i+1];
+  }
+  this.values.length--;
+  return value;
+};
+
+
 
 function StageAbstractState( stage ) {
   this.stage = stage ;
@@ -997,6 +1232,11 @@ StageAbstractState.prototype.getImage = function( key ) {
 } ;
 
 
+StageAbstractState.prototype.resetButton = function(flag) {
+  return 0;
+};
+
+
 /**
  * @param record Array
  */
@@ -1016,88 +1256,101 @@ StageAbstractState.prototype._putKeyOffRecord = function( record ) {
 
 
 
-function ShootingState( stage ) {
-  this.parent = StageAbstractState ;
-  this.parent.call( this, stage ) ;
+function ShootingState(stage) {
+  this.parent = StageAbstractState;
+  this.parent.call(this, stage);
+  this.flag = 0;
+  this.flags = new FIFOQueue();
+  for(var i = 0; i < this._BUTTON_LAG; i++) {
+    this.flags.push(this.flag);
+  }
 }
-__inherit( ShootingState, StageAbstractState ) ;
+__inherit(ShootingState, StageAbstractState);
 
 
-ShootingState.prototype.handleKeyDown = function( e ) {
-  var p = [ ] ;
-  switch( e.keyCode ) {
+
+ShootingState.prototype.handleKeyDown = function(e, fighter) {
+  var p = [];
+  switch(e.keyCode) {
     case 16: // shift
-      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_SLOW ) )
-        p.push( 's' ) ;
-      break ;
+      if(fighter.setFlag(fighter._FLAG_SLOW))
+        p.push('s');
+      break;
     case 32: // space
-      this.stage.fighter.changeCharacter( ) ;
-      p.push( 'sp' ) ;
-      break ;
+      fighter.changeCharacter();
+      p.push('sp');
+      break;
     case 37: // left
-      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_MOVE_LEFT ) )
-        p.push( 'l' ) ;
-      break ;
+      if(fighter.setFlag(fighter._FLAG_MOVE_LEFT))
+        p.push('l') ;
+      break;
     case 38: // up
-      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_MOVE_UP ) )
-        p.push( 'u' ) ;
-      break ;
+      if(fighter.setFlag(fighter._FLAG_MOVE_UP))
+        p.push('u');
+      break;
     case 39: // right
-      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_MOVE_RIGHT ) )
-        p.push( 'r' ) ;
-      break ;
+      if(fighter.setFlag(fighter._FLAG_MOVE_RIGHT))
+        p.push('r');
+      break;
     case 40: // down
-      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_MOVE_DOWN ) )
-        p.push( 'd' ) ;
-      break ;
+      if(fighter.setFlag(fighter._FLAG_MOVE_DOWN))
+        p.push('d');
+      break;
     // TODO: temporal
     case 88: // x
-      this.stage.notifyFighterDoBomb( this.stage.fighter ) ;
-      p.push( 'x' ) ;
-      break ;
+      this.stage.notifyFighterDoBomb(fighter);
+      p.push('x');
+      break;
     case 90: // z
-      if( this.stage.fighter.setFlag( this.stage.fighter._FLAG_SHOT ) )
-        p.push( 'z' ) ;
-      break ;
-  } ;
-  this._putKeyOnRecord( p ) ;
-} ;
+      if(fighter.setFlag(fighter._FLAG_SHOT))
+        p.push('z');
+      break;
+  };
+  this._putKeyOnRecord(p);
+};
 
 
-ShootingState.prototype.handleKeyUp = function( e ) {
-  var p = [ ] ;
-  switch( e.keyCode ) {
+ShootingState.prototype.handleKeyUp = function(e, fighter) {
+  var p = [];
+  switch(e.keyCode) {
     case 16: // shift
-      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_SLOW ) )
-        p.push( 's' ) ;
-      break ;
+      if(fighter.clearFlag(fighter._FLAG_SLOW))
+        p.push('s');
+      break;
     case 37: // left
-      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_MOVE_LEFT ) )
-        p.push( 'l' ) ;
-      break ;
+      if(fighter.clearFlag(fighter._FLAG_MOVE_LEFT))
+        p.push('l');
+      break;
     case 38: // up
-      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_MOVE_UP ) )
-        p.push( 'u' ) ;
-      break ;
+      if(fighter.clearFlag(fighter._FLAG_MOVE_UP))
+        p.push('u');
+      break;
     case 39: // right
-      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_MOVE_RIGHT ) )
-        p.push( 'r' ) ;
-      break ;
+      if(fighter.clearFlag(fighter._FLAG_MOVE_RIGHT))
+        p.push('r');
+      break;
     case 40: // down
-      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_MOVE_DOWN ) )
-        p.push( 'd' ) ;
-      break ;
+      if(fighter.clearFlag(fighter._FLAG_MOVE_DOWN))
+        p.push('d');
+      break;
     case 90: // z
-      if( this.stage.fighter.clearFlag( this.stage.fighter._FLAG_SHOT ) )
-        p.push( 'z' ) ;
-      break ;
+      if(fighter.clearFlag(fighter._FLAG_SHOT))
+        p.push('z');
+      break;
   } ;
-  this._putKeyOffRecord( p ) ;
-} ;
+  this._putKeyOffRecord(p);
+};
 
 
 ShootingState.prototype.updateDisplay = function( surface ) {
 } ;
+
+
+ShootingState.prototype.resetButton = function(flag) {
+  flag &= ~this.stage._BUTTON_SPACE;
+  flag &= ~this.stage._BUTTON_X;
+  return flag;
+};
 
 
 

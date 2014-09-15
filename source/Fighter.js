@@ -4,15 +4,45 @@
 function FighterManager(gameState) {
   this.parent = ElementManager;
   this.parent.call(this, gameState);
+  this.id = 0;
   this._init();
 };
 __inherit(FighterManager, ElementManager);
 
 FighterManager.prototype._MAX_NUM = 2;
 
+FighterManager.prototype.Randomizer = __randomizer;
+FighterManager.prototype.Math = Math;
+
 
 FighterManager.prototype._initMaxNum = function() {
   return this._MAX_NUM;
+};
+
+
+/**
+ * Note: not return the resouces to freelist.
+ */
+FighterManager.prototype.reset = function() {
+  for(var i = 0; i < this.elements.length; i++) {
+    this.elements[i].free();
+    this.elements[i].beDefaultPosition();
+  }
+  this.count = 0;
+};
+
+
+FighterManager.prototype.recoverWhenContinue = function() {
+  for(var i = 0; i < this.elements.length; i++) {
+    this.elements[i].recoverWhenContinue();
+  }
+};
+
+
+FighterManager.prototype.beNeutral = function() {
+  for(var i = 0; i < this.elements.length; i++) {
+    this.elements[i].beNeutral();
+  }
 };
 
 
@@ -21,12 +51,38 @@ FighterManager.prototype.getFighter = function() {
 };
 
 
+FighterManager.prototype.getRandom = function() {
+  return this.get((this.Randomizer.random() * this.elements.length) | 0);
+};
+
+
+FighterManager.prototype.getMe = function(isMaster) {
+  return this.get(isMaster ? 0 : 1);
+};
+
+
+FighterManager.prototype.getOther = function(isMaster) {
+  return this.get(isMaster ? 1 : 0);
+};
+
+
 FighterManager.prototype._init = function() {
-  this.add(new Fighter(this.gameState,
-                       this.gameState.getWidth(),
-                       this.gameState.getHeight(),
-                       this._getImage()));
-  this.getFighter().beDefaultPosition();
+  this.add(this._createFighter());
+  this.get(0).beDefaultPosition();
+
+  if(this.gameState.isMultiPlay()) {
+    this.add(this._createFighter());
+    this.get(1).beDefaultPosition();
+  }
+};
+
+
+FighterManager.prototype._createFighter = function() {
+  return new Fighter(this.gameState,
+                     this.gameState.getWidth(),
+                     this.gameState.getHeight(),
+                     this._getImage(),
+                     this.id++);
 };
 
 
@@ -45,6 +101,28 @@ FighterManager.prototype.initDrawer = function(layer, image) {
 FighterManager.prototype._getImage = function() {
   return this.gameState.getImage(Game._IMG_FIGHTER);
 };
+
+
+// TODO: duplicated code.
+// TODO: check Active numbers
+FighterManager.prototype.getClosestFighter = function(e) {
+  var target = this.get(0);
+  if(this.elements.length <= 1)
+    return target;
+
+  var min = 1024 * 1024; // TODO: temporal
+  for(var i = 0; i < this.elements.length; i++) {
+    var f = this.get(i);
+    var d = this.Math.pow(f.getX() - e.getX(), 2) +
+              this.Math.pow(f.getY() - e.getY(), 2);
+    if(d < min) {
+      min = d;
+      target = f;
+    }
+  }
+  return target;
+};
+
 
 
 function FighterDrawer(elementManager, layer, image) {
@@ -80,7 +158,8 @@ FighterView.prototype.animate = function() {
 
 
 
-function Fighter(gameState, maxX, maxY, image) {
+function Fighter(gameState, maxX, maxY, image, id) {
+  this.id = id;
   this.characterIndex = 0;  // TODO: temporal
   this.parent = Element;
   this.parent.call(this, gameState, maxX, maxY);
@@ -96,6 +175,7 @@ function Fighter(gameState, maxX, maxY, image) {
   this.deadCount = 0;
   this.spellCard = 'Special Spell'; // TODO: temporary
   this.setFlag(this._FLAG_UNHITTABLE);
+  this.options = [];
   this._initView();
 };
 __inherit(Fighter, Element);
@@ -299,6 +379,16 @@ Fighter.prototype.hasOption = function( ) {
 } ;
 
 
+Fighter.prototype.addOption = function(option) {
+  this.options.push(option);
+};
+
+
+Fighter.prototype.getOption = function(index) {
+  return this.options[index];
+};
+
+
 /**
  * TODO: temporal
  */
@@ -338,3 +428,14 @@ Fighter.prototype.getImageIndexY = function() {
   return this.Element_getImageIndexY() + this.characterIndex * 3;
 };
 
+
+Fighter.prototype.recoverWhenContinue = function() {
+  this.state = this._STATE_ALIVE;
+  this.setX((this.gameState.getWidth() / 2) | 0);
+  this.setY(this.gameState.getHeight() - 100);
+};
+
+
+Fighter.prototype.getID = function() {
+  return this.id;
+};

@@ -27,7 +27,8 @@ Peer.prototype.log = function(data) {
 
 
 Peer.prototype._wsReady = function(event) {
-  this.receiver.notifyWsReady(event);
+  if(this.receiver.notifyWsReady !== void 0)
+    this.receiver.notifyWsReady(event);
 };
 
 
@@ -131,12 +132,14 @@ Peer.prototype._onDataChannel = function(event) {
 
 
 Peer.prototype._onOpen = function(event) {
-  this.receiver.notifyOpenPeer(event);
+  if(this.receiver.notifyOpenPeer !== void 0)
+    this.receiver.notifyOpenPeer(event);
 };
 
 
 Peer.prototype._onClose = function(event) {
-  this.receiver.notifyClosePeer(event);
+  if(this.receiver.notifyClosePeer !== void 0)
+    this.receiver.notifyClosePeer(event);
 };
 
 

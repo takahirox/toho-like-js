@@ -48,14 +48,24 @@ OpeningState.prototype.notifyLogoConclusion = function( ) {
 } ;
 
 
-OpeningState.prototype.notifyTitleConclusion = function( ) {
-  this.game.notifyOpeningConclusion( ) ;
-} ;
+OpeningState.prototype.notifyTitleConclusion = function() {
+  if(! this.isMultiPlay() || this.isConnected()) {
+    this.game.notifyOpeningConclusion();
+  } else {
+    // TODO: temporal
+    window.alert('connect to begin the game.');
+  }
+};
 
 
-OpeningState.prototype.notifyReplaySelectBegin = function( ) {
-  this.game.notifyReplaySelectBegin( ) ;
-} ;
+OpeningState.prototype.notifyReplaySelectBegin = function() {
+  if(this.isMultiPlay()) {
+    // TODO: temporal
+    window.alert('cannot choose replay for multi play.');
+  } else {
+    this.game.notifyReplaySelectBegin();
+  }
+};
 
 
 OpeningState.prototype.getImage = function( key ) {
