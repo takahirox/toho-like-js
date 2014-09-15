@@ -770,7 +770,6 @@ StageState.prototype.notifyEnemyDidShot = function( enemy, shot ) {
 
 
 StageState.prototype.notifyBulletHit = function( bullet, enemy ) {
-  console.log(this.count);
   this.effectManager.createDamageEffect( enemy ) ;
   this.setFlag( this._FLAG_SE_ENEMY_DAMAGE ) ;
   this.score += 10 ;
