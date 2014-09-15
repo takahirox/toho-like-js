@@ -144,10 +144,15 @@ __copyParentMethod(EnemyBulletManager, ElementManager, 'checkCollisionWith');
 EnemyBulletManager.prototype.checkCollisionWith = function(fighter) {
   if(fighter.isFlagSet(fighter._FLAG_UNHITTABLE))
     return;
-
   this.ElementManager_checkCollisionWith(null, fighter, this, true);
 };
 
+
+EnemyBulletManager.prototype.checkCollisionWithFighters = function(fighters) {
+  for(var i = 0; i < fighters.length; i++) {
+    this.checkCollisionWith(fighters[i]);
+  }
+};
 
 EnemyBulletManager.prototype.notifyCollision = function(id, fighter, bullet) {
   fighter.die();
@@ -158,6 +163,13 @@ EnemyBulletManager.prototype.notifyCollision = function(id, fighter, bullet) {
 __copyParentMethod(EnemyBulletManager, ElementManager, 'checkGrazeWith');
 EnemyBulletManager.prototype.checkGrazeWith = function(fighter) {
   this.ElementManager_checkGrazeWith(null, fighter, this);
+};
+
+
+EnemyBulletManager.prototype.checkGrazeWithFighters = function(fighters) {
+  for(var i = 0; i < fighters.length; i++) {
+    this.checkGrazeWith(fighters[i]);
+  }
 };
 
 
@@ -173,7 +185,7 @@ EnemyBulletManager.prototype.notifyGraze = function(id, fighter,
 EnemyBulletManager.prototype.bomb = function( fighter ) {
   for( var i = 0; i < this.elements.length; i++ ) {
     this.elements[ i ].die( ) ;
-    this.gameState.notifyBeScoreItem( this.elements[ i ] ) ;
+    this.gameState.notifyBeScoreItem(fighter, this.elements[i]);
   }
 } ;
 
@@ -186,10 +198,10 @@ EnemyBulletManager.prototype.removeBulletsOfEnemy = function( enemy ) {
 } ;
 
 
-EnemyBulletManager.prototype.beItem = function( ) {
+EnemyBulletManager.prototype.beItem = function(fighter) {
   for( var i = 0; i < this.elements.length; i++ ) {
     this.elements[ i ].die( ) ;
-    this.gameState.notifyBeScoreItem( this.elements[ i ] ) ;
+    this.gameState.notifyBeScoreItem(fighter, this.elements[i]);
   }
   // TODO: temporal
   this.clearReserved( ) ;

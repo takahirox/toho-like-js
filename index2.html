@@ -42,22 +42,80 @@
 <script type="text/javascript" src="source/StaffRollState.js"></script>
 <script type="text/javascript">
 
-var __game ;
+// for console
+var __game;
+var __connectButton, __statusSpan;
 
-var init = function( ) {
+var __init = function( ) {
+  // TODO: temporal
+  var array = location.href.split('?');
+  if(array.length <= 1) {
+    location.href = array[0] + '?' + (Math.random() * 10000 | 0);
+    return -1;
+  }
+  var room = parseInt(array[1]);
+  document.getElementById('room').innerText = room;
+
+  __statusSpan = document.getElementById('status');
+  __connectButton = document.getElementById('connectButton');
+
+  __statusSpan.innerText = 'not connected yet.';
+  __connectButton.disabled = true;
+
   var mainCanvas = document.getElementById( 'mainCanvas' ) ;
   var bgCanvas = document.getElementById('bgCanvas');
   var game = new Game(mainCanvas, bgCanvas);
+  game.setRoom(room);
   __game = game ;
+
+  game.onWsReady = function(event) { __wsReady(event); };
+  game.onConnected = function(event) { __connected(event); };
+  game.onSentParams = function() { __waitingForOther(); };
+  game.onRan = function() { __ranTheGame(); };
+
   window.onkeydown = function(event) { game.handleKeyDown(event); };
   window.onkeyup = function(event) { game.handleKeyUp(event); };
-  game.run( ) ;
+
+  __game.run();
 } ;
+
+
+var __wsReady = function(event) {
+  __connectButton.disabled = false;
+};
+
+
+var __connect = function() {
+  __connectButton.disabled = true;
+  __statusSpan.innerText = 'connecting.';
+  __game.connect();
+};
+
+
+var __connected = function() {
+  __connectButton.disabled = true;
+  __statusSpan.innerText = 'connected.';
+};
+
+
+var __waitingForOther = function() {
+  __statusSpan.innerText = 'waiting for other\'s character select.';
+};
+
+
+var __ranTheGame = function() {
+  __statusSpan.innerText = 'ran.';
+};
+
 
 </script>
 </head>
 
-<body onLoad="init( )">
+<body onLoad="__init()">
+
+Room No. <span id="room"></span>
+<button id="connectButton" onclick="__connect()">connect</button>
+<span id="status"></span>
 
 <div id="canvasdiv" style="position:relative; width:640px; height:480px">
 <canvas id="mainCanvas" width="640" height="480"

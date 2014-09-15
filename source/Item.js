@@ -44,9 +44,9 @@ ItemManager.prototype.createScoreItem = function(enemy) {
 /**
  * TODO: temporary
  */
-ItemManager.prototype.createHoming = function(enemy) {
+ItemManager.prototype.createHoming = function(fighter, enemy) {
   var item = this.factory.create(enemy, this.Item._TYPE_SCORE);
-  item.setTarget(this.gameState.fighter);
+  item.setTarget(fighter);
   this.addElement(item);
 };
 
@@ -56,6 +56,12 @@ ItemManager.prototype.checkCollisionWith = function( fighter ) {
   this.ElementManager_checkCollisionWith(null, fighter, this);
 };
 
+
+ItemManager.prototype.checkCollisionWithFighters = function(fighters) {
+  for(var i = 0; i < fighters.length; i++) {
+    this.checkCollisionWith(fighters[i]);
+  }
+};
 
 ItemManager.prototype.notifyCollision = function(id, fighter, item) {
   item.die();

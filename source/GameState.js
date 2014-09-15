@@ -13,6 +13,11 @@ GameState.prototype.runStep = function( ) {
 } ;
 
 
+GameState.prototype.doRunNextStep = function() {
+  return true;
+};
+
+
 GameState.prototype.updateDisplay = function( surface ) {
 } ;
 
@@ -63,3 +68,23 @@ GameState.prototype.setFlag = function( type ) {
 GameState.prototype.clearFlag = function( type ) {
   this.flags &= ~type ;
 } ;
+
+
+GameState.prototype.isMultiPlay = function() {
+  return this.game.isMultiPlay();
+};
+
+
+GameState.prototype.isMaster = function() {
+  return this.game.isMaster();
+};
+
+
+GameState.prototype.isConnected = function() {
+  return this.game.isConnected();
+};
+
+
+GameState.prototype.receiveFromPeer = function(data) {
+};
+

@@ -41,7 +41,28 @@ function Game(mainCanvas, bgCanvas) {
   var self = this;
   this.runFunc = function() { self._runStep(); };
 
+  this.room = null;
+  this.peer = null;
+  this.master = false;
+  this.multiPlay = false;
+  this.connected = false;
+  this.waitingOther = false;
+  this.receivedOther = false;
+  this.otherParams = null;
+  this.meParams = null;
+
+  this.onWsReady = null;
+  this.onConnected = null;
+  this.onSentParams = null;
+  this.onRan = null;
 }
+
+Game.prototype.Randomizer = __randomizer;
+
+Game.prototype._WS_URL = 'ws://boiling-anchorage-5279.herokuapp.com/';
+
+Game.prototype._PEER_ID_START = 0;
+Game.prototype._PEER_ID_SYNC = 1;
 
 Game._SIDE_WIDTH = 160 ;
 Game._FPS = 60 ;
@@ -274,12 +295,20 @@ Game.prototype.clear = function( surface ) {
 
 
 Game.prototype.handleKeyDown = function( e ) {
+  // TODO: temporal
+  if(this.isMultiPlay() && this.waitingOther && ! this.receivedOther)
+    return;
+
   this.states[ this.state ].handleKeyDown( e ) ;
   e.preventDefault( ) ;
 } ;
 
 
 Game.prototype.handleKeyUp = function( e ) {
+  // TODO: temporal
+  if(this.isMultiPlay() && this.waitingOther && ! this.receivedOther)
+    return;
+
   this.states[ this.state ].handleKeyUp( e ) ;
   e.preventDefault( ) ;
 } ;
@@ -300,8 +329,14 @@ Game.prototype._runStep = function( ) {
     this.someoneState = -1;
 
   this.count++ ;
-  requestAnimationFrame(this.runFunc);
+  if(this.states[this.state].doRunNextStep())
+    this.runNextStep();
 } ;
+
+
+Game.prototype.runNextStep = function() {
+  requestAnimationFrame(this.runFunc);
+};
 
 
 Game.prototype._calculateFps = function( ) {
@@ -384,10 +419,29 @@ Game.prototype.notifyOpeningConclusion = function( ) {
 } ;
 
 
-Game.prototype.notifyCharacterSelectConclusion = function( index ) {
-  this._changeState( Game._STATE_IN_STAGE,
-                     { 'characterIndex': index } ) ;
-} ;
+Game.prototype.notifyCharacterSelectConclusion = function(index) {
+  var seed = (new Date()).getTime() & 0xffff;
+
+  if(this.isMultiPlay()) {
+    var p = {};
+    p.i = index;
+    p.s = seed;
+    this.meParams = p;
+    this.waitingOther = true;
+    this._startSync(p);
+    if(this.receivedOther) {
+      this._changeState(Game._STATE_IN_STAGE,
+                        this._makeStageStateParameterForMultiPlay());
+      if(this.onRan !== null)
+        this.onRan();
+    }
+  } else {
+    var params = {};
+    params.characterIndex = index; // me
+    params.seed = seed;
+    this._changeState(Game._STATE_IN_STAGE, params);
+  }
+};
 
 
 Game.prototype.notifyReplaySelectBegin = function( index ) {
@@ -409,16 +463,24 @@ Game.prototype.notifyReplaySelectConclusion = function( params ) {
  * TODO: temporal
  */
 Game.prototype.notifyQuitStage = function( flag ) {
-  if( flag )
+  if(flag && ! this.isMultiPlay())
     this._changeState( Game._STATE_POST_REPLAY, { } ) ;
   else
     this._changeState( Game._STATE_OPENING, { } ) ;
+
+  // TODO: temporal
+  if(this.isMultiPlay())
+    this.resetSyncParams();
 } ;
 
 
 Game.prototype.notifyGameClear = function( ) {
 //  this._changeState( Game._STATE_ENDING, { } ) ;
   this._changeState( Game._STATE_STAFF_ROLL, { } ) ;
+
+  // TODO: temporal
+  if(this.isMultiPlay())
+    this.resetSyncParams();
 } ;
 
 
@@ -451,3 +513,99 @@ Game.prototype.setFlag = function( type ) {
 Game.prototype.clearFlag = function( type ) {
   this.flags &= ~type ;
 } ;
+
+
+Game.prototype.setRoom = function(room) {
+  this.room = room;
+  this.peer = new Peer(this.room, this._WS_URL, this);
+  this.peer.createPeerConnection();
+  this.multiPlay = true;
+};
+
+
+Game.prototype.notifyWsReady = function(e) {
+  if(this.onWsReady !== null)
+    this.onWsReady(e);
+};
+
+
+Game.prototype.connect = function() {
+  this.peer.offer();
+  this.master = true;
+};
+
+
+Game.prototype.notifyOpenPeer = function(e) {
+  this.connected = true;
+  if(this.onConnected !== null)
+    this.onConnected(e);
+};
+
+
+Game.prototype._startSync = function(params) {
+  this.peer.send({id: this._PEER_ID_START, p: params});
+  if(this.onSentParams !== null)
+    this.onSentParams();
+};
+
+
+Game.prototype.sync = function(params) {
+  this.peer.send({id: this._PEER_ID_SYNC, p: params});
+};
+
+
+Game.prototype.receiveFromPeer = function(data) {
+  switch(data.id) {
+    case this._PEER_ID_START:
+      this.receivedOther = true;
+      this.otherParams = data.p;
+      if(this.waitingOther) {
+        this._changeState(Game._STATE_IN_STAGE,
+                          this._makeStageStateParameterForMultiPlay());
+        if(this.onRan !== null)
+          this.onRan();
+      }
+      break;
+    case this._PEER_ID_SYNC:
+      this.states[this.state].receiveFromPeer(data.p);
+      break;
+  }
+};
+
+
+Game.prototype._makeStageStateParameterForMultiPlay = function() {
+  var p = {};
+  p.characterIndex = this.meParams.i;
+  p.characterIndex2 = this.otherParams.i;
+  // use greater one.
+  p.seed = this.meParams.s > this.otherParams.s
+             ? this.meParams.s : this.otherParams.s;
+  return p;
+};
+
+
+Game.prototype.isMultiPlay = function() {
+  return this.multiPlay;
+};
+
+
+Game.prototype.isMaster = function() {
+  return this.master;
+};
+
+
+Game.prototype.isConnected = function() {
+  return this.connected;
+};
+
+
+Game.prototype.resetSyncParams = function() {
+  this.waitingOther = false;
+  this.receivedOther = false;
+  this.otherParams = null;
+  this.meParams = null;
+
+  // TODO: temporal
+  if(this.onConnected !== null)
+    this.onConnected();
+};

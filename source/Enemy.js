@@ -69,9 +69,14 @@ __copyParentMethod(EnemyManager, ElementManager, 'checkCollisionWith');
 EnemyManager.prototype.checkCollisionWith = function(fighter) {
   if(fighter.isFlagSet(fighter._FLAG_UNHITTABLE))
     return;
-
-  var self = this;
   this.ElementManager_checkCollisionWith(null, fighter, this)
+};
+
+
+EnemyManager.prototype.checkCollisionWithFighters = function(fighters) {
+  for(var i = 0; i < fighters.length; i++) {
+    this.checkCollisionWith(fighters[i]);
+  }
 };
 
 

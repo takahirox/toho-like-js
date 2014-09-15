@@ -833,11 +833,12 @@ Element.prototype._supplyPosition = function( ) {
 /**
  * TODO: temporal
  */
-Element.prototype._calculateAimedVector = function( ) {
-  var ax = this.gameState.fighter.getCenterX( ) - this.getCenterX( ) ;
-  var ay = this.gameState.fighter.getCenterY( ) - this.getCenterY( ) ;
-  this.vectors[ this.vectorIndex ].v.theta += this._calculateTheta( this.Math.atan2( ay, ax ) ) ;
-} ;
+Element.prototype._calculateAimedVector = function() {
+  var fighter = this.gameState.fighterManager.getClosestFighter(this);
+  var ax = fighter.getCenterX() - this.getCenterX();
+  var ay = fighter.getCenterY() - this.getCenterY();
+  this.vectors[this.vectorIndex].v.theta += this._calculateTheta(this.Math.atan2(ay, ax));
+};
 
 
 /**
