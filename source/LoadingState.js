@@ -62,7 +62,7 @@ LoadingState.prototype._loadBGMs = function( ) {
   var self = this ;
   for( var key in Game._BGMS ) {
     this.game.bgms[ key ] = new Audio( Game._BGMS[ key ] ) ;
-    this.game.bgms[ key ].addEventListener( 'canplay', function( e ) {
+    this.game.bgms[ key ].addEventListener( 'loadstart', function( e ) {
       self.loadBgmNum++ ;
     } ) ;
     this.game.bgms[ key ].load( ) ;
