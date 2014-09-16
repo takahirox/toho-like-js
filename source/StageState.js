@@ -53,12 +53,15 @@ function StageState( game ) {
   this.states[ this._STATE_GAME_OVER ] = new GameOverState( this ) ;
 
   this.keyFlag = 0;
-  this.keyFlags = new FIFOQueue();
+  this.keyFlags = new KeyFlagQueue();
+  this.keyFlagHistories = new KeyFlagQueue();
 
   this.keyFlag2 = 0;
-  this.keyFlags2 = new FIFOQueue();
+  this.keyFlags2 = new KeyFlagQueue();
 
-  this.runStepDone = 0;
+  this.syncCount = 0;
+
+  this.waitingForOther = false;
 
 }
 __inherit( StageState, GameState ) ;
@@ -67,6 +70,8 @@ __inherit( StageState, GameState ) ;
 StageState.prototype.Randomizer = __randomizer;
 
 StageState.prototype._BUTTON_LAG = 1;
+StageState.prototype._BUTTON_HISTORY = 4;
+
 StageState.prototype._BUTTON_LEFT  = 0x01;
 StageState.prototype._BUTTON_UP    = 0x02;
 StageState.prototype._BUTTON_RIGHT = 0x04;
@@ -106,13 +111,18 @@ StageState.prototype.init = function( params ) {
 
   this.keyFlag = 0;
   this.keyFlag2 = 0;
-  this.keyFlags.length = 0;
-  this.keyFlags2.length = 0;
+  this.keyFlags.free();
+  this.keyFlags2.free();
+  this.keyFlagHistories.free();
+
   for(var i = 0; i < this._BUTTON_LAG; i++) {
     this.keyFlags.push(0);
     this.keyFlags2.push(0);
+    this.keyFlagHistories.push(0);
   }
-  this.runStepDone = 0;
+
+  this.syncCount = 0;
+  this.waitingForOther = false;
 
   if( ! this.initialized ) {
     this._initBackground();
@@ -226,12 +236,15 @@ StageState.prototype.runStep = function( ) {
   // TODO: temporal
   } else if(! this.isFlagSet(this._FLAG_AUTO_PLAY)) {
     this.keyFlags.push(this.keyFlag);
+    this.keyFlagHistories.push(this.keyFlag);
+    this.keyFlagHistories.shiftUntilLengthIs(this._BUTTON_HISTORY);
     this._deployKeyFlag(this.keyFlags.shift(), this.fighter);
     if(this.game.isMultiPlay()) {
       this._deployKeyFlag(this.keyFlags2.shift(), this.fighter2);
     }
   }
-  this.replayCount++ ;
+  this.replayCount++;
+  this.syncCount++;
 
   // TODO: temporal
   if( this.state == this._STATE_SHOOTING ) {
@@ -1152,49 +1165,119 @@ StageState.prototype._deployKeyFlag = function(flag, fighter) {
 };
 
 
+StageState.prototype._SYNC_CONTAINER = {m: null, a: null};
 StageState.prototype._sync = function() {
-  this.runStepDone++;
-  var p = {};
-  p.k = this.keyFlag;
-  this.game.sync(p);
+  var c = this._SYNC_CONTAINER;
+  c.m = this.keyFlagHistories.min;
+  c.a = this.keyFlagHistories.getValues();;
+  this.game.sync(c);
   this._runNextStepIfPossible();
 };
 
 
 StageState.prototype.receiveFromPeer = function(data) {
-  this.runStepDone++;
-  this.keyFlags2.push(data.k);
-  this._runNextStepIfPossible();
+  this.keyFlags2.insertValues(data.m, data.a);
+  if(this.waitingForOther)
+    this._runNextStepIfPossible();
 };
 
 
 StageState.prototype._runNextStepIfPossible = function() {
-  if(this.runStepDone >= 2) {
-    this.runStepDone = 0;
+  if(this.keyFlags2.hasValueOfCount(this.syncCount)) {
+    this.waitingForOther = false;
     this.game.runNextStep();
+  } else {
+    this.waitingForOther = true;
   }
 };
 
 
 /**
- * TODO: optimize
+ * TODO: optimize and rename
  */
-function FIFOQueue() {
+function KeyFlagQueue() {
+  this.min = 0;
+  this.max = -1;
   this.values = [];
 }
 
-FIFOQueue.prototype.push = function(value) {
-  this.values[this.values.length] = value;
+KeyFlagQueue.prototype._NONE = -1;
+
+
+KeyFlagQueue.prototype.free = function() {
+  this.min = 0;
+  this.max = -1;
+  this.values.length = 0;
 };
 
 
-FIFOQueue.prototype.shift = function() {
+KeyFlagQueue.prototype.getLength = function() {
+  return this.values.length;
+};
+
+
+KeyFlagQueue.prototype.get = function(index) {
+  return this.values[index];
+};
+
+
+KeyFlagQueue.prototype.push = function(value) {
+  this.values[this.values.length] = value;
+  this.max++;
+};
+
+
+KeyFlagQueue.prototype.shift = function() {
   var value = this.values[0];
   for(var i = 0; i < this.values.length-1; i++) {
     this.values[i] = this.values[i+1];
   }
   this.values.length--;
+  this.min++;
   return value;
+};
+
+
+KeyFlagQueue.prototype.hasValueOfCount = function(count) {
+  while(true) {
+    if(this.getLength() == 0)
+      return false;
+    if(this.min == count)
+      return (this.values[0] != this._NONE) ? true : false;
+    if(this.min > count)
+      return false;
+    this.shift();
+  }
+};
+
+
+/**
+ * TODO: optimize and check the logic
+ */
+KeyFlagQueue.prototype.insertValues = function(min, values) {
+  for(var i = this.getLength(); this.max < min - 1; i++) {
+    this.values[i] = this._NONE;
+    this.max++;
+  }
+
+  var n = this.min - min >= 0 ? this.min - min : 0;
+  for(var i = n, len = values.length; i < len; i++) {
+    this.values[min - this.min + i] = values[i];
+    if(min + i > this.max)
+      this.max++;
+  }
+};
+
+
+KeyFlagQueue.prototype.shiftUntilLengthIs = function(count) {
+  while(this.getLength() > count) {
+    this.shift();
+  }
+};
+
+
+KeyFlagQueue.prototype.getValues = function() {
+  return this.values;
 };
 
 
@@ -1258,11 +1341,6 @@ StageAbstractState.prototype._putKeyOffRecord = function( record ) {
 function ShootingState(stage) {
   this.parent = StageAbstractState;
   this.parent.call(this, stage);
-  this.flag = 0;
-  this.flags = new FIFOQueue();
-  for(var i = 0; i < this._BUTTON_LAG; i++) {
-    this.flags.push(this.flag);
-  }
 }
 __inherit(ShootingState, StageAbstractState);
 
