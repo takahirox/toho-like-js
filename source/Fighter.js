@@ -25,7 +25,7 @@ FighterManager.prototype._initMaxNum = function() {
  */
 FighterManager.prototype.reset = function() {
   for(var i = 0; i < this.elements.length; i++) {
-    this.elements[i].free();
+    this.elements[i].reset();
     this.elements[i].beDefaultPosition();
   }
   this.count = 0;

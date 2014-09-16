@@ -550,11 +550,15 @@ Game.prototype._startSync = function(params) {
 
 
 Game.prototype.sync = function(params) {
-  this.peer.send({id: this._PEER_ID_SYNC, p: params});
+  // TODO: temporal impl to reduce the amount data transferred.
+//  this.peer.send({id: this._PEER_ID_SYNC, p: params});
+  this.peer.send(params);
 };
 
 
 Game.prototype.receiveFromPeer = function(data) {
+  // TODO: temporal impl to reduce the amount data transferred.
+/*
   switch(data.id) {
     case this._PEER_ID_START:
       this.receivedOther = true;
@@ -570,6 +574,28 @@ Game.prototype.receiveFromPeer = function(data) {
       this.states[this.state].receiveFromPeer(data.p);
       break;
   }
+*/
+  if(data.id !== void 0) {
+    switch(data.id) {
+      case this._PEER_ID_START:
+        this.receivedOther = true;
+        this.otherParams = data.p;
+        if(this.waitingOther) {
+          this._changeState(Game._STATE_IN_STAGE,
+                            this._makeStageStateParameterForMultiPlay());
+          if(this.onRan !== null)
+            this.onRan();
+        }
+        break;
+      case this._PEER_ID_SYNC:
+        this.states[this.state].receiveFromPeer(data.p);
+        break;
+    }
+  } else {
+    this.states[this.state].receiveFromPeer(data);
+  }
+
+
 };
 
 
