@@ -1,6 +1,9 @@
+/**
+ * TODO: optimize
+ */
 function Peer(room, wsURL, receiver) {
   this.room = room;
-  this.id = (Math.random() * 10000000) | 0; // TODO: temporal
+  this.peopleInTheRoom = 0;
   this.ws = new WebSocket(wsURL);
   this.receiver = receiver;
 
@@ -14,12 +17,24 @@ function Peer(room, wsURL, receiver) {
   this.onMessageFunc = function(event) {self._onMessage(event);};
   this.onOpenFunc = function(event) {self._onOpen(event);};
   this.onCloseFunc = function(event) {self._onClose(event);};
+  this.dummySendFunc = function() { self._keepSendDummy(); };
 
   this.ws.onmessage = function(event) {self._gotSignal(event);};
   this.ws.onopen = function(event) {self._wsReady(event);};
+
+  this.interval = null;
+  this.peerConnected = false;
 }
 
+// must be same as the server side ones.
+Peer.prototype._PEER_ID_DUMMY       = -1;
+Peer.prototype._PEER_ID_NOTICE_ROOM = 0;
+Peer.prototype._PEER_ID_SYNC        = 1;
+
 Peer.prototype._ICE_SERVERS = [{'url': 'stun:stun.l.google.com:19302'}];
+Peer.prototype._DUMMY_SPAN = 1000 * 20;
+Peer.prototype._DUMMY_DATA = JSON.stringify({_pid: Peer.prototype._PEER_ID_DUMMY});
+
 
 Peer.prototype.log = function(data) {
 //  console.log(data);
@@ -29,12 +44,18 @@ Peer.prototype.log = function(data) {
 Peer.prototype._wsReady = function(event) {
   if(this.receiver.notifyWsReady !== void 0)
     this.receiver.notifyWsReady(event);
+  this._noticeRoom();
+  this._keepSendDummy();
+};
+
+
+Peer.prototype._noticeRoom = function() {
+  var str = JSON.stringify({_pid: this._PEER_ID_NOTICE_ROOM, room: this.room});
+  this.ws.send(str);
 };
 
 
 Peer.prototype.sendSignal = function(params) {
-  params.id = this.id;
-  params.room = this.room;
   var str = JSON.stringify(params);
   this.ws.send(str);
   this.log(str);
@@ -44,20 +65,24 @@ Peer.prototype.sendSignal = function(params) {
 Peer.prototype._gotSignal = function(event) {
   var params = JSON.parse(event.data);
 
-  // TODO: temporal
-  if(params.id === this.id || (params.room !== null && params.room !== this.room))
-    return;
-
-  switch(params.type) {
-    case 'offer':
-      this._gotOffer(params);
-      break;
-    case 'answer':
-      this._gotAnswer(params);
-      break;
-    case 'candidate':
-      this._gotCandidate(params);
-      break;
+  if(params._pid === void 0) {
+    switch(params.type) {
+      case 'offer':
+        this._gotOffer(params);
+        break;
+      case 'answer':
+        this._gotAnswer(params);
+        break;
+      case 'candidate':
+        this._gotCandidate(params);
+        break;
+    }
+  } else {
+    if(params._pid == Peer.prototype._PEER_ID_NOTICE_ROOM) {
+      this.peopleInTheRoom = params.num;
+      if(this.receiver.notifyRoomUpdate !== void 0)
+        this.receiver.notifyRoomUpdate(this.peopleInTheRoom);
+    }
   }
   this.log(params);
 };
@@ -90,6 +115,11 @@ Peer.prototype.offer = function() {
   this.channel.onmessage = this.onMessageFunc;
   this.channel.onopen = this.onOpenFunc;
   this.channel.onclose = this.onCloseFunc;
+  // TODO: temporal
+  this.channel.onerror = function(e) {
+    window.alert(e);
+    console.log(e);
+  };
   this.pc.createOffer(this.gotSDPFunc);
 };
 
@@ -132,12 +162,15 @@ Peer.prototype._onDataChannel = function(event) {
 
 
 Peer.prototype._onOpen = function(event) {
+  this.peerConnected = true;
+  this.ws.close(1000); // TODO: consider more
   if(this.receiver.notifyOpenPeer !== void 0)
     this.receiver.notifyOpenPeer(event);
 };
 
 
 Peer.prototype._onClose = function(event) {
+  this.peerConnected = false;
   if(this.receiver.notifyClosePeer !== void 0)
     this.receiver.notifyClosePeer(event);
 };
@@ -151,4 +184,17 @@ Peer.prototype._onMessage = function(event) {
 
 Peer.prototype.send = function(data) {
   this.channel.send(JSON.stringify(data));
+};
+
+
+Peer.prototype._keepSendDummy = function() {
+  this.ws.send(this._DUMMY_DATA);
+  this._setIntervalForDummy();
+};
+
+
+Peer.prototype._setIntervalForDummy = function() {
+  if(! this.ws || this.peerConnected)
+    return;
+  this.interval = setTimeout(this.dummySendFunc, this._DUMMY_SPAN);
 };

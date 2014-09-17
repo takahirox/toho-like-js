@@ -45,6 +45,7 @@
 // for console
 var __game;
 var __connectButton, __statusSpan;
+var __alreadyConnected = false;
 
 var __init = function( ) {
   // TODO: temporal
@@ -59,7 +60,7 @@ var __init = function( ) {
   __statusSpan = document.getElementById('status');
   __connectButton = document.getElementById('connectButton');
 
-  __statusSpan.innerText = 'not connected yet.';
+  __statusSpan.innerText = '0 in the room.';
   __connectButton.disabled = true;
 
   var mainCanvas = document.getElementById( 'mainCanvas' ) ;
@@ -69,6 +70,7 @@ var __init = function( ) {
   __game = game ;
 
   game.onWsReady = function(event) { __wsReady(event); };
+  game.onRoomUpdate = function(num) { __updatedRoom(num); };
   game.onConnected = function(event) { __connected(event); };
   game.onSentParams = function() { __waitingForOther(); };
   game.onRan = function() { __ranTheGame(); };
@@ -81,7 +83,7 @@ var __init = function( ) {
 
 
 var __wsReady = function(event) {
-  __connectButton.disabled = false;
+//  __connectButton.disabled = false;
 };
 
 
@@ -92,7 +94,25 @@ var __connect = function() {
 };
 
 
+var __updatedRoom = function(num) {
+  if(! __alreadyConnected) {
+    __statusSpan.innerText = num + ' in the room.';
+    if(num < 2) {
+      __connectButton.disabled = true;
+      __statusSpan.innerText += ' (need one more person)';
+    } else if(num == 2) {
+      __connectButton.disabled = false;
+      __statusSpan.innerText += ' (ready to push connect button)';
+    } else {
+      __connectButton.disabled = true;
+      __statusSpan.innerText += ' (over capacity)';
+    }
+  }
+};
+
+
 var __connected = function() {
+  __alreadyConnected = true;
   __connectButton.disabled = true;
   __statusSpan.innerText = 'connected.';
 };

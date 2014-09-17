@@ -55,10 +55,12 @@ function Game(mainCanvas, bgCanvas) {
   this.onConnected = null;
   this.onSentParams = null;
   this.onRan = null;
+  this.onRoomUpdate = null;
 }
 
 Game.prototype.Randomizer = __randomizer;
 
+//Game.prototype._WS_URL = 'ws://localhost:5000';
 Game.prototype._WS_URL = 'ws://boiling-anchorage-5279.herokuapp.com/';
 
 Game.prototype._PEER_ID_START = 0;
@@ -526,6 +528,12 @@ Game.prototype.setRoom = function(room) {
 Game.prototype.notifyWsReady = function(e) {
   if(this.onWsReady !== null)
     this.onWsReady(e);
+};
+
+
+Game.prototype.notifyRoomUpdate = function(num) {
+  if(this.onRoomUpdate !== null)
+    this.onRoomUpdate(num);
 };
 
 
