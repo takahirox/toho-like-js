@@ -41,6 +41,7 @@ function Game(mainCanvas, bgCanvas) {
   var self = this;
   this.runFunc = function() { self._runStep(); };
 
+  this.lag = null;
   this.room = null;
   this.peer = null;
   this.master = false;
@@ -428,6 +429,8 @@ Game.prototype.notifyCharacterSelectConclusion = function(index) {
     var p = {};
     p.i = index;
     p.s = seed;
+    if(this.lag)
+      p.l = this.lag;
     this.meParams = p;
     this.waitingOther = true;
     this._startSync(p);
@@ -515,6 +518,11 @@ Game.prototype.setFlag = function( type ) {
 Game.prototype.clearFlag = function( type ) {
   this.flags &= ~type ;
 } ;
+
+
+Game.prototype.setLag = function(lag) {
+  this.lag = lag;
+};
 
 
 Game.prototype.setRoom = function(room) {
@@ -614,6 +622,16 @@ Game.prototype._makeStageStateParameterForMultiPlay = function() {
   // use greater one.
   p.seed = this.meParams.s > this.otherParams.s
              ? this.meParams.s : this.otherParams.s;
+
+  if(this.meParams.l !== void 0 && this.otherParams.l === void 0) {
+    p.lag = this.meParams.l;
+  } else if(this.meParams.l === void 0 && this.otherParams.l !== void 0) {
+    p.lag = this.otherParams.l;
+  } else if(this.meParams.l !== void 0 && this.otherParams.l !== void 0) {
+    p.lag = this.meParams.l > this.otherParams.l
+              ? this.meParams.l : this.otherParams.l;
+  }
+
   return p;
 };
 

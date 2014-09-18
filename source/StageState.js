@@ -60,6 +60,7 @@ function StageState( game ) {
   this.keyFlags2 = new KeyFlagQueue();
 
   this.syncCount = 0;
+  this.lag = this._BUTTON_LAG;
 
   this.waitingForOther = false;
 
@@ -109,13 +110,16 @@ StageState.prototype._STATE_GAME_OVER = 0x4 ;
 StageState.prototype.init = function( params ) {
   this.state = this._STATE_SHOOTING ;
 
+  if(params.lag !== void 0)
+    this.lag = params.lag;
+
   this.keyFlag = 0;
   this.keyFlag2 = 0;
   this.keyFlags.free();
   this.keyFlags2.free();
   this.keyFlagHistories.free();
 
-  for(var i = 0; i < this._BUTTON_LAG; i++) {
+  for(var i = 0; i < this.lag; i++) {
     this.keyFlags.push(0);
     this.keyFlags2.push(0);
     this.keyFlagHistories.push(0);
