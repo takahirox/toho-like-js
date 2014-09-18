@@ -47,14 +47,56 @@ var __game;
 var __connectButton, __statusSpan;
 var __alreadyConnected = false;
 
+
+// TODO: temporal
+var __reloadWithRandomRoomNo = function(baseURL, params) {
+  var args = '';
+  if(params.lag !== null)
+    args = '&l=' + params.lag;
+
+  location.href = baseURL + '?' + (Math.random() * 10000 | 0) + args;
+};
+
+
+// TODO: temporal
+var __validateURL = function(params) {
+  var array = location.href.split('?');
+  var baseURL = array[0];
+
+  if(array.length <= 1) {
+    __reloadWithRandomRoomNo(baseURL, params);
+    return false;
+  }
+
+  var args = array[1].split('&');
+
+  if(args.length > 1) {
+    for(var i = 1; i < args.length; i++) {
+      var p = args[i].split('=');
+      if(p[0] === 'l' && ! isNaN(p[1])) {
+        params.lag = parseInt(p[1]);
+      }
+    }
+  }
+
+  var room = args[0];
+  if(room === '' || isNaN(room)) {
+    __reloadWithRandomRoomNo(baseURL, params);
+    return false;
+  }
+  params.room = parseInt(room);
+  return true;
+};
+
+
 var __init = function( ) {
   // TODO: temporal
-  var array = location.href.split('?');
-  if(array.length <= 1) {
-    location.href = array[0] + '?' + (Math.random() * 10000 | 0);
+  var params = {room: null, lag: null};
+  if(! __validateURL(params)) {
     return -1;
   }
-  var room = parseInt(array[1]);
+
+  var room = params.room;
   document.getElementById('room').innerText = room;
 
   __statusSpan = document.getElementById('status');
@@ -67,6 +109,9 @@ var __init = function( ) {
   var bgCanvas = document.getElementById('bgCanvas');
   var game = new Game(mainCanvas, bgCanvas);
   game.setRoom(room);
+  if(params.lag !== null)
+    game.setLag(params.lag);
+
   __game = game ;
 
   game.onWsReady = function(event) { __wsReady(event); };
