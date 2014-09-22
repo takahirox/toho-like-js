@@ -41,6 +41,7 @@ function StageState( game ) {
   this.baseCharacterIndex = 0 ;
   this.baseCharacterIndex2 = 0 ;
   this.seed = null ;
+  this.viewFromFighter = false;
 
   this.state = this._STATE_SHOOTING ;
 //  this.state = this._STATE_TALK ;
@@ -127,6 +128,7 @@ StageState.prototype.init = function( params ) {
 
   this.syncCount = 0;
   this.waitingForOther = false;
+  this.viewFromFighter = false;
 
   if( ! this.initialized ) {
     this._initBackground();
@@ -172,7 +174,6 @@ StageState.prototype._initBackground = function() {
  */
 StageState.prototype._initFighter = function() {
   this.fighterManager = new FighterManager(this);
-  this.fighterManager.initDrawer(this.game.bgLayer, null);
 
  // TODO: temporal
   if(this.game.isMultiPlay()) {
@@ -182,6 +183,7 @@ StageState.prototype._initFighter = function() {
     this.fighter = this.fighterManager.getFighter();
   }
 
+  this.fighterManager.initDrawer(this.game.bgLayer, null);
   this.fighterOptionManager = new FighterOptionManager(
                                     this, this.fighterManager.elements);
   this.fighterOptionManager.initDrawer(this.game.bgLayer, null);
@@ -573,6 +575,10 @@ StageState.prototype._getFaceImage = function( ) {
 
 
 StageState.prototype.handleKeyDown = function( e ) {
+  // TODO: temporal
+  if(e.keyCode == 89) // y
+    this.viewFromFighter = ~this.viewFromFighter;
+
   if( this.isFlagSet( this._FLAG_AUTO_PLAY ) )
     return ;
 //  this.states[ this.state ].handleKeyDown( e ) ;
@@ -1194,6 +1200,17 @@ StageState.prototype._runNextStepIfPossible = function() {
     this.waitingForOther = true;
   }
 };
+
+
+StageState.prototype.doLookAtFromViewpointTarget = function() {
+  return this.viewFromFighter;
+};
+
+
+StageState.prototype.getViewpointTarget = function() {
+  return this.fighter;
+};
+
 
 
 /**

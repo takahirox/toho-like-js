@@ -75,6 +75,10 @@ var __validateURL = function(params) {
       var p = args[i].split('=');
       if(p[0] === 'l' && ! isNaN(p[1])) {
         params.lag = parseInt(p[1]);
+        if(params.lag < 1)
+          params.lag = 1;
+        if(params.lag > 20)
+          params.lag = 20;
       }
     }
   }
@@ -198,6 +202,7 @@ How to play
 <li>X:          bomb / cancel</li>
 <li>Shift:      slow</li>
 <li>Space:      character change(for debug)</li>
+<li>Y:          viewpoint change</li>
 </ul>
 
 <p>

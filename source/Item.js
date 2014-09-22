@@ -157,6 +157,11 @@ ItemView.prototype.rotate = function() {
 };
 
 
+ItemView.prototype.doRotateForViewpoint = function() {
+  return true;
+};
+
+
 function Item( gameState, maxX, maxY ) {
   this.parent = Element ;
   this.parent.call( this, gameState, maxX, maxY ) ;

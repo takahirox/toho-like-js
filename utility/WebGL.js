@@ -18,6 +18,8 @@ function Layer(canvas) {
   this.aBuffer = this.gl.createBuffer();
 };
 
+Layer.prototype.mat4 = mat4; // only for reference.
+
 Layer.prototype._NAMES = ['webgl', 'experimental-webgl'];
 
 Layer.prototype._BLEND_ALPHA     = 0;
@@ -188,14 +190,24 @@ Layer.prototype.clear = function() {
 
 
 Layer.prototype.perspective = function(theta, near, far) {
-  mat4.perspective(theta, this.gl.viewportWidth / this.gl.viewportHeight,
+  this.mat4.perspective(theta, this.gl.viewportWidth / this.gl.viewportHeight,
                    near, far, this.pMatrix);
 };
 
 
 Layer.prototype.ortho = function(near, far) {
-  mat4.ortho(0, this.gl.viewportWidth, -this.gl.viewportHeight, 0,
+  this.mat4.ortho(0, this.gl.viewportWidth, -this.gl.viewportHeight, 0,
              near, far, this.pMatrix);
+};
+
+
+Layer.prototype.lookAt = function(eye, center, up) {
+  this.mat4.lookAt(eye, center, up, this.mvMatrix);
+};
+
+
+Layer.prototype.identity = function() {
+  this.mat4.identity(this.mvMatrix);
 };
 
 
@@ -259,8 +271,10 @@ Layer.prototype.draw = function(texture, vBuffer, cBuffer, iBuffer, aBuffer,
   }
   gl.blendFuncSeparate(param1, param2, gl.ONE, gl.ONE);
 
-  gl.enable(gl.BLEND);
+//  gl.enable(gl.DEPTH_TEST);
+//  gl.depthFunc(gl.LEQUAL);
   gl.disable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBuffer);
   this.setMatrixUniforms(gl);

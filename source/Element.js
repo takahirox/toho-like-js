@@ -424,6 +424,36 @@ ElementView.prototype.rotate = function() {
 
 
 /**
+ * TODO: optimize. and remove magic numbers;
+ */
+ElementView.prototype.rotateForViewpoint = function() {
+  var r = this.Math.sqrt(40*40 + 120*120);
+  var r2 = this.element.getHeight()/2;
+  var ay =  40 * r2 / r;
+  var az = 120 * r2 / r;
+  for(var j = 0, len = this.getNum(); j < len; j++) {
+    var o = this._V_SIZE * j;
+    for(var i = 0; i < this._V_ITEM_NUM; i++) {
+      var y = this.vertices[o+i*this._V_ITEM_SIZE+1];
+      var z = this.vertices[o+i*this._V_ITEM_SIZE+2];
+      if(i > 1) {
+        this.vertices[o+i*this._V_ITEM_SIZE+1] = ay;
+        this.vertices[o+i*this._V_ITEM_SIZE+2] = z+az;
+      } else {
+        this.vertices[o+i*this._V_ITEM_SIZE+1] = ay;
+        this.vertices[o+i*this._V_ITEM_SIZE+2] = z-az;
+      }
+    }
+  }
+};
+
+
+ElementView.prototype.doRotateForViewpoint = function() {
+  return false;
+};
+
+
+/**
  * assume that update coordinates here in each frame.
  */
 ElementView.prototype.animate = function() {
@@ -432,6 +462,7 @@ ElementView.prototype.animate = function() {
 
 
 function ElementDrawer(e, layer, image) {
+  this.gameState = e.gameState;
   if(e instanceof ElementManager) {
     this.elementManager = e;
     this.element = null;
@@ -464,6 +495,9 @@ ElementDrawer.prototype._initTexture = function(layer, image) {
 
 ElementDrawer.prototype._pourVertices = function(i, v) {
   v.saveVertices();
+  if(this.gameState.doLookAtFromViewpointTarget() &&
+     v.doRotateForViewpoint())
+    v.rotateForViewpoint();
   v.rotate();
   v.translate();
 
@@ -582,12 +616,48 @@ ElementDrawer.prototype._initDraw = function(layer) {
 };
 
 
+/**
+ * TODO: remove magic numbers.
+ */
 ElementDrawer.prototype._project = function(layer) {
-  layer.ortho(0.1, 10.0);
+  if(this.gameState.doLookAtFromViewpointTarget())
+    layer.perspective(60, 0.1, 1000.0);
+  else
+    layer.ortho(0.1, 10.0);
 };
 
 
+/**
+ * Note: layer.lookAt or something should be here.
+ */
 ElementDrawer.prototype._prepareDraw = function(layer) {
+};
+
+
+ElementDrawer.prototype._VIEWPOINTS_CONTAINERS = [
+  [0, 0, 1], // eye
+  [0, 0, 0], // center
+  [0, 1, 0]  // up
+];
+/**
+ * TODO: remove magic numbers.
+ */
+ElementDrawer.prototype.lookAtFromViewpointTarget = function(layer) {
+  var f = this.gameState.getViewpointTarget();
+
+  var eye = this._VIEWPOINTS_CONTAINERS[0];
+  var center = this._VIEWPOINTS_CONTAINERS[1];
+  var up = this._VIEWPOINTS_CONTAINERS[2];
+
+  eye[0] =  f.getX();
+  eye[1] = -f.getY()+8;
+  eye[2] = 20;
+
+  center[0] = f.getX();
+  center[1] = -f.getY() + 128;
+  center[2] = -20;
+
+  layer.lookAt(eye, center, up);
 };
 
 
@@ -596,8 +666,10 @@ ElementDrawer.prototype.draw = function(layer) {
   this._pourBuffer(layer, n);
   this._initDraw(layer);
   this._project(layer);
-  mat4.identity(layer.mvMatrix);
+  layer.identity();
   this._prepareDraw(layer);
+  if(this.gameState.doLookAtFromViewpointTarget())
+    this.lookAtFromViewpointTarget(layer);
   this._draw(layer);
 };
 

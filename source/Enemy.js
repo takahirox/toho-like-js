@@ -170,6 +170,11 @@ EnemyView.prototype.rotate = function() {
 };
 
 
+EnemyView.prototype.doRotateForViewpoint = function() {
+  return true;
+};
+
+
 EnemyView.prototype.animate = function() {
   this._initCoordinates();
 };
