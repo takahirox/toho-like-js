@@ -153,7 +153,14 @@ FighterView.prototype.rotate = function() {
 
 FighterView.prototype.animate = function() {
   this._initCoordinates();
-  this.a = this.element.isFlagSet(this.element._FLAG_UNHITTABLE) ? 0.7 : 1.0;
+  // TODO: temporal
+  this.a = this.element.isFlagSet(this.element._FLAG_UNHITTABLE) ||
+           this.element.gameState.doLookAtFromViewpointTarget() ? 0.7 : 1.0;
+};
+
+
+FighterView.prototype.doRotateForViewpoint = function() {
+  return true;
 };
 
 
@@ -439,3 +446,5 @@ Fighter.prototype.recoverWhenContinue = function() {
 Fighter.prototype.getID = function() {
   return this.id;
 };
+
+

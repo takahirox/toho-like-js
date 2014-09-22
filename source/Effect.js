@@ -518,6 +518,15 @@ ShockWaveView.prototype.animate = function() {
 };
 
 
+ShockWaveView.prototype.rotate = function() {
+};
+
+
+ShockWaveView.prototype.doRotateForViewpoint = function() {
+  return true;
+};
+
+
 
 /**
  * This class is for small shockwave like the one
@@ -747,6 +756,10 @@ BigShockWaveView.prototype.animate = function() {
 };
 
 
+BigShockWaveView.prototype.rotate = function() {
+};
+
+
 
 function BigShockWaveEffect(gameState, maxX, maxY) {
   this.parent = Element;
@@ -868,6 +881,15 @@ ExplosionView.prototype.animate = function() {
   this._initCoordinates();
   this.a = (this.element._END_COUNT - this.element.count + 1)/
              this.element._END_COUNT;
+};
+
+
+ExplosionView.prototype.rotate = function() {
+};
+
+
+ExplosionView.prototype.doRotateForViewpoint = function() {
+  return true;
 };
 
 
@@ -995,6 +1017,10 @@ __inherit(GrazeView, ElementView);
 
 GrazeView.prototype.animate = function() {
   this.a = 1.0 - this.element.count/this.element._END_COUNT;
+};
+
+
+GrazeView.prototype.rotate = function() {
 };
 
 
@@ -1151,6 +1177,15 @@ __inherit(DamageView, ElementView);
 
 DamageView.prototype.animate = function() {
   this.a = (this.element._END_COUNT - this.element.count + 1) * 0.02;
+};
+
+
+DamageView.prototype.rotate = function() {
+};
+
+
+DamageView.prototype.doRotateForViewpoint = function() {
+  return true;
 };
 
 
@@ -1322,6 +1357,9 @@ BigExplosionView.prototype.animate = function() {
   this.vertices[11] = -1.0;
 };
 
+
+BigExplosionView.prototype.rotate = function() {
+};
 
 
 

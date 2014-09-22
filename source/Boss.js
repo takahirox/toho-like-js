@@ -252,6 +252,11 @@ BossView.prototype.rotate = function() {
 };
 
 
+BossView.prototype.doRotateForViewpoint = function() {
+  return true;
+};
+
+
 BossView.prototype.animate = function() {
   this._initCoordinates();
 

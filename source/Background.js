@@ -177,6 +177,7 @@ __inherit(BackgroundDrawer, ElementDrawer);
 
 // only for reference
 BackgroundDrawer.prototype.Math = Math;
+BackgroundDrawer.prototype.mat4 = mat4;
 
 
 
@@ -186,9 +187,14 @@ BackgroundDrawer.prototype._project = function(layer) {
 
 
 BackgroundDrawer.prototype._prepareDraw = function(layer) {
-  mat4.rotate(layer.mvMatrix, this.Math.PI/180*50, [-1, 0, 0]);
+  this.mat4.rotate(layer.mvMatrix, this.Math.PI/180*50, [-1, 0, 0]);
 };
 
+/**
+ * Nothing to do yet.
+ */
+BackgroundDrawer.prototype.lookAtFromViewpointTarget = function(layer) {
+};
 
 
 function Background(gameState, maxX, maxY) {
