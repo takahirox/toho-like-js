@@ -182,7 +182,7 @@ BackgroundDrawer.prototype.mat4 = mat4;
 
 
 BackgroundDrawer.prototype._project = function(layer) {
-  layer.perspective(60, 0.1, 10.0);
+  layer.perspective(60, 0.1, 100.0);
 };
 
 
@@ -191,9 +191,23 @@ BackgroundDrawer.prototype._prepareDraw = function(layer) {
 };
 
 /**
- * Nothing to do yet.
+ * independent of fighter so far.
+ * TODO: remove magic numbers.
  */
 BackgroundDrawer.prototype.lookAtFromViewpointTarget = function(layer) {
+  var eye = this._VIEWPOINTS_CONTAINERS[0];
+  var center = this._VIEWPOINTS_CONTAINERS[1];
+  var up = this._VIEWPOINTS_CONTAINERS[2];
+
+  eye[0] = 0;
+  eye[1] = -0.4;
+  eye[2] = 0.1;
+
+  center[0] = 0;
+  center[1] = 0;
+  center[2] = 0;
+
+  layer.lookAt(eye, center, up);
 };
 
 
