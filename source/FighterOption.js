@@ -9,6 +9,22 @@ __inherit(FighterOptionManager, ElementManager);
 
 FighterOptionManager.prototype._MAX_NUM = 4;
 
+FighterOptionManager.prototype._PARAMS = [];
+FighterOptionManager.prototype._PARAMS[0] = {
+  'r':  32,
+  'angle': 180,
+  'theta': 180,
+  'd':  1,
+  'trange': {'min': 180, 'max': 250}
+};
+FighterOptionManager.prototype._PARAMS[1] = {
+  'r':  32,
+  'angle':   0,
+  'theta': 360,
+  'd': -1,
+  'trange': {'min': 290, 'max': 360}
+};
+
 
 FighterOptionManager.prototype._initMaxNum = function() {
   return this._MAX_NUM;
@@ -19,18 +35,8 @@ FighterOptionManager.prototype._init = function() {
   // TODO: move these parameters to outside.
   for(var i = 0; i < this.fighters.length; i++) {
     var fighter = this.fighters[i];
-    this.create(fighter,
-                {'r':  32,
-                 'angle': 180,
-                 'theta': 180,
-                  'd':  1,
-                  'trange': {'min': 180, 'max': 250}});
-    this.create(fighter,
-               {'r':  32,
-                'angle':   0,
-                'theta': 360,
-                'd': -1,
-                'trange': {'min': 290, 'max': 360}});
+    this.create(fighter, this._PARAMS[0]);
+    this.create(fighter, this._PARAMS[1]);
   }
 };
 
@@ -39,10 +45,11 @@ FighterOptionManager.prototype._init = function() {
  * keeps the elements even it resets.
  * TODO: unstraightforward.
  */
-__copyParentMethod(FighterOptionManager, ElementManager, 'reset');
 FighterOptionManager.prototype.reset = function() {
-  this.ElementManager_reset();
-  this._init();
+  for(var i = 0; i < this.elements.length; i++) {
+    this.elements[i].reset(this._PARAMS[i%2]);
+  }
+  this.count = 0 ;
 };
 
 
@@ -190,9 +197,8 @@ FighterOption.prototype._ROTATE_SPEED = 4 ;
 
 
 __copyParentMethod(FighterOption, Element, 'init');
-FighterOption.prototype.init = function(params, image, fighter) {
+FighterOption.prototype._init = function(params, image) {
   this.Element_init(params, image);
-  this.fighter = fighter;
 
   this.width  = this._WIDTH;
   this.height = this._HEIGHT;
@@ -203,7 +209,18 @@ FighterOption.prototype.init = function(params, image, fighter) {
   this.theta  = this._getValueOrDefaultValue(params.theta, 0);
   this.d      = this._getValueOrDefaultValue(params.d, 0);
   this.trange = this._getValueOrDefaultValue(params.trange, null);
+};
+
+
+FighterOption.prototype.init = function(params, image, fighter) {
+  this.fighter = fighter;
+  this._init(params, image);
   this._initView();
+};
+
+
+FighterOption.prototype.reset = function(params) {
+  this._init(params, this.image);
 };
 
 
