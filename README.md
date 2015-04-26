@@ -21,6 +21,7 @@ http://d.hatena.ne.jp/takahirox/20140920/1411190305
 
 - fast rendering and many bullets with WebGL
 - online co-op play with WebRTC
+- watch other players real-time status with WebSocket
 - register your replay and watch other players replays
 
 ## Benchmarks
