@@ -286,7 +286,7 @@ Game.prototype.soundBGM = function( key ) {
 
 
 Game.prototype.run = function( ) {
-  this.states[ this.state ].init( ) ;
+//  this.states[ this.state ].init( ) ;
 //  this.interval = setInterval( this._runStep.bind( this ), 1000 / Game._FPS ) ;
   this._runStep( ) ;
 } ;
