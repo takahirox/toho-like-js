@@ -865,6 +865,14 @@ StageState.prototype.notifyBossVanishEnd = function( boss ) {
   if( boss.vanishedTalk ) {
     this.state = this._STATE_TALK ;
     this.fighterManager.beNeutral( ) ;
+    // TODO: temporal. consider if desync can occur.
+    for(var i = 0; i < this.lag; i++) {
+      this.keyFlags.set(i, this.states[this.state].resetButton(this.keyFlags.get(i)));
+    }
+    for(var i = 0; i < this._BUTTON_HISTORY; i++) {
+      this.keyFlags2.set(i, this.states[this.state].resetButton(this.keyFlags2.get(i)));
+      this.keyFlagHistories.set(i, this.states[this.state].resetButton(this.keyFlagHistories.get(i)));
+    }
   }
 //  this.state = this._STATE_CLEAR ;
 } ;
@@ -876,6 +884,14 @@ StageState.prototype.notifyBossVanishEnd = function( boss ) {
 StageState.prototype.notifyBeginTalk = function() {
   this.state = this._STATE_TALK;
   this.fighterManager.beNeutral();
+  // TODO: temporal. consider if desync can occur.
+  for(var i = 0; i < this.lag; i++) {
+    this.keyFlags.set(i, this.states[this.state].resetButton(this.keyFlags.get(i)));
+  }
+  for(var i = 0; i < this._BUTTON_HISTORY; i++) {
+    this.keyFlags2.set(i, this.states[this.state].resetButton(this.keyFlags2.get(i)));
+    this.keyFlagHistories.set(i, this.states[this.state].resetButton(this.keyFlagHistories.get(i)));
+  }
 };
 
 
@@ -901,6 +917,14 @@ StageState.prototype.notifyFighterDead = function( fighter, element ) {
     this.state = this._STATE_GAME_OVER ;
     this.states[ this.state ].init( ) ;
     fighter.beNeutral( ) ;
+    // TODO: temporal. consider if desync can occur.
+    for(var i = 0; i < this.lag; i++) {
+      this.keyFlags.set(i, this.states[this.state].resetButton(this.keyFlags.get(i)));
+    }
+    for(var i = 0; i < this._BUTTON_HISTORY; i++) {
+      this.keyFlags2.set(i, this.states[this.state].resetButton(this.keyFlags2.get(i)));
+      this.keyFlagHistories.set(i, this.states[this.state].resetButton(this.keyFlagHistories.get(i)));
+    }
     return ;
   }
 
@@ -962,6 +986,14 @@ StageState.prototype.notifyBossBeginTalk = function( boss ) {
   if( boss.appearedTalk ) {
     this.state = this._STATE_TALK ;
     this.fighterManager.beNeutral( ) ;
+    // TODO: temporal. consider if desync can occur.
+    for(var i = 0; i < this.lag; i++) {
+      this.keyFlags.set(i, this.states[this.state].resetButton(this.keyFlags.get(i)));
+    }
+    for(var i = 0; i < this._BUTTON_HISTORY; i++) {
+      this.keyFlags2.set(i, this.states[this.state].resetButton(this.keyFlags2.get(i)));
+      this.keyFlagHistories.set(i, this.states[this.state].resetButton(this.keyFlagHistories.get(i)));
+    }
   } else {
     this.notifyBossBecameActive( boss ) ;
   }
@@ -1179,7 +1211,7 @@ StageState.prototype._SYNC_CONTAINER = {m: null, a: null};
 StageState.prototype._sync = function() {
   var c = this._SYNC_CONTAINER;
   c.m = this.keyFlagHistories.min;
-  c.a = this.keyFlagHistories.getValues();;
+  c.a = this.keyFlagHistories.getValues();
   this.game.sync(c);
   this._runNextStepIfPossible();
 };
@@ -1239,6 +1271,12 @@ KeyFlagQueue.prototype.getLength = function() {
 
 KeyFlagQueue.prototype.get = function(index) {
   return this.values[index];
+};
+
+
+KeyFlagQueue.prototype.set = function(index, flag) {
+  if(index < this.values.length)
+    this.values[index] = flag;
 };
 
 
