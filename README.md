@@ -35,7 +35,7 @@ http://d.hatena.ne.jp/takahirox/20140920/1411190305
 
 - [glMatrix](https://github.com/toji/gl-matrix)
 
-No Three.js, yeah!
+No any WebGL 3D libraries, yeah!
 
 ## Link
 
