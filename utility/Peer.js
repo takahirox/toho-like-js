@@ -126,11 +126,8 @@ Peer.prototype._gotSignal = function(event) {
 
 Peer.prototype.createPeerConnection = function() {
   var servers = {'iceServers': this._ICE_SERVERS};
-  var options = {optional: [{
-                    RtpDataChannels: true
-                }]};
 
-  this.pc = new webkitRTCPeerConnection(servers, options);
+  this.pc = new webkitRTCPeerConnection(servers);
   this.pc.onicecandidate = this.onIceCandidateFunc;
 };
 
