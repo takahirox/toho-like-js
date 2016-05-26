@@ -17,6 +17,7 @@ function Peer(room, wsURL, receiver) {
   this.onMessageFunc = function(event) {self._onMessage(event);};
   this.onOpenFunc = function(event) {self._onOpen(event);};
   this.onCloseFunc = function(event) {self._onClose(event);};
+  this.onErrorFunc = function(event) {self._onError(event);};
   this.dummySendFunc = function() { self._keepSendDummy(); };
 
   this.ws.onmessage = function(event) {self._gotSignal(event);};
@@ -153,7 +154,7 @@ Peer.prototype.offer = function() {
     window.alert(e);
     console.log(e);
   };
-  this.pc.createOffer(this.gotSDPFunc);
+  this.pc.createOffer(this.gotSDPFunc, this.onErrorFunc);
 };
 
 
@@ -166,7 +167,7 @@ Peer.prototype._gotSDP = function(sdp) {
 Peer.prototype._gotOffer = function(msg) {
   this.pc.ondatachannel = this.onDataChannelFunc;
   this._setRemoteDescription(msg);
-  this.pc.createAnswer(this.gotSDPFunc);
+  this.pc.createAnswer(this.gotSDPFunc, this.onErrorFunc);
 };
 
 
@@ -206,6 +207,11 @@ Peer.prototype._onClose = function(event) {
   this.peerConnected = false;
   if(this.receiver.notifyClosePeer !== void 0)
     this.receiver.notifyClosePeer(event);
+};
+
+
+Peer.prototype._onError = function(event) {
+  window.alert(event);
 };
 
 
