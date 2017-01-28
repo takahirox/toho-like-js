@@ -62,7 +62,7 @@ function Game(mainCanvas, bgCanvas) {
 Game.prototype.Randomizer = __randomizer;
 
 //Game.prototype._WS_URL = 'ws://localhost:5000';
-Game.prototype._WS_URL = 'ws://boiling-anchorage-5279.herokuapp.com/';
+Game.prototype._WS_URL = 'wss://boiling-anchorage-5279.herokuapp.com/';
 
 Game.prototype._PEER_ID_START = 0;
 Game.prototype._PEER_ID_SYNC = 1;

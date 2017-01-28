@@ -12,7 +12,7 @@ function GameSocket(game) {
   this.dummySendFunc = function() { self._keepSendDummy(); };
 };
 
-GameSocket._URL = 'ws://safe-retreat-9152.herokuapp.com/';
+GameSocket._URL = 'wss://safe-retreat-9152.herokuapp.com/';
 //GameSocket._URL = 'ws://localhost:5000';
 
 GameSocket._DUMMY_SPAN = 1000 * 20;
