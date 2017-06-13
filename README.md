@@ -13,6 +13,8 @@ http://d.hatena.ne.jp/takahirox/20140920/1411190305
 
 ## Screenshot
 
+![Screen shot](https://github.com/takahirox/assets/blob/master/toho-like-js/screenshot.gif)
+
 ![Screen shot1](http://f.st-hatena.com/images/fotolife/t/takahirox/20140608/20140608210348.png)
 
 ![Screen shot2](http://f.st-hatena.com/images/fotolife/t/takahirox/20140919/20140919225039.png)
