@@ -54,17 +54,56 @@ var init = function( ) {
   game.run( ) ;
 } ;
 
+function fullscreen() {
+  var canvasdiv = document.querySelector('#canvasdiv');
+  var mainCanvas = document.querySelector('#mainCanvas');
+  var bgCanvas = document.querySelector('#bgCanvas');
+
+  if (canvasdiv.requestFullscreen) {
+      canvasdiv.requestFullscreen();
+  } else if (canvasdiv.msRequestFullscreen) {
+      canvasdiv.msRequestFullscreen();
+  } else if (canvasdiv.mozRequestFullScreen) {
+      canvasdiv.mozRequestFullScreen();
+  } else if (canvasdiv.webkitRequestFullscreen) {
+      canvasdiv.webkitRequestFullscreen();
+  }
+
+}
+
 </script>
+
+<style>
+#canvasdiv {
+  position:relative;
+  width:640px;
+  height:480px
+}
+
+#canvasdiv:-webkit-full-screen {
+  width: 100%;
+  height: 100%;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+}
+</style>
+
 </head>
 
 <body onLoad="init( )">
 
-<div id="canvasdiv" style="position:relative; width:640px; height:480px">
+<div id="canvasdiv">
 <canvas id="mainCanvas" width="640" height="480"
  style="z-index: 2; position:absolute;left0px;top0px;"></canvas>
 <canvas id="bgCanvas" width="480" height="480"
  style="z-index: 1; position:absolute;left0px;top0px;"></canvas>
 </div>
+
+<br>
+<button onclick="fullscreen()">Go fullscreen</button>
 
 <p>
 How to play
